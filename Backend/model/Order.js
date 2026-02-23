@@ -1,0 +1,162 @@
+import mongoose from "mongoose";
+
+const orderItemSchema = new mongoose.Schema({
+  productId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Product",
+    required: true
+  },
+  productName: {
+    type: String,
+    required: true
+  },
+  variant: {
+    size: String,
+    color: String,
+    sku: String
+  },
+  quantity: {
+    type: Number,
+    required: true,
+    min: 1
+  },
+  price: {
+    type: Number,
+    required: true 
+  },
+  discountedPrice: Number,
+  totalPrice: {
+    type: Number,
+    required: true
+  },
+  image: String
+});
+
+const orderSchema = new mongoose.Schema({
+  orderNumber: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true
+  },
+  
+  items: [orderItemSchema],
+  
+  subtotal: {
+    type: Number,
+    required: true
+  },
+  discount: {
+    type: Number,
+    default: 0
+  },
+  shippingCharge: {
+    type: Number,
+    default: 0
+  },
+  tax: {
+    type: Number,
+    default: 0
+  },
+  totalAmount: {
+    type: Number,
+    required: true
+  },
+  
+  shippingAddress: {
+    address1: String,
+    address2: String,
+    landmark: String,
+    city: String,
+    state: String,
+    pincode: String,
+    country: String,
+    phone: String
+  },
+  
+  billingAddress: {
+    address1: String,
+    address2: String,
+    city: String,
+    state: String,
+    pincode: String,
+    country: String,
+    phone: String
+  },
+  
+  paymentMethod: {
+    type: String,
+    enum: ["cod", "card", "upi", "netbanking", "wallet"],
+    required: true
+  },
+  paymentStatus: {
+    type: String,
+    enum: ["pending", "paid", "failed", "refunded"],
+    default: "pending"
+  },
+  paymentDetails: {
+    transactionId: String,
+    paymentId: String,
+    paidAt: Date
+  },
+  
+  orderStatus: {
+    type: String,
+    enum: [
+      "pending",
+      "confirmed",
+      "processing",
+      "shipped",
+      "out_for_delivery",
+      "delivered",
+      "cancelled",
+      "returned",
+      "refunded"
+    ],
+    default: "pending"
+  },
+  
+  trackingNumber: String,
+  courierName: String,
+  estimatedDelivery: Date,
+  deliveredAt: Date,
+  
+  statusHistory: [{
+    status: String,
+    note: String,
+    changedAt: { type: Date, default: Date.now },
+    changedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+  }],
+  
+  cancellationReason: String,
+  cancelledAt: Date,
+  returnReason: String,
+  returnedAt: Date,
+  
+  customerNotes: String,
+  adminNotes: String
+}, { timestamps: true });
+
+orderSchema.pre('save', async function(next) {
+  if (!this.orderNumber) {
+    const date = new Date();
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    this.orderNumber = `ORD${year}${month}${day}${random}`;
+  }
+  next();
+});
+
+// orderSchema.index({ orderNumber: 1 });
+orderSchema.index({ userId: 1, createdAt: -1 });
+orderSchema.index({ orderStatus: 1 });
+orderSchema.index({ paymentStatus: 1 });
+orderSchema.index({ createdAt: -1 });
+
+export default mongoose.model("Order", orderSchema);

@@ -1,3 +1,4 @@
+// User.js
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -62,7 +63,7 @@ const userSchema = new mongoose.Schema({
 
   role: {
     type: String,
-    enum: ["user", "admin"],
+    enum: ["admin","user" ],
     default: "user"
   },
 
@@ -81,29 +82,29 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 
+userSchema.pre("save", async function () {
 
-userSchema.pre("save", async function (next) {
+   if (!this.password) {
+      return next(new Error("Password missing"));
+   }
 
-  // Only hash if password modified
-  if (!this.isModified("password")) return next();
+   if (!this.isModified("password")) {
+      return 0;
+   }
 
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-
-  next();
+   this.password = await bcrypt.hash(this.password, 10);
+  //  next();
 });
+  //  ✅ PASSWORD COMPARISON METHOD
 
-/* =========================================================
-   ✅ PASSWORD COMPARISON METHOD
-========================================================= */
 
 userSchema.methods.comparePassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
+   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-/* =========================================================
-   ✅ GENERATE ACCESS TOKEN
-========================================================= */
+
+  //  ✅ GENERATE ACCESS TOKEN
+
 
 userSchema.methods.generateAccessToken = function () {
 

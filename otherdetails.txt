@@ -1,0 +1,64 @@
+
+------------------Backend file structure---------
+* Relation ship between models
+
+User ────┬─── Cart
+         ├─── Order
+         ├─── Review
+         └─── Coupon Usage
+
+Product ─┬─── Category
+         ├─── Review
+         ├─── Order Items
+         └─── Cart Items
+
+Order ───┬─── User
+         ├─── Product (via items)
+         └─── Coupon
+
+
+
+*folder structure
+backend/
+├── models/
+│   ├── User.js
+│   ├── Category.js
+│   ├── Product.js
+│   ├── Order.js
+│   ├── Cart.js
+│   ├── Review.js
+│   └── Coupon.js
+├── controllers/
+│   ├── authController.js
+│   ├── userController.js
+│   ├── categoryController.js
+│   ├── productController.js
+│   ├── orderController.js
+│   ├── cartController.js
+│   ├── reviewController.js
+│   └── couponController.js
+├── routes/
+│   ├── authRoutes.js
+│   ├── userRoutes.js
+│   ├── categoryRoutes.js
+│   ├── productRoutes.js
+│   ├── orderRoutes.js
+│   ├── cartRoutes.js
+│   ├── reviewRoutes.js
+│   └── couponRoutes.js
+├── middleware/
+│   ├── authMiddleware.js
+│   ├── adminMiddleware.js
+│   ├── errorMiddleware.js
+│   └── validationMiddleware.js
+├── utils/
+│   ├── generateToken.js
+│   ├── sendEmail.js
+│   ├── uploadFile.js
+│   └── apiFeatures.js
+├── config/
+│   ├── db.js
+│   └── cloudinary.js
+├── validators/
+│   └── (validation schemas)
+└── server.js
