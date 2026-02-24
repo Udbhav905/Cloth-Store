@@ -280,29 +280,31 @@ export const addAddress = async (req, res) => {
 // @access  Private
 export const updateAddress = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    console.log("*******",req.user.id);
+    const user = await User.findById(req.user.id);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const { addressId } = req.params;
+    // const { addressId } = req.params;
     const { address1, address2, city, state, pincode, country } = req.body;
 
-    // Find the address in the user's addresses array
-    const address = user.addresses.id(addressId);
+    
+    const address = user.addresses;
+    console.log("*******",address[0]);
 
     if (!address) {
       return res.status(404).json({ message: "Address not found" });
     }
 
     // Update address fields
-    if (address1) address.address1 = address1;
-    if (address2 !== undefined) address.address2 = address2;
-    if (city) address.city = city;
-    if (state) address.state = state;
-    if (pincode) address.pincode = pincode;
-    if (country) address.country = country;
+    if (address1) address[0].address1 = address1;
+    if (address2 !== undefined) address[0].address2 = address2;
+    if (city) address[0].city = city;
+    if (state) address[0].state = state;
+    if (pincode) address[0].pincode = pincode;
+    if (country) address[0].country = country;
 
     await user.save();
 
@@ -355,7 +357,8 @@ export const deleteAddress = async (req, res) => {
 // @access  Private
 export const getAddresses = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    console.log("req.body",await req);
+    const user = await User.findById(req._id);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -373,14 +376,15 @@ export const getAddresses = async (req, res) => {
 // @access  Private
 export const getAddressById = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
-
+    const user = await User.findById(await req.params.addressId);
+    
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
+    
+    console.log("----->>",user);
     const { addressId } = req.params;
-    const address = user.addresses.id(addressId);
+    const address = user.addresses;
 
     if (!address) {
       return res.status(404).json({ message: "Address not found" });
