@@ -280,7 +280,7 @@ export const addAddress = async (req, res) => {
 // @access  Private
 export const updateAddress = async (req, res) => {
   try {
-    console.log("*******",req.user.id);
+    // console.log("*******",req.user.id);
     const user = await User.findById(req.user.id);
 
     if (!user) {
@@ -292,7 +292,7 @@ export const updateAddress = async (req, res) => {
 
     
     const address = user.addresses;
-    console.log("*******",address[0]);
+    // console.log("*******",address[0]);
 
     if (!address) {
       return res.status(404).json({ message: "Address not found" });
@@ -357,7 +357,7 @@ export const deleteAddress = async (req, res) => {
 // @access  Private
 export const getAddresses = async (req, res) => {
   try {
-    console.log("req.body",await req);
+    // console.log("req.body",await req);
     const user = await User.findById(req._id);
 
     if (!user) {
@@ -382,7 +382,7 @@ export const getAddressById = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
     
-    console.log("----->>",user);
+    // console.log("----->>",user);
     const { addressId } = req.params;
     const address = user.addresses;
 
