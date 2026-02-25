@@ -1,0 +1,246 @@
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+
+  /* ✅ If you have sidebar */
+  padding-left: 80px;
+}
+
+.navbarVisible {
+  transform: translateY(0);
+}
+
+.navbarHidden {
+  transform: translateY(-100%);
+}
+
+.navbarContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  gap: 1rem;
+}
+
+/* LEFT SECTION */
+.navbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex: 1;
+}
+
+.menuToggle {
+  width: 30px;
+  height: 20px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.menuToggle span {
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  transition: all 0.3s ease;
+  border-radius: 2px;
+}
+
+/* SEARCH BAR */
+.searchBar {
+  display: flex;
+  align-items: center;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 30px;
+  padding: 0.5rem 1rem;
+
+  width: 100%;
+  max-width: 300px;
+  flex: 1;
+}
+
+.searchBar:focus-within {
+  background: white;
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+}
+
+.searchIcon {
+  width: 18px;
+  height: 18px;
+  color: #667eea;
+  margin-right: 8px;
+}
+
+.searchInput {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  width: 100%;
+}
+
+/* RIGHT SECTION */
+.navbarRight {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+/* WEATHER */
+.weatherWidget {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.4rem 0.8rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 30px;
+  color: white;
+  font-size: 13px;
+}
+
+/* TIME */
+.timeWidget {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.4rem 0.8rem;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 30px;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  font-size: 13px;
+}
+
+/* ICON BUTTONS */
+.notificationIcon,
+.logoutButton {
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.notificationIcon svg,
+.logoutButton svg {
+  width: 20px;
+  height: 20px;
+  color: #666;
+}
+
+/* BADGE */
+.notificationBadge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #ff6b6b;
+  color: white;
+  font-size: 10px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* PROFILE */
+.profileSection {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.3rem 0.6rem;
+  border-radius: 30px;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.profileImage {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.profileInfo {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.profileName {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.profileRole {
+  font-size: 10px;
+  color: #666;
+}
+
+/* -------------------- */
+/* ✅ TABLET */
+/* -------------------- */
+
+@media (max-width: 992px) {
+
+  .navbar {
+    padding-left: 0;
+  }
+
+  .weatherWidget,
+  .timeWidget {
+    display: none;
+  }
+
+  .searchBar {
+    max-width: 220px;
+  }
+}
+
+/* -------------------- */
+/* ✅ MOBILE */
+/* -------------------- */
+
+@media (max-width: 768px) {
+
+  .navbarContainer {
+    padding: 0.75rem 1rem;
+  }
+
+  .searchBar {
+    display: none;
+  }
+
+  .profileInfo {
+    display: none;
+  }
+
+  .navbarRight {
+    gap: 0.5rem;
+  }
+
+  .profileSection {
+    padding: 0.2rem;
+  }
+
+  .profileImage {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+}
