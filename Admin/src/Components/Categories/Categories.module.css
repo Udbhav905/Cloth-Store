@@ -1,5 +1,5 @@
 /* ============================================
-   MAISON — Luxury Clothstore Categories CSS
+   LUXURIA — Luxury Clothstore Categories CSS
    Aesthetic: Dark editorial luxury, gold accents
    Font pairing: Playfair Display + Cormorant Garamond
 ============================================ */
@@ -106,7 +106,7 @@
 }
 
 .header::before {
-  content: "MAISON";
+  content: "LUXURIA";
   position: absolute;
   top: 50%;
   left: 50%;
@@ -334,7 +334,11 @@
     opacity 0.5s;
   opacity: 0;
   padding: 0 60px;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
 }
+
 
 .formVisible {
   max-height: 1200px;
@@ -978,6 +982,8 @@
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;  /* ⭐ smooth iOS scroll */
   animation: modalIn 0.4s var(--transition-spring) both;
   box-shadow: var(--shadow-card), var(--shadow-gold);
 }
@@ -1288,6 +1294,40 @@
   .cancelButton,
   .submitButton {
     width: 100%;
+  }
+   .formActions {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 16px 20px;
+    background: var(--noir);
+    border-top: 1px solid var(--gold-border);
+  }
+   .categoryForm {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .formActions {
+    position: sticky;     /* ⭐ MAGIC */
+    bottom: 0;
+    background: var(--graphite);
+    padding-top: 20px;
+    margin-top: 30px;
+    z-index: 5;
+  }
+
+  .categoryForm {
+    padding-bottom: 90px;  /* prevent overlap */
+  }
+  .formActions {
+    gap: 12px;
+  }
+
+  .cancelButton,
+  .submitButton {
+    height: 52px;
   }
 }
 
