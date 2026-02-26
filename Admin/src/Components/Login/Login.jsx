@@ -3,20 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import styles from './Login.module.css';
 
 const Login = ({ onLogin }) => {
-  const [credentials, setCredentials] = useState({
-    email: '',  
-    password: ''
-  });
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [credentials, setCredentials] = useState({ email: '', password: '' });
+  const [error, setError]           = useState('');
+  const [isLoading, setIsLoading]   = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setCredentials(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setCredentials(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -27,51 +21,29 @@ const Login = ({ onLogin }) => {
     try {
       const response = await fetch('http://localhost:3000/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: credentials.email,
-          password: credentials.password
-        }),
-        credentials: 'include' // Important for cookies
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: credentials.email, password: credentials.password }),
+        credentials: 'include',
       });
 
       const data = await response.json();
 
-      if (!response.ok) {
-        console.log("--------->",response);
-        throw new Error(data.message || 'Login failed');
-      }
+      if (!response.ok) throw new Error(data.message || 'Login failed');
 
-      // Check if user has admin role (optional - based on your requirements)
       if (data.role !== 'admin' && data.role !== 'superadmin') {
         throw new Error('Unauthorized: Admin access only');
       }
 
-      // Store user data in localStorage or context if needed
       localStorage.setItem('admin', JSON.stringify({
-        _id: data._id,
-        name: data.name,
-        email: data.email,
-        role: data.role
+        _id: data._id, name: data.name, email: data.email, role: data.role,
       }));
-      
-      // Store token if needed (though it's in HTTP-only cookie)
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-      }
 
-      // Call the onLogin callback from parent
+      if (data.token) localStorage.setItem('token', data.token);
+
       onLogin(data);
-      
-      // Navigate to dashboard
       navigate('/dashboard');
-      
     } catch (err) {
-      console.log("--------err",err);
       setError(err.message || 'Invalid email or password');
-      console.error('Login error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -80,28 +52,33 @@ const Login = ({ onLogin }) => {
   return (
     <div className={styles.loginContainer}>
       <div className={styles.loginCard}>
+
+        {/* ── Logo Section ── */}
         <div className={styles.logoSection}>
           <div className={styles.logoWrapper}>
+            {/* Needle & thread mark */}
             <svg className={styles.logoIcon} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M3 6H21M3 12H21M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              <circle cx="18" cy="6" r="2" fill="currentColor"/>
-              <circle cx="18" cy="12" r="2" fill="currentColor"/>
-              <circle cx="18" cy="18" r="2" fill="currentColor"/>
+              <path d="M12 3C9.5 3 7.5 5 7.5 7.5C7.5 10 9.5 12 12 12C14.5 12 16.5 10 16.5 7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M12 12V21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M9 15L12 12L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M16.5 7.5H20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           </div>
-          <h1 className={styles.brandName}>ClothStore</h1>
-          <p className={styles.brandTagline}>Admin Dashboard</p>
+          <h1 className={styles.brandName}>Luxuria</h1>
+          <p className={styles.brandTagline}>Admin Atelier</p>
         </div>
 
+        {/* ── Form Section ── */}
         <form onSubmit={handleSubmit} className={styles.formSection}>
           <h2 className={styles.welcomeText}>Welcome Back</h2>
-          <p className={styles.subText}>Please login to your account</p>
-      
+          <p className={styles.subText}>Sign in to your atelier</p>
+
           <div className={styles.inputGroup}>
+            {/* Email */}
             <div className={styles.inputWrapper}>
               <svg className={styles.inputIcon} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2"/>
-                <path d="M5 20V19C5 15.6863 7.68629 13 11 13H13C16.3137 13 19 15.6863 19 19V20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M3 9L12 14L21 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
               </svg>
               <input
                 type="email"
@@ -115,10 +92,12 @@ const Login = ({ onLogin }) => {
               />
             </div>
 
+            {/* Password */}
             <div className={styles.inputWrapper}>
               <svg className={styles.inputIcon} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="5" y="11" width="14" height="11" rx="2" stroke="currentColor" strokeWidth="2"/>
-                <path d="M8 11V8C8 5.79086 9.79086 4 12 4C14.2091 4 16 5.79086 16 8V11" stroke="currentColor" strokeWidth="2"/>
+                <rect x="5" y="11" width="14" height="11" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M8 11V8C8 5.79086 9.79086 4 12 4C14.2091 4 16 5.79086 16 8V11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <circle cx="12" cy="16" r="1.5" fill="currentColor"/>
               </svg>
               <input
                 type="password"
@@ -133,28 +112,26 @@ const Login = ({ onLogin }) => {
             </div>
           </div>
 
+          {/* Error */}
           {error && (
             <div className={styles.errorMessage}>
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                <path d="M12 8V12M12 16H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M12 8V12M12 16H12.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
               </svg>
               <span>{error}</span>
             </div>
           )}
 
-          <button 
-            type="submit" 
-            className={styles.loginButton}
-            disabled={isLoading}
-          >
+          {/* Submit */}
+          <button type="submit" className={styles.loginButton} disabled={isLoading}>
             {isLoading ? (
               <>
-                <span className={styles.loader}></span>
-                <span>Signing in...</span>
+                <span className={styles.loader} />
+                <span>Signing in…</span>
               </>
             ) : (
-              'Sign In'
+              <span>Enter Atelier</span>
             )}
           </button>
 
@@ -163,8 +140,9 @@ const Login = ({ onLogin }) => {
           </div>
         </form>
 
+        {/* ── Footer ── */}
         <div className={styles.footer}>
-          <p>Admin access only</p>
+          <p>Authorised Access Only</p>
         </div>
       </div>
     </div>

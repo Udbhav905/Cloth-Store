@@ -1,228 +1,326 @@
+/* ============================================
+   MAISON — Luxury Navbar
+============================================ */
+
 .navbar {
   position: fixed;
   top: 0;
-  left: 0;
+  left: 72px;         /* sidebar collapsed width */
   right: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
   z-index: 1000;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-
-  /* ✅ If you have sidebar */
-  padding-left: 80px;
+  background: rgba(10,10,10,0.92);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border-bottom: 1px solid rgba(201,168,76,0.12);
+  transition: transform 0.4s cubic-bezier(0.4,0,0.2,1),
+              background 0.4s,
+              box-shadow 0.4s,
+              left 0.45s cubic-bezier(0.4,0,0.2,1);
 }
 
-.navbarVisible {
-  transform: translateY(0);
+.navbarScrolled {
+  background: rgba(10,10,10,0.97);
+  box-shadow: 0 4px 40px rgba(0,0,0,0.6), 0 1px 0 rgba(201,168,76,0.12);
 }
 
-.navbarHidden {
-  transform: translateY(-100%);
+.navbarVisible  { transform: translateY(0); }
+.navbarHidden   { transform: translateY(-100%); }
+
+/* Top shimmer */
+.topRule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,168,76,0.5) 40%, rgba(232,200,118,0.7) 60%, transparent);
+  animation: shimmer 4s ease-in-out infinite;
 }
 
-.navbarContainer {
+@keyframes shimmer {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+
+.navbarInner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
-  gap: 1rem;
+  padding: 0 28px;
+  height: 62px;
+  gap: 20px;
 }
 
-/* LEFT SECTION */
-.navbarLeft {
+/* ── Left ── */
+.navLeft {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 16px;
   flex: 1;
 }
 
-.menuToggle {
-  width: 30px;
-  height: 20px;
-  cursor: pointer;
-  display: flex;
+/* Hamburger — hidden on desktop */
+.hamburger {
+  display: none;
   flex-direction: column;
   justify-content: space-between;
+  width: 24px;
+  height: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
 }
 
-.menuToggle span {
+.hamburger span {
+  display: block;
   width: 100%;
-  height: 2px;
-  background: linear-gradient(90deg, #667eea, #764ba2);
-  transition: all 0.3s ease;
-  border-radius: 2px;
+  height: 1px;
+  background: var(--gold, #c9a84c);
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.3s;
+  transform-origin: center;
 }
 
-/* SEARCH BAR */
-.searchBar {
+.hamburgerOpen span:nth-child(1) { transform: translateY(7.5px) rotate(45deg); }
+.hamburgerOpen span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.hamburgerOpen span:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
+
+/* Search */
+.searchWrap {
   display: flex;
   align-items: center;
-  background: rgba(102, 126, 234, 0.1);
-  border-radius: 30px;
-  padding: 0.5rem 1rem;
-
+  gap: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  padding: 8px 14px;
   width: 100%;
-  max-width: 300px;
-  flex: 1;
+  max-width: 320px;
+  transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
 }
 
-.searchBar:focus-within {
-  background: white;
-  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+.searchFocused {
+  border-color: rgba(201,168,76,0.4);
+  background: rgba(255,255,255,0.06);
+  box-shadow: 0 0 0 1px rgba(201,168,76,0.15);
 }
 
 .searchIcon {
-  width: 18px;
-  height: 18px;
-  color: #667eea;
-  margin-right: 8px;
+  width: 15px; height: 15px;
+  color: #666;
+  flex-shrink: 0;
+  transition: color 0.3s;
 }
+
+.searchFocused .searchIcon { color: #c9a84c; }
 
 .searchInput {
   border: none;
   background: transparent;
   outline: none;
-  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: #f5f0e8;
   width: 100%;
 }
 
-/* RIGHT SECTION */
-.navbarRight {
+.searchInput::placeholder {
+  color: #555;
+  font-style: italic;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.85rem;
+}
+
+.searchShortcut {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  color: #444;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid #333;
+  padding: 2px 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Centre ── */
+.navCentre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.wordmark {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #faf8f4;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.wordmarkSub {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.52rem;
+  font-weight: 300;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #c9a84c;
+}
+
+/* ── Right ── */
+.navRight {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 20px;
+  flex: 1;
+  justify-content: flex-end;
 }
 
-/* WEATHER */
-.weatherWidget {
+/* Clock */
+.clockWidget {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0.4rem 0.8rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 30px;
-  color: white;
-  font-size: 13px;
+  gap: 8px;
 }
 
-/* TIME */
-.timeWidget {
+.clockIcon {
+  width: 14px; height: 14px;
+  color: #c9a84c;
+  flex-shrink: 0;
+}
+
+.clockText {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0.4rem 0.8rem;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 30px;
-  border: 1px solid rgba(102, 126, 234, 0.2);
-  font-size: 13px;
+  flex-direction: column;
+  gap: 1px;
 }
 
-/* ICON BUTTONS */
-.notificationIcon,
-.logoutButton {
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 50%;
-  transition: all 0.3s ease;
+.clockTime {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: #f5f0e8;
+  line-height: 1;
 }
 
-.notificationIcon svg,
-.logoutButton svg {
-  width: 20px;
-  height: 20px;
+.clockDate {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.65rem;
+  font-style: italic;
+  letter-spacing: 0.04em;
   color: #666;
+  line-height: 1;
 }
 
-/* BADGE */
-.notificationBadge {
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  background: #ff6b6b;
-  color: white;
-  font-size: 10px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Divider */
+.navDivider {
+  width: 1px;
+  height: 28px;
+  background: linear-gradient(180deg, transparent, rgba(201,168,76,0.25), transparent);
 }
 
-/* PROFILE */
-.profileSection {
+/* Profile */
+.profile {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0.3rem 0.6rem;
-  border-radius: 30px;
-  background: rgba(102, 126, 234, 0.1);
 }
 
-.profileImage {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.profileAvatar {
+  width: 32px; height: 32px;
+  border: 1px solid rgba(201,168,76,0.4);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  font-family: 'Playfair Display', serif;
+  font-size: 0.75rem;
   font-weight: 600;
-  font-size: 14px;
+  color: #c9a84c;
+  background: rgba(201,168,76,0.08);
+  transition: border-color 0.3s, box-shadow 0.3s;
+  flex-shrink: 0;
+}
+
+.profile:hover .profileAvatar {
+  border-color: #c9a84c;
+  box-shadow: 0 0 12px rgba(201,168,76,0.2);
 }
 
 .profileInfo {
   display: flex;
   flex-direction: column;
-  line-height: 1.1;
+  gap: 1px;
 }
 
 .profileName {
-  font-size: 13px;
-  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: #f5f0e8;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .profileRole {
-  font-size: 10px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.65rem;
+  font-style: italic;
   color: #666;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  text-transform: capitalize;
 }
 
-/* -------------------- */
-/* ✅ TABLET */
-/* -------------------- */
+/* Logout */
+.logoutBtn {
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  color: #666;
+  width: 32px; height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  flex-shrink: 0;
+}
 
-@media (max-width: 992px) {
+.logoutBtn svg {
+  width: 15px; height: 15px;
+}
 
+.logoutBtn:hover {
+  border-color: rgba(201,168,76,0.5);
+  color: #c9a84c;
+  background: rgba(201,168,76,0.06);
+  box-shadow: 0 0 12px rgba(201,168,76,0.12);
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════ */
+
+@media (max-width: 768px) {
   .navbar {
-    padding-left: 0;
+    left: 0 !important; /* override sidebar offset on mobile */
   }
 
-  .weatherWidget,
-  .timeWidget {
+  .hamburger {
+    display: flex;
+  }
+
+  .navCentre {
     display: none;
   }
 
-  .searchBar {
-    max-width: 220px;
-  }
-}
-
-/* -------------------- */
-/* ✅ MOBILE */
-/* -------------------- */
-
-@media (max-width: 768px) {
-
-  .navbarContainer {
-    padding: 0.75rem 1rem;
+  .clockWidget {
+    display: none;
   }
 
-  .searchBar {
+  .navDivider {
     display: none;
   }
 
@@ -230,17 +328,29 @@
     display: none;
   }
 
-  .navbarRight {
-    gap: 0.5rem;
+  .searchWrap {
+    max-width: 180px;
   }
 
-  .profileSection {
-    padding: 0.2rem;
+  .searchShortcut {
+    display: none;
   }
 
-  .profileImage {
-    width: 32px;
-    height: 32px;
-    font-size: 13px;
+  .navbarInner {
+    padding: 0 16px;
   }
+}
+
+@media (max-width: 480px) {
+  .searchWrap {
+    display: none;
+  }
+
+  .navLeft {
+    flex: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }

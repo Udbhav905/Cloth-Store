@@ -1,295 +1,459 @@
+/* ============================================
+   MAISON — Luxury Login Page CSS
+   Aesthetic: Dark editorial luxury, gold accents
+   Font pairing: Playfair Display + Cormorant Garamond
+============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Montserrat:wght@300;400;500;600&display=swap');
+
+:root {
+  --noir:         #0a0a0a;
+  --charcoal:     #141414;
+  --graphite:     #1e1e1e;
+  --smoke:        #2a2a2a;
+  --ash:          #3d3d3d;
+  --mist:         #888888;
+  --silver:       #b8b8b8;
+  --cream:        #f5f0e8;
+  --ivory:        #faf8f4;
+  --gold:         #c9a84c;
+  --gold-light:   #e8c876;
+  --gold-dim:     #9a7a35;
+  --gold-glow:    rgba(201, 168, 76, 0.15);
+  --gold-border:  rgba(201, 168, 76, 0.3);
+
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body:    'Cormorant Garamond', Georgia, serif;
+  --font-ui:      'Montserrat', sans-serif;
+
+  --ease-silk:    cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring:  cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-slow:    cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  --shadow-card:  0 32px 80px rgba(0,0,0,0.8), 0 8px 24px rgba(0,0,0,0.5);
+  --shadow-gold:  0 0 40px rgba(201, 168, 76, 0.18), 0 0 80px rgba(201, 168, 76, 0.07);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Full-page container ── */
 .loginContainer {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-color: var(--noir);
+  background-image:
+    radial-gradient(ellipse 100% 60% at 50% 0%,   rgba(201,168,76,0.07) 0%, transparent 55%),
+    radial-gradient(ellipse 80%  50% at 50% 100%,  rgba(201,168,76,0.04) 0%, transparent 60%),
+    repeating-linear-gradient(
+      90deg,
+      transparent, transparent 80px,
+      rgba(255,255,255,0.012) 80px,
+      rgba(255,255,255,0.012) 81px
+    );
+  padding: 24px;
   position: relative;
   overflow: hidden;
+}
+
+/* ── Decorative corner lines ── */
+.loginContainer::before,
+.loginContainer::after {
+  content: '';
+  position: fixed;
+  width: 220px;
+  height: 220px;
+  pointer-events: none;
 }
 
 .loginContainer::before {
+  top: 32px; left: 32px;
+  border-top: 1px solid var(--gold-border);
+  border-left: 1px solid var(--gold-border);
+  animation: cornerFade 1.2s 0.6s var(--ease-slow) both;
+}
+
+.loginContainer::after {
+  bottom: 32px; right: 32px;
+  border-bottom: 1px solid var(--gold-border);
+  border-right: 1px solid var(--gold-border);
+  animation: cornerFade 1.2s 0.8s var(--ease-slow) both;
+}
+
+@keyframes cornerFade {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Watermark ── */
+.loginContainer > *:first-child::before {
+  content: 'MAISON';
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-display);
+  font-size: clamp(90px, 20vw, 220px);
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  color: rgba(201,168,76,0.03);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+
+/* ── Login Card ── */
+.loginCard {
+  width: 100%;
+  max-width: 460px;
+  background: var(--charcoal);
+  border: 1px solid var(--gold-border);
+  border-top: 2px solid var(--gold);
+  position: relative;
+  z-index: 1;
+  box-shadow: var(--shadow-card), var(--shadow-gold);
+  animation: cardReveal 0.9s var(--ease-slow) both;
+}
+
+@keyframes cardReveal {
+  from { opacity: 0; transform: translateY(30px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Top shimmer line */
+.loginCard::before {
   content: '';
   position: absolute;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(
-    45deg,
-    transparent 30%,
-    rgba(255, 255, 255, 0.1) 50%,
-    transparent 70%
-  );
-  animation: shimmer 8s infinite linear;
+  top: -2px; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--gold) 40%, var(--gold-light) 60%, transparent 100%);
+  animation: shimmer 3s ease-in-out infinite;
 }
 
 @keyframes shimmer {
-  from {
-    transform: rotate(0deg) translate(-50%, -50%);
-  }
-  to {
-    transform: rotate(360deg) translate(-50%, -50%);
-  }
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
 }
 
-.loginCard {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 30px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  width: 90%;
-  max-width: 450px;
-  overflow: hidden;
-  position: relative;
-  animation: slideUp 0.6s ease-out;
-  transform-origin: center;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
+/* ── Logo Section ── */
 .logoSection {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 40px;
+  padding: 52px 48px 36px;
   text-align: center;
-  color: white;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
   position: relative;
   overflow: hidden;
+  animation: fadeDown 0.7s 0.3s var(--ease-slow) both;
+}
+
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .logoSection::after {
   content: '';
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
-  animation: pulse 4s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.3;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.5;
-  }
+  bottom: 0; left: 48px;
+  width: 48px; height: 1px;
+  background: var(--gold);
+  box-shadow: 0 0 10px rgba(201,168,76,0.5);
 }
 
 .logoWrapper {
-  width: 80px;
-  height: 80px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 20px;
-  animation: bounce 2s ease-in-out infinite;
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--gold-border);
+  margin-bottom: 20px;
+  position: relative;
+  animation: logoGlow 3s ease-in-out infinite;
 }
 
-@keyframes bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+@keyframes logoGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201,168,76,0);    border-color: var(--gold-border); }
+  50%       { box-shadow: var(--shadow-gold);              border-color: var(--gold); }
 }
 
 .logoIcon {
-  width: 50px;
-  height: 50px;
-  color: white;
+  width: 26px;
+  height: 26px;
+  color: var(--gold);
 }
 
 .brandName {
-  font-size: 32px;
-  font-weight: 800;
-  margin-bottom: 5px;
-  letter-spacing: 2px;
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  animation: glow 2s ease-in-out infinite;
-}
-
-@keyframes glow {
-  0%, 100% {
-    text-shadow: 0 0 10px rgba(255,255,255,0.5);
-  }
-  50% {
-    text-shadow: 0 0 20px rgba(255,255,255,0.8);
-  }
+  color: var(--ivory);
+  margin-bottom: 6px;
+  line-height: 1;
 }
 
 .brandTagline {
-  font-size: 14px;
-  opacity: 0.9;
-  letter-spacing: 1px;
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
+  font-weight: 300;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--gold);
 }
 
+/* ── Form Section ── */
 .formSection {
-  padding: 40px;
+  padding: 40px 48px 36px;
+  animation: fadeUp 0.7s 0.5s var(--ease-slow) both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .welcomeText {
-  color: #333;
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 5px;
-  animation: fadeIn 1s ease-out;
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--ivory);
+  margin-bottom: 6px;
+  letter-spacing: 0.03em;
 }
 
 .subText {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 30px;
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mist);
+  margin-bottom: 36px;
 }
 
+/* ── Input Group ── */
 .inputGroup {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  margin-bottom: 30px;
+  gap: 16px;
+  margin-bottom: 28px;
 }
 
 .inputWrapper {
   position: relative;
-  transition: transform 0.3s ease;
-}
-
-.inputWrapper:hover {
-  transform: translateY(-2px);
 }
 
 .inputIcon {
   position: absolute;
-  left: 15px;
+  left: 18px;
   top: 50%;
   transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
-  color: #999;
-  transition: color 0.3s ease;
+  width: 17px;
+  height: 17px;
+  color: var(--mist);
+  pointer-events: none;
+  transition: color 0.3s;
 }
 
 .inputWrapper:focus-within .inputIcon {
-  color: #667eea;
+  color: var(--gold);
 }
 
 .input {
   width: 100%;
-  padding: 15px 15px 15px 45px;
-  border: 2px solid #e0e0e0;
-  border-radius: 15px;
-  font-size: 16px;
-  transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--smoke);
+  border: 1px solid var(--ash);
+  border-radius: 0;
+  padding: 16px 18px 16px 50px;
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  color: var(--cream);
+  outline: none;
+  transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+  letter-spacing: 0.03em;
+}
+
+.input::placeholder {
+  color: var(--mist);
+  font-style: italic;
+  font-size: 0.95rem;
 }
 
 .input:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
-  outline: none;
-  transform: scale(1.02);
+  border-color: var(--gold);
+  background: var(--charcoal);
+  box-shadow:
+    0 0 0 1px var(--gold-border),
+    inset 0 1px 0 rgba(201,168,76,0.08);
 }
 
+.input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 100px var(--smoke) inset !important;
+  -webkit-text-fill-color: var(--cream) !important;
+  caret-color: var(--cream);
+}
+
+/* ── Error Message ── */
 .errorMessage {
-  background: #fee;
-  color: #c33;
-  padding: 12px;
-  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(220, 80, 80, 0.08);
+  border: 1px solid rgba(220, 80, 80, 0.3);
+  border-left: 3px solid #e05555;
+  padding: 12px 16px;
   margin-bottom: 20px;
-  font-size: 14px;
-  text-align: center;
-  animation: shake 0.5s ease-in-out;
+  animation: errorShake 0.4s var(--ease-spring);
 }
 
-@keyframes shake {
-  0%, 100% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-10px);
-  }
-  75% {
-    transform: translateX(10px);
-  }
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-6px); }
+  40%       { transform: translateX(5px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(3px); }
 }
 
+.errorMessage svg { color: #e05555; flex-shrink: 0; }
+.errorMessage span {
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: #f08080;
+}
+
+/* ── Login Button ── */
 .loginButton {
   width: 100%;
-  padding: 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  border-radius: 15px;
-  color: white;
-  font-size: 16px;
-  font-weight: 600;
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: 17px 32px;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   position: relative;
   overflow: hidden;
+  transition: color 0.4s, box-shadow 0.4s;
+  margin-bottom: 20px;
 }
 
 .loginButton::before {
   content: '';
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-  transform: translate(-50%, -50%);
-  transition: width 0.6s, height 0.6s;
+  inset: 0;
+  background: var(--gold);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.45s var(--ease-silk);
 }
 
-.loginButton:hover::before {
-  width: 300px;
-  height: 300px;
+.loginButton:hover:not(:disabled) {
+  color: var(--noir);
+  box-shadow: var(--shadow-gold);
 }
 
-.loginButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-}
+.loginButton:hover:not(:disabled)::before { transform: scaleX(1); }
+
+.loginButton > * { position: relative; z-index: 1; }
 
 .loginButton:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
+.loginButton:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* ── Loader Spinner ── */
 .loader {
   display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 3px solid #fff;
-  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  border: 1px solid currentColor;
   border-top-color: transparent;
-  animation: spin 1s linear infinite;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.footer {
-  padding: 20px;
+/* ── Forgot Password ── */
+.forgotPassword {
   text-align: center;
-  background: #f5f5f5;
-  border-top: 1px solid #e0e0e0;
-  font-size: 12px;
-  color: #999;
+}
+
+.forgotPassword a {
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--mist);
+  text-decoration: none;
+  position: relative;
+  transition: color 0.3s;
+}
+
+.forgotPassword a::after {
+  content: '';
+  position: absolute;
+  bottom: -2px; left: 0;
+  width: 0; height: 1px;
+  background: var(--gold);
+  transition: width 0.35s var(--ease-silk);
+}
+
+.forgotPassword a:hover {
+  color: var(--gold);
+}
+
+.forgotPassword a:hover::after { width: 100%; }
+
+/* ── Footer ── */
+.footer {
+  padding: 20px 48px 28px;
+  text-align: center;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  animation: fadeUp 0.7s 0.7s var(--ease-slow) both;
+}
+
+.footer p {
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--ash);
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════ */
+
+@media (max-width: 520px) {
+  .loginCard { max-width: 100%; }
+  .logoSection, .formSection, .footer { padding-left: 28px; padding-right: 28px; }
+  .logoSection { padding-top: 40px; }
+  .brandName { font-size: 1.5rem; }
+  .welcomeText { font-size: 1.4rem; }
+  .loginContainer::before,
+  .loginContainer::after { width: 80px; height: 80px; }
+}
+
+@media (max-width: 360px) {
+  .logoSection, .formSection, .footer { padding-left: 20px; padding-right: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }
