@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './Components/Login/Login';
 import Dashboard from './Components/Dashboard/Dashboard';
 import   './App.css';
+import Categories from './Components/Categories/Categories';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -90,6 +91,8 @@ function App() {
             path="/" 
             element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} 
           />
+         
+          <Route path="/categories" element={<Categories />} />
         </Routes>
       </div>
     </Router>
