@@ -22,13 +22,13 @@ const Sidebar = ({ isOpen, onClose }) => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // For desktop: expand on hover. For mobile: controlled by prop.
+
   const isVisible = isMobile ? isOpen : true;
   const isExpanded = isMobile ? isOpen : expanded;
 
   return (
     <>
-      {/* Mobile overlay */}
+    
       {isMobile && isOpen && (
         <div className={styles.overlay} onClick={onClose} />
       )}
@@ -43,10 +43,10 @@ const Sidebar = ({ isOpen, onClose }) => {
         onMouseEnter={() => !isMobile && setExpanded(true)}
         onMouseLeave={() => !isMobile && setExpanded(false)}
       >
-        {/* Top gold rule */}
+        
         <div className={styles.topRule} />
 
-        {/* Header / Logo */}
+       
         <div className={styles.sidebarHeader}>
           <div className={styles.logoMark}>
             <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.logoSvg}>
@@ -62,16 +62,13 @@ const Sidebar = ({ isOpen, onClose }) => {
             <span className={styles.brandSub}>Atelier</span>
           </div>
 
-          {/* Mobile close */}
           {isMobile && (
             <button className={styles.mobileClose} onClick={onClose}>×</button>
           )}
         </div>
 
-        {/* Divider */}
         <div className={styles.headerDivider} />
 
-        {/* Nav */}
         <nav className={styles.sidebarNav}>
           {menuItems.map((item, i) => (
             <NavLink
@@ -93,19 +90,14 @@ const Sidebar = ({ isOpen, onClose }) => {
           ))}
         </nav>
 
-        {/* Footer */}
+        
         <div className={styles.sidebarFooter}>
           <div className={styles.footerDivider} />
           <div className={styles.storageRow}>
-            <div className={styles.storageTrack}>
-              <div className={styles.storageFill} style={{ width: '65%' }} />
-            </div>
-            <div className={`${styles.storageLabel} ${isExpanded ? styles.storageLabelVisible : ''}`}>
-              6.5 <span>/ 10 GB</span>
-            </div>
+           
           </div>
           <div className={`${styles.versionTag} ${isExpanded ? styles.versionTagVisible : ''}`}>
-            v2.4.1 — Maison Suite
+            v1.0.0 — LUXURIA Suite
           </div>
         </div>
       </aside>

@@ -1,0 +1,399 @@
+/* ============================================================
+   LUXURIA — NewArrivals.module.css
+   Infinite rAF scroll · Premium Editorial · Dark Gold
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,200;0,300;1,200;1,300&family=Jost:wght@200;300;400&display=swap');
+
+:root {
+  --gold:     #c9a84c;
+  --gold-lt:  #e8c97a;
+  --gold-dim: rgba(201, 168, 76, 0.14);
+  --gold-gl:  rgba(201, 168, 76, 0.05);
+  --black:    #080808;
+  --surf:     #0e0e0e;
+  --surf2:    #141414;
+  --cream:    #f2ece2;
+  --muted:    rgba(242, 236, 226, 0.42);
+  --border:   rgba(201, 168, 76, 0.13);
+  --serif:    'Cormorant Garamond', Georgia, serif;
+  --sans:     'Jost', sans-serif;
+  --ease:     cubic-bezier(0.4, 0, 0.2, 1);
+  --silk:     cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ══════════════════════════════════════════
+   SECTION
+══════════════════════════════════════════ */
+.section {
+  background: var(--black);
+  padding: 88px 0 72px;
+  overflow: hidden;
+  position: relative;
+}
+
+.section::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 1px; height: 56px;
+  background: linear-gradient(180deg, var(--gold-dim), transparent);
+}
+
+/* ══════════════════════════════════════════
+   HEADER
+══════════════════════════════════════════ */
+.header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: end;
+  gap: 32px;
+  padding: 0 6vw 52px;
+  max-width: 1440px;
+  margin: 0 auto;
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.75s cubic-bezier(0,0,0.2,1),
+              transform 0.75s cubic-bezier(0,0,0.2,1);
+}
+
+.headerIn { opacity: 1; transform: translateY(0); }
+
+.hLeft  { display: flex; flex-direction: column; gap: 14px; }
+.hRight { display: flex; flex-direction: column; gap: 18px; padding-bottom: 4px; }
+
+.eyebrow {
+  display: flex; align-items: center; gap: 14px;
+  font-family: var(--sans);
+  font-size: 9.5px; font-weight: 300;
+  letter-spacing: 0.32em; text-transform: uppercase;
+  color: var(--gold);
+}
+
+.eyebrowLine {
+  display: block; width: 32px; height: 1px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+  flex-shrink: 0;
+}
+
+.title {
+  font-family: var(--serif);
+  font-size: clamp(50px, 5.8vw, 88px);
+  font-weight: 200; line-height: 0.92;
+  color: var(--cream); margin: 0;
+}
+
+.title em {
+  font-style: italic;
+  color: var(--gold-lt);
+  font-weight: 200;
+  display: block;
+}
+
+.desc {
+  font-family: var(--sans);
+  font-size: 12.5px; font-weight: 300;
+  letter-spacing: 0.06em; line-height: 1.8;
+  color: var(--muted); max-width: 380px; margin: 0;
+}
+
+.pills { display: flex; align-items: center; gap: 14px; }
+
+.pill {
+  display: flex; align-items: center; gap: 7px;
+  font-family: var(--sans);
+  font-size: 9px; font-weight: 300;
+  letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--muted);
+}
+
+.pillDot { font-size: 5.5px; color: var(--gold); }
+
+.pillDiv {
+  width: 1px; height: 13px;
+  background: var(--border);
+}
+
+/* ══════════════════════════════════════════
+   VIEWPORT + TRACK
+══════════════════════════════════════════ */
+.viewport {
+  position: relative;
+  overflow: hidden;
+  padding: 4px 0 8px;
+  /* no user-select so dragging text doesn't happen */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Left / right soft fades */
+.fade {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 140px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.fadeL { left:  0; background: linear-gradient(90deg,  var(--black) 0%, transparent 100%); }
+.fadeR { right: 0; background: linear-gradient(270deg, var(--black) 0%, transparent 100%); }
+
+/* Track — no transition here; JS sets transform directly */
+.track {
+  display: flex;
+  gap: 22px;
+  padding: 12px 6vw;
+  will-change: transform;
+}
+
+/* ══════════════════════════════════════════
+   CARD
+══════════════════════════════════════════ */
+.card {
+  flex-shrink: 0;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surf);
+  border: 1px solid var(--border);
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  /* entrance handled per-card via section inView; card itself always visible */
+  transition:
+    box-shadow   0.4s var(--ease),
+    border-color 0.3s var(--ease),
+    transform    0.4s var(--silk);
+}
+
+.card:hover,
+.cardHovered {
+  box-shadow:
+    0 20px 56px rgba(0,0,0,0.55),
+    0 0 0 1px rgba(201,168,76,0.28),
+    0 0 32px rgba(201,168,76,0.04);
+  border-color: rgba(201,168,76,0.3);
+  transform: translateY(-6px);
+}
+
+/* ── Image ── */
+.imgWrap {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: var(--surf2);
+}
+
+.shimmer {
+  position: absolute; inset: 0;
+  background: linear-gradient(
+    90deg,
+    var(--surf2) 0%,
+    rgba(201,168,76,0.05) 45%,
+    var(--surf2) 60%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.7s ease-in-out infinite;
+}
+
+.img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+  opacity: 0;
+  transition: opacity 0.5s var(--ease), transform 0.65s var(--silk);
+  will-change: transform;
+  pointer-events: none;
+}
+
+.imgLoaded { opacity: 1; }
+
+.card:hover .img,
+.cardHovered .img {
+  transform: scale(1.07);
+}
+
+/* Tag */
+.tag {
+  position: absolute; top: 14px; left: 14px;
+  font-family: var(--sans);
+  font-size: 8px; font-weight: 300;
+  letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--black); background: var(--gold);
+  padding: 4px 10px; z-index: 2;
+}
+
+/* Hover reveal overlay */
+.reveal {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  gap: 12px;
+  background: rgba(8,8,8,0.52);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  opacity: 0;
+  transition: opacity 0.38s var(--ease);
+  z-index: 3;
+}
+
+.card:hover .reveal,
+.cardHovered .reveal { opacity: 1; }
+
+.revealLine {
+  display: block; width: 24px; height: 1px;
+  background: var(--gold);
+  transform: scaleX(0);
+  transition: transform 0.38s 0.08s var(--silk);
+  transform-origin: center;
+}
+
+.card:hover .revealLine,
+.cardHovered .revealLine { transform: scaleX(1); }
+
+.revealText {
+  font-family: var(--sans);
+  font-size: 9px; font-weight: 300;
+  letter-spacing: 0.32em; text-transform: uppercase;
+  color: var(--gold-lt);
+  opacity: 0; transform: translateY(5px);
+  transition: opacity 0.3s 0.12s var(--silk), transform 0.3s 0.12s var(--silk);
+  white-space: nowrap;
+}
+
+.card:hover .revealText,
+.cardHovered .revealText { opacity: 1; transform: translateY(0); }
+
+/* ── Card info ── */
+.info {
+  padding: 16px 18px 18px;
+  display: flex; flex-direction: column; gap: 5px;
+  position: relative;
+}
+
+.meta {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--sans);
+  font-size: 8.5px; font-weight: 300;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--muted);
+}
+
+.dot { color: var(--gold); opacity: 0.5; font-size: 9px; }
+
+.nameRow {
+  display: flex; align-items: baseline;
+  justify-content: space-between; gap: 6px;
+  margin-top: 2px;
+}
+
+.name {
+  font-family: var(--serif);
+  font-size: 26px; font-weight: 200;
+  font-style: italic; color: var(--cream);
+  margin: 0; letter-spacing: 0.02em; line-height: 1.1;
+  transition: color 0.25s;
+}
+
+.card:hover .name,
+.cardHovered .name { color: var(--gold-lt); }
+
+.price {
+  font-family: var(--sans);
+  font-size: 11.5px; font-weight: 300;
+  letter-spacing: 0.08em; color: var(--gold);
+  white-space: nowrap; flex-shrink: 0;
+}
+
+.origin {
+  display: flex; align-items: center; gap: 7px;
+  font-family: var(--sans);
+  font-size: 8px; font-weight: 300;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--muted); margin-top: 3px;
+}
+
+.diamond { font-size: 5px; color: var(--gold); opacity: 0.55; }
+
+/* Animated bottom underline */
+.underline {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform 0.45s var(--silk);
+}
+
+.underlineOn { transform: scaleX(1); }
+
+/* ══════════════════════════════════════════
+   BOTTOM RULE
+══════════════════════════════════════════ */
+.rule {
+  display: flex; align-items: center;
+  padding: 48px 6vw 0;
+  opacity: 0;
+  transition: opacity 0.8s 0.5s cubic-bezier(0,0,0.2,1);
+}
+
+.ruleIn { opacity: 1; }
+
+.ruleLine {
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border));
+}
+
+.ruleLine + .ruleDiamond + .ruleLine {
+  background: linear-gradient(90deg, var(--border), transparent);
+}
+
+.ruleDiamond {
+  font-size: 6.5px; color: var(--gold);
+  opacity: 0.45; padding: 0 18px;
+}
+
+/* ══════════════════════════════════════════
+   KEYFRAMES
+══════════════════════════════════════════ */
+@keyframes shimmer {
+  0%   { background-position:  200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ══════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .card    { width: 270px; }
+  .fade    { width: 80px; }
+  .header  { padding: 0 4vw 44px; }
+  .track   { padding: 12px 4vw; }
+  .rule    { padding: 40px 4vw 0; }
+}
+
+@media (max-width: 768px) {
+  .section { padding: 60px 0 56px; }
+
+  .header {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 0 5vw 36px;
+  }
+
+  .title  { font-size: clamp(44px, 12vw, 68px); }
+  .desc   { font-size: 12px; max-width: 100%; }
+
+  .card   { width: 240px; }
+  .fade   { width: 50px; }
+  .track  { gap: 16px; padding: 8px 5vw; }
+  .rule   { padding: 36px 5vw 0; }
+}
+
+@media (max-width: 480px) {
+  .section { padding: 48px 0 44px; }
+  .header  { padding: 0 5vw 28px; }
+  .title   { font-size: clamp(38px, 13vw, 56px); }
+  .card    { width: 220px; }
+  .name    { font-size: 22px; }
+  .info    { padding: 12px 14px 14px; }
+  .fade    { width: 36px; }
+}
