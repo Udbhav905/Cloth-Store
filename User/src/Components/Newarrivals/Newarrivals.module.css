@@ -381,7 +381,6 @@
 
   .title  { font-size: clamp(44px, 12vw, 68px); }
   .desc   { font-size: 12px; max-width: 100%; }
-
   .card   { width: 240px; }
   .fade   { width: 50px; }
   .track  { gap: 16px; padding: 8px 5vw; }

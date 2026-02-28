@@ -6,7 +6,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
     <link rel="icon" type="image/png" href="./src/assets/logo.png" style="scale: 2;">
-    <title>💰 Cloth Store</title>
+    <script>
+  const titles = [
+    "Cloth Store 💭",
+    "Premium Collection 👔",
+    " Come Back 🥹",
+    " We Miss You 💔"
+  ];
+
+  let i = 0;
+
+  setInterval(() => {
+    document.title = titles[i];
+    i = (i + 1) % titles.length;
+  }, 2000);
+   </script>
   </head>
   <body>
     <div id="root"></div>

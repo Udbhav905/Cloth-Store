@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import styles from "./NewArrivals.module.css";
 
 /* ─────────────────────────────────────────────
@@ -106,8 +107,8 @@ function Card({ item, onPause, onResume }) {
   const leave = () => { setHovered(false); onResume(); };
 
   return (
-    <a
-      href={item.slug}
+    <Link
+      to={item.slug}
       className={`${styles.card} ${hovered ? styles.cardHovered : ""}`}
       onMouseEnter={enter}
       onMouseLeave={leave}
@@ -155,7 +156,7 @@ function Card({ item, onPause, onResume }) {
         </div>
         <div className={`${styles.underline} ${hovered ? styles.underlineOn : ""}`} />
       </div>
-    </a>
+    </Link>
   );
 }
 
