@@ -656,3 +656,138 @@
   .titleLine { font-size: clamp(34px, 12vw, 52px); }
   .titleLineGold { font-size: clamp(38px, 13vw, 58px); }
 }
+
+/* ══════════════════════════════════════════════
+   SKELETON CARDS
+══════════════════════════════════════════════ */
+.skeletonCard {
+  pointer-events: none;
+  border: 1px solid rgba(201,168,76,0.05);
+  /* Reveal animation still runs so layout is stable */
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.skeletonImgBlock {
+  position: relative;
+  overflow: hidden;
+  background: #111;
+}
+
+.skeletonShimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    transparent 35%,
+    rgba(201,168,76,0.06) 50%,
+    transparent 65%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: trendShimmer 1.8s ease-in-out infinite;
+}
+
+.skeletonLine {
+  background: rgba(201,168,76,0.07);
+  border-radius: 2px;
+  animation: trendPulse 1.8s ease-in-out infinite;
+  display: block;
+}
+
+/* ══════════════════════════════════════════════
+   RATING DISPLAY
+══════════════════════════════════════════════ */
+.rating {
+  font-size: 10px;
+  color: var(--gold);
+  letter-spacing: 0.02em;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.ratingNum {
+  font-family: var(--sans);
+  font-size: 9px;
+  font-weight: 300;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+
+/* ══════════════════════════════════════════════
+   LIVE DOT STATE
+══════════════════════════════════════════════ */
+.liveDotActive {
+  background: #4caf50 !important;
+  animation: livePulse 2s ease-out infinite;
+}
+
+/* ══════════════════════════════════════════════
+   ERROR / EMPTY STATE
+══════════════════════════════════════════════ */
+.errorWrap {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 60px 6vw 80px;
+  text-align: center;
+}
+
+.errorDiamond {
+  font-size: 8px;
+  color: var(--gold);
+  opacity: 0.35;
+}
+
+.errorText {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0;
+  max-width: 380px;
+  line-height: 1.7;
+}
+
+.retryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--gold);
+  font-family: var(--sans);
+  font-size: 9.5px;
+  font-weight: 300;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  padding: 10px 22px;
+  cursor: pointer;
+  transition: background 0.25s, border-color 0.25s;
+}
+
+.retryBtn svg { width: 14px; height: 14px; }
+
+.retryBtn:hover {
+  background: var(--gold-glow);
+  border-color: rgba(201,168,76,0.4);
+}
+
+/* ══════════════════════════════════════════════
+   EXTRA KEYFRAMES
+══════════════════════════════════════════════ */
+@keyframes trendShimmer {
+  0%   { background-position:  200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes trendPulse {
+  0%, 100% { opacity: 1;   }
+  50%       { opacity: 0.3; }
+}

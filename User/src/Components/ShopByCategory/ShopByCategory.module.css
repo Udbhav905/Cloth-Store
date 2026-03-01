@@ -707,3 +707,112 @@
   .grid { padding: 0 12px; }
   .titleAccent { font-size: 48px; }
 }
+
+/* ══════════════════════════════════════════════
+   SKELETON LOADING STATE
+══════════════════════════════════════════════ */
+.skeletonCard {
+  position: relative;
+  overflow: hidden;
+  background: #0e0e0e;
+  pointer-events: none;
+}
+
+.skeletonShimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    rgba(201,168,76,0)   0%,
+    rgba(201,168,76,0)  35%,
+    rgba(201,168,76,0.05) 50%,
+    rgba(201,168,76,0)  65%,
+    rgba(201,168,76,0) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonSweep 1.8s ease-in-out infinite;
+}
+
+.skeletonContent {
+  position: absolute;
+  bottom: 22px;
+  left: 20px;
+  right: 20px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skeletonLine {
+  background: rgba(201,168,76,0.08);
+  border-radius: 2px;
+  animation: skeletonPulse 1.8s ease-in-out infinite;
+}
+
+/* ══════════════════════════════════════════════
+   ERROR / EMPTY STATE
+══════════════════════════════════════════════ */
+.errorWrap {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 64px 6vw;
+  text-align: center;
+}
+
+.errorDiamond {
+  font-size: 8px;
+  color: var(--gold);
+  opacity: 0.4;
+}
+
+.errorText {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin: 0;
+  max-width: 360px;
+}
+
+.retryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--gold);
+  font-family: var(--sans);
+  font-size: 9.5px;
+  font-weight: 300;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  padding: 10px 22px;
+  cursor: pointer;
+  transition: background 0.25s, border-color 0.25s;
+}
+
+.retryBtn svg { width: 14px; height: 14px; }
+
+.retryBtn:hover {
+  background: var(--gold-glow);
+  border-color: rgba(201,168,76,0.4);
+}
+
+/* ══════════════════════════════════════════════
+   EXTRA KEYFRAMES
+══════════════════════════════════════════════ */
+@keyframes skeletonSweep {
+  0%   { background-position:  200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}

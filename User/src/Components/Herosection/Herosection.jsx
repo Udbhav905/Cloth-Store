@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import img1 from '../../assets/confident-young-handsome-man-holds-his-coat-shoulder-near-lake-autumn-forest.jpg'
+import img2 from '../../assets/women.jpg'
+import img3 from '../../assets/medium-shot-man-posing-outdoors.jpg'
 import styles from "./HeroSection.module.css";
 
 /* ─────────────────────────────────────────────
@@ -12,7 +15,7 @@ const SLIDES = [
     italic: 1,
     sub: "Handcrafted in Milan. Worn by the discerning few.",
     cta: "Explore Collection",
-    img: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1600&q=85&auto=format&fit=crop",
+    img: img3,
     pos: "60% center",
   },
   {
@@ -22,7 +25,7 @@ const SLIDES = [
     italic: 2,
     sub: "Where restraint becomes the most seductive statement.",
     cta: "View Couture",
-    img: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1600&q=85&auto=format&fit=crop",
+    img: img2,
     pos: "50% 30%",
   },
   {
@@ -32,7 +35,7 @@ const SLIDES = [
     italic: 1,
     sub: "Every thread tells the story of generations of mastery.",
     cta: "Our Heritage",
-    img: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1600&q=85&auto=format&fit=crop",
+    img: img1,
     pos: "40% center",
   },
 ];

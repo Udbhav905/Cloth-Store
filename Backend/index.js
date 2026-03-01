@@ -33,8 +33,22 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // CORS configuration
+// Simpler fix - using a function to handle multiple origins
 app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:5183",
+  // origin: true, // Allow all origins in production 
+  // credentials: true
+  origin: function(origin, callback) {
+    const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'];  //for devlopment
+    
+    // Allow requests with no origin (like mobile apps, curl, etc)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 

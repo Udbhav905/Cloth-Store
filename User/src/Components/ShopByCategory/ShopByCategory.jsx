@@ -1,81 +1,23 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
+import useCategoryStore from "../../store/Usecategorystore";
 import styles from "./ShopByCategory.module.css";
 
 /* ─────────────────────────────────────────────
-   CATEGORY DATA
+   Fallback images — used when category.img is null
+   (i.e. admin hasn't uploaded a category image yet)
 ───────────────────────────────────────────── */
-const CATEGORIES = [
-  {
-    id: 1,
-    slug: "evening-gowns",
-    label: "Evening",
-    sublabel: "Gowns",
-    count: "48 Pieces",
-    desc: "Where silk meets starlight",
-    img: "https://images.unsplash.com/photo-1566479179817-0b1c6a6f5c9b?w=900&q=88&auto=format&fit=crop&crop=top",
-    size: "tall",      // tall card — spans 2 rows
-    accent: "#c9a84c",
-  },
-  {
-    id: 2,
-    slug: "tailored-suits",
-    label: "Tailored",
-    sublabel: "Suiting",
-    count: "34 Pieces",
-    desc: "Power dressed in silence",
-    img: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=900&q=88&auto=format&fit=crop",
-    size: "wide",      // wide card — spans 2 cols
-    accent: "#d4cfc8",
-  },
-  {
-    id: 3,
-    slug: "resort-wear",
-    label: "Resort",
-    sublabel: "Wear",
-    count: "62 Pieces",
-    desc: "Effortless sun-drenched luxury",
-    img: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=900&q=88&auto=format&fit=crop&crop=top",
-    size: "normal",
-    accent: "#c9a84c",
-  },
-  {
-    id: 4,
-    slug: "bridal-couture",
-    label: "Bridal",
-    sublabel: "Couture",
-    count: "21 Pieces",
-    desc: "Once-in-a-lifetime perfection",
-    img: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=900&q=88&auto=format&fit=crop&crop=top",
-    size: "normal",
-    accent: "#e8dcc8",
-  },
-  {
-    id: 5,
-    slug: "cashmere-knits",
-    label: "Cashmere",
-    sublabel: "Knits",
-    count: "29 Pieces",
-    desc: "Second-skin softness",
-    img: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=900&q=88&auto=format&fit=crop&crop=top",
-    size: "tall",
-    accent: "#c9a84c",
-  },
-  {
-    id: 6,
-    slug: "accessories",
-    label: "Rare",
-    sublabel: "Accessories",
-    count: "57 Pieces",
-    desc: "The final punctuation",
-    img: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=900&q=88&auto=format&fit=crop&crop=top",
-    size: "wide",
-    accent: "#b8a898",
-  },
+const FALLBACK_IMGS = [
+  "https://images.unsplash.com/photo-1566479179817-0b1c6a6f5c9b?w=900&q=88&auto=format&fit=crop&crop=top",
+  "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=900&q=88&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=900&q=88&auto=format&fit=crop&crop=top",
+  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=900&q=88&auto=format&fit=crop&crop=top",
+  "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=900&q=88&auto=format&fit=crop&crop=top",
+  "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=900&q=88&auto=format&fit=crop&crop=top",
 ];
 
 /* ─────────────────────────────────────────────
-   INTERSECTION HOOK
+   HOOK — scroll reveal
 ───────────────────────────────────────────── */
 function useInView(threshold = 0.1) {
   const ref = useRef(null);
@@ -94,11 +36,35 @@ function useInView(threshold = 0.1) {
 }
 
 /* ─────────────────────────────────────────────
-   SINGLE CATEGORY CARD
+   SKELETON CARD — shown while API loads
+───────────────────────────────────────────── */
+const SKELETON_LAYOUT = ["tall", "wide", "normal", "normal", "tall", "wide"];
+
+function SkeletonCard({ size, index }) {
+  return (
+    <div
+      className={`${styles.card} ${styles[`card--${size}`]} ${styles.skeletonCard}`}
+      style={{ "--idx": index }}
+      aria-hidden="true"
+    >
+      <div className={styles.skeletonShimmer} />
+      <div className={styles.skeletonContent}>
+        <div className={styles.skeletonLine} style={{ width: "40%", height: "9px" }} />
+        <div className={styles.skeletonLine} style={{ width: "70%", height: "36px", marginTop: "8px" }} />
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   CATEGORY CARD — real backend data
 ───────────────────────────────────────────── */
 function CategoryCard({ cat, index, visible }) {
   const [hovered, setHovered] = useState(false);
   const [loaded,  setLoaded]  = useState(false);
+
+  /* Use backend Cloudinary image, fall back to placeholder */
+  const imgSrc = cat.img || FALLBACK_IMGS[index % FALLBACK_IMGS.length];
 
   return (
     <Link
@@ -113,37 +79,41 @@ function CategoryCard({ cat, index, visible }) {
       onMouseLeave={() => setHovered(false)}
       draggable={false}
     >
-      {/* ── Background image ── */}
+      {/* ── Image ── */}
       <div className={styles.imgWrap}>
         {!loaded && <div className={styles.skeleton} />}
         <img
-          src={cat.img}
-          alt={`${cat.label} ${cat.sublabel}`}
+          src={imgSrc}
+          alt={cat.name}
           className={`${styles.img} ${loaded ? styles.imgLoaded : ""}`}
           onLoad={() => setLoaded(true)}
-          style={{
-            transform: hovered ? "scale(1.08)" : "scale(1.0)",
+          onError={(e) => {
+            /* If Cloudinary URL fails, fallback to placeholder */
+            e.currentTarget.src = FALLBACK_IMGS[index % FALLBACK_IMGS.length];
           }}
+          style={{ transform: hovered ? "scale(1.08)" : "scale(1.0)" }}
           draggable={false}
           loading={index < 3 ? "eager" : "lazy"}
         />
-
-        {/* Multi-layer dark overlay */}
         <div className={styles.overlay} />
-        {/* Extra dark at bottom for text legibility */}
         <div className={styles.overlayBottom} />
       </div>
 
-      {/* ── Count badge ── */}
-      <span className={`${styles.countBadge} ${hovered ? styles.countBadgeHovered : ""}`}>
-        {cat.count}
-      </span>
+      {/* ── Count badge (hidden when null) ── */}
+      {cat.count && (
+        <span className={`${styles.countBadge} ${hovered ? styles.countBadgeHovered : ""}`}>
+          {cat.count}
+        </span>
+      )}
 
-      {/* ── Explore ring (appears on hover) ── */}
+      {/* ── Rotating "Explore" ring ── */}
       <div className={`${styles.exploreRing} ${hovered ? styles.exploreRingVisible : ""}`}>
         <svg viewBox="0 0 100 100" className={styles.ringText}>
           <defs>
-            <path id={`circle-${cat.id}`} d="M 50,50 m -35,0 a 35,35 0 1,1 70,0 a 35,35 0 1,1 -70,0" />
+            <path
+              id={`circle-${cat.id}`}
+              d="M 50,50 m -35,0 a 35,35 0 1,1 70,0 a 35,35 0 1,1 -70,0"
+            />
           </defs>
           <text className={styles.ringTextEl}>
             <textPath href={`#circle-${cat.id}`} startOffset="0%">
@@ -153,29 +123,29 @@ function CategoryCard({ cat, index, visible }) {
         </svg>
         <div className={styles.ringArrow}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
-            <line x1="5" y1="12" x2="19" y2="12" />
+            <line x1="5"  y1="12" x2="19" y2="12" />
             <polyline points="12 5 19 12 12 19" />
           </svg>
         </div>
       </div>
 
-      {/* ── Text content ── */}
+      {/* ── Text ── */}
       <div className={`${styles.content} ${hovered ? styles.contentHovered : ""}`}>
+        {/* Description from backend OR visual map */}
         <p className={styles.desc}>{cat.desc}</p>
+
         <div className={styles.labelWrap}>
           <h3 className={styles.label}>
             <span className={styles.labelTop}>{cat.label}</span>
             <span className={styles.labelBottom}>{cat.sublabel}</span>
           </h3>
-          {/* Animated arrow on hover */}
           <span className={`${styles.arrow} ${hovered ? styles.arrowVisible : ""}`}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3">
-              <line x1="5" y1="12" x2="19" y2="12" />
+              <line x1="5"  y1="12" x2="19" y2="12" />
               <polyline points="12 5 19 12 12 19" />
             </svg>
           </span>
         </div>
-        {/* Gold reveal line */}
         <span className={`${styles.revealLine} ${hovered ? styles.revealLineOn : ""}`} />
       </div>
     </Link>
@@ -183,23 +153,62 @@ function CategoryCard({ cat, index, visible }) {
 }
 
 /* ─────────────────────────────────────────────
+   ERROR STATE
+───────────────────────────────────────────── */
+function ErrorState({ message, onRetry }) {
+  return (
+    <div className={styles.errorWrap}>
+      <span className={styles.errorDiamond}>◆</span>
+      <p className={styles.errorText}>{message}</p>
+      <button className={styles.retryBtn} onClick={onRetry}>
+        Retry
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <polyline points="1 4 1 10 7 10" />
+          <path d="M3.51 15a9 9 0 1 0 .49-3" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────── */
 export default function ShopByCategory() {
-  const [sectionRef, inView] = useInView(0.08);
-  const [headerRef, headerIn] = useInView(0.2);
+  const [sectionRef, inView]  = useInView(0.08);
+  const [headerRef,  headerIn] = useInView(0.2);
+
+  const { categories, loading, error, fetchCategories, refresh } = useCategoryStore();
+
+  /* Fetch on mount — store caches for 5 min automatically */
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const isLoading = loading && categories.length === 0;
+  const hasError  = !loading && !!error && categories.length === 0;
+  const isEmpty   = !loading && !error && categories.length === 0;
+
+  /* Grid items — real data or skeletons */
+  const gridItems = isLoading
+    ? SKELETON_LAYOUT.map((size, i) => (
+        <SkeletonCard key={`sk-${i}`} size={size} index={i} />
+      ))
+    : categories.map((cat, i) => (
+        <CategoryCard key={cat.id} cat={cat} index={i} visible={inView} />
+      ));
 
   return (
     <section className={styles.section} ref={sectionRef}>
 
-      {/* ── Ambient background ── */}
+      {/* ── Ambient BG ── */}
       <div className={styles.ambientBg} aria-hidden="true">
         <div className={styles.ambientGlow1} />
         <div className={styles.ambientGlow2} />
         <div className={styles.ambientGrid} />
       </div>
 
-      {/* ── Section header ── */}
+      {/* ── Header ── */}
       <div
         className={`${styles.header} ${headerIn ? styles.headerIn : ""}`}
         ref={headerRef}
@@ -217,18 +226,24 @@ export default function ShopByCategory() {
 
         <div className={styles.headerRight}>
           <p className={styles.subtitle}>
-            Six worlds of distinction. Each one a doorway into
-            a different dimension of the LUXURIA experience.
+            {isLoading
+              ? "Loading our curated universes…"
+              : isEmpty
+              ? "No categories found."
+              : `${categories.length} worlds of distinction. Each one a doorway into a different dimension of the LUXURIA experience.`
+            }
           </p>
           <div className={styles.headerStats}>
             <div className={styles.stat}>
-              <span className={styles.statNum}>251+</span>
-              <span className={styles.statLabel}>Unique Pieces</span>
+              <span className={styles.statNum}>
+                {isLoading ? "—" : categories.length}
+              </span>
+              <span className={styles.statLabel}>Categories</span>
             </div>
             <div className={styles.statDivider} />
             <div className={styles.stat}>
-              <span className={styles.statNum}>6</span>
-              <span className={styles.statLabel}>Categories</span>
+              <span className={styles.statNum}>251+</span>
+              <span className={styles.statLabel}>Unique Pieces</span>
             </div>
             <div className={styles.statDivider} />
             <div className={styles.stat}>
@@ -239,19 +254,17 @@ export default function ShopByCategory() {
         </div>
       </div>
 
-      {/* ── Asymmetric category grid ── */}
-      <div className={styles.grid}>
-        {CATEGORIES.map((cat, i) => (
-          <CategoryCard
-            key={cat.id}
-            cat={cat}
-            index={i}
-            visible={inView}
-          />
-        ))}
-      </div>
+      {/* ── Content ── */}
+      {hasError || isEmpty ? (
+        <ErrorState
+          message={hasError ? error : "No categories found. Add some from your admin panel."}
+          onRetry={refresh}
+        />
+      ) : (
+        <div className={styles.grid}>{gridItems}</div>
+      )}
 
-      {/* ── Bottom ornamental rule ── */}
+      {/* ── Bottom ornament ── */}
       <div className={`${styles.rule} ${inView ? styles.ruleVisible : ""}`}>
         <span className={styles.ruleLine} />
         <span className={styles.ruleDiamond}>◆</span>
