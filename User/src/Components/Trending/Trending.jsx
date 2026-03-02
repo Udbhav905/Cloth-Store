@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import useProductStore, {
   calcFinalPrice,
@@ -7,11 +7,11 @@ import useProductStore, {
   getBadge,
   getTag,
   getSoldText,
-} from "../../store/useProductStore";
+} from "../../Store/useProductStore";
 import styles from "./Trending.module.css";
 
 /* ─────────────────────────────────────────────
-   FALLBACK images — used when product has no mainImage
+   FALLBACK images
 ───────────────────────────────────────────── */
 const FALLBACK_IMGS = [
   "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=700&q=90&auto=format&fit=crop&crop=top",
@@ -23,23 +23,72 @@ const FALLBACK_IMGS = [
 ];
 
 /* ─────────────────────────────────────────────
-   HOOKS
+   HOOK — generic section reveal (header, ticker)
+   One-shot is fine for these because they are
+   always in the DOM when the observer fires.
 ───────────────────────────────────────────── */
-function useScrollReveal(threshold = 0.12) {
+function useScrollReveal(threshold = 0.1) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // If already in viewport on mount (e.g. after back-navigation) → show immediately
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight) { setVisible(true); return; }
+
     const obs = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) { setVisible(true); obs.disconnect(); }
-      },
+      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
       { threshold }
     );
     obs.observe(el);
     return () => obs.disconnect();
   }, [threshold]);
+  return [ref, visible];
+}
+
+/* ─────────────────────────────────────────────
+   HOOK — per-card reveal
+   ⚡ THE KEY FIX:
+   Each card creates its OWN observer when it
+   mounts.  Because cards mount *after* the API
+   returns, they individually check whether they
+   are already in the viewport.  If yes → visible
+   immediately.  If no → wait for scroll.
+───────────────────────────────────────────── */
+function useCardReveal(delay = 0) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const show = () => setVisible(true);
+
+    // Already on screen? Show after a tiny staggered delay only.
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight + 60) {
+      const t = setTimeout(show, delay);
+      return () => clearTimeout(t);
+    }
+
+    // Below the fold → observe normally
+    const obs = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          const t = setTimeout(show, delay);
+          obs.disconnect();
+          return () => clearTimeout(t);
+        }
+      },
+      { threshold: 0.08 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // runs once when the card mounts
+
   return [ref, visible];
 }
 
@@ -65,11 +114,7 @@ function SkeletonCard({ index }) {
   const isEven = index % 2 === 0;
   return (
     <div
-      className={`
-        ${styles.card}
-        ${isEven ? styles.cardEven : styles.cardOdd}
-        ${styles.skeletonCard}
-      `}
+      className={`${styles.card} ${isEven ? styles.cardEven : styles.cardOdd} ${styles.skeletonCard}`}
       style={{ "--idx": index }}
       aria-hidden="true"
     >
@@ -86,50 +131,44 @@ function SkeletonCard({ index }) {
 }
 
 /* ─────────────────────────────────────────────
-   PRODUCT CARD  — real backend data
+   PRODUCT CARD — each card manages its own reveal
 ───────────────────────────────────────────── */
-function ProductCard({ product, index, visible }) {
+function ProductCard({ product, index }) {
   const [hovered,   setHovered]   = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
 
-  const isEven = index % 2 === 0;
-  const rank   = String(index + 1).padStart(2, "0");
+  // ⚡ Per-card observer — staggered by 80ms × index, max 400ms
+  const staggerDelay = Math.min(index * 80, 400);
+  const [cardRef, visible] = useCardReveal(staggerDelay);
 
-  /* Prices */
+  const isEven        = index % 2 === 0;
+  const rank          = String(index + 1).padStart(2, "0");
   const finalPrice    = calcFinalPrice(product);
   const discounted    = hasDiscount(product);
   const priceDisplay  = formatPrice(finalPrice);
   const originalPrice = discounted ? formatPrice(product.basePrice) : null;
-
-  /* Metadata */
-  const badge    = getBadge(product, index);
-  const tag      = getTag(product);
-  const soldText = getSoldText(product);
-
-  /* Category name from populated field */
-  const categoryName =
-    product.category?.name ?? product.subCategory?.name ?? "Collection";
-
-  /* Image — Cloudinary URL or fallback */
-  const imgSrc = product.mainImage || FALLBACK_IMGS[index % FALLBACK_IMGS.length];
+  const badge         = getBadge(product, index);
+  const tag           = getTag(product);
+  const soldText      = getSoldText(product);
+  const categoryName  = product.category?.name ?? product.subCategory?.name ?? "Collection";
+  const imgSrc        = product.mainImage || FALLBACK_IMGS[index % FALLBACK_IMGS.length];
 
   return (
     <Link
+      ref={cardRef}
       to={`/products/${product._id}`}
       className={`
         ${styles.card}
         ${visible ? styles.cardIn : ""}
         ${isEven ? styles.cardEven : styles.cardOdd}
       `}
-      style={{ "--idx": index, "--accent": "#c9a84c" }}
+      style={{ "--idx": 0, "--accent": "#c9a84c" }} /* idx=0 so CSS delay doesn't stack on top of JS delay */
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       draggable={false}
     >
-      {/* Rank watermark */}
       <span className={styles.rankBg}>{rank}</span>
 
-      {/* ── Image block ── */}
       <div className={styles.imgBlock}>
         {!imgLoaded && <div className={styles.shimmer} />}
         <img
@@ -137,21 +176,13 @@ function ProductCard({ product, index, visible }) {
           alt={product.name}
           className={`${styles.img} ${imgLoaded ? styles.imgOn : ""}`}
           onLoad={() => setImgLoaded(true)}
-          onError={(e) => {
-            e.currentTarget.src = FALLBACK_IMGS[index % FALLBACK_IMGS.length];
-          }}
+          onError={(e) => { e.currentTarget.src = FALLBACK_IMGS[index % FALLBACK_IMGS.length]; }}
           draggable={false}
           style={{ transform: hovered ? "scale(1.09)" : "scale(1.0)" }}
           loading={index < 3 ? "eager" : "lazy"}
         />
-
-        {/* Badge */}
         <span className={styles.badge}>{badge}</span>
-
-        {/* Tag pill */}
         <span className={styles.tagPill}>{tag}</span>
-
-        {/* Hover overlay */}
         <div className={`${styles.overlay} ${hovered ? styles.overlayOn : ""}`}>
           <div className={styles.overlayInner}>
             <span className={styles.overlayRank}>{rank}</span>
@@ -161,33 +192,24 @@ function ProductCard({ product, index, visible }) {
         </div>
       </div>
 
-      {/* ── Card body ── */}
       <div className={styles.body}>
         <div className={styles.topRow}>
           <span className={styles.category}>{categoryName}</span>
           <span className={styles.sold}>{soldText}</span>
         </div>
-
         <h3 className={styles.name}>{product.name}</h3>
-
         <div className={styles.priceRow}>
           <span className={styles.price}>{priceDisplay}</span>
-          {originalPrice && (
-            <span className={styles.originalPrice}>{originalPrice}</span>
-          )}
-          {/* Rating stars if available */}
+          {originalPrice && <span className={styles.originalPrice}>{originalPrice}</span>}
           {product.averageRating > 0 && (
             <span className={styles.rating}>
               {"★".repeat(Math.round(product.averageRating))}
               {"☆".repeat(5 - Math.round(product.averageRating))}
-              <span className={styles.ratingNum}>
-                &nbsp;{product.averageRating.toFixed(1)}
-              </span>
+              <span className={styles.ratingNum}>&nbsp;{product.averageRating.toFixed(1)}</span>
             </span>
           )}
           <span className={styles.priceDot}>◆</span>
         </div>
-
         <div className={`${styles.hoverBar} ${hovered ? styles.hoverBarOn : ""}`} />
       </div>
     </Link>
@@ -217,9 +239,8 @@ function ErrorState({ message, onRetry }) {
    MAIN COMPONENT
 ───────────────────────────────────────────── */
 export default function Trending() {
-  const [sectionRef, inView]  = useScrollReveal(0.05);
-  const [headerRef,  headerIn] = useScrollReveal(0.2);
-  const [gridRef,    gridIn]   = useScrollReveal(0.05);
+  const [sectionRef, inView]   = useScrollReveal(0.03);
+  const [headerRef,  headerIn] = useScrollReveal(0.15);
   const bgParallaxRef          = useParallax(0.06);
 
   const {
@@ -230,7 +251,6 @@ export default function Trending() {
     refreshTrending,
   } = useProductStore();
 
-  /* Fetch on mount — 5-min cache in store */
   useEffect(() => {
     fetchTrending();
   }, []);
@@ -239,15 +259,11 @@ export default function Trending() {
   const hasError  = !trendingLoading && !!trendingError && trending.length === 0;
   const isEmpty   = !trendingLoading && !trendingError && trending.length === 0;
 
-  /* Skeleton count while loading */
-  const SKELETON_COUNT = 6;
-
   const TICKER = "TRENDING NOW · MOST WANTED · THIS WEEK'S OBSESSIONS · ";
 
   return (
     <section className={styles.section} ref={sectionRef}>
 
-      {/* ── Background ── */}
       <div className={styles.bgWrap} ref={bgParallaxRef} aria-hidden="true">
         <div className={styles.bgGrid} />
         <div className={styles.bgGlow1} />
@@ -255,7 +271,7 @@ export default function Trending() {
         <div className={styles.bgNoise} />
       </div>
 
-      {/* ── Top ticker ── */}
+      {/* Ticker */}
       <div className={`${styles.ticker} ${inView ? styles.tickerIn : ""}`}>
         <div className={styles.tickerTrack}>
           {Array(6).fill(TICKER).map((t, i) => (
@@ -264,11 +280,8 @@ export default function Trending() {
         </div>
       </div>
 
-      {/* ── Header ── */}
-      <div
-        className={`${styles.header} ${headerIn ? styles.headerIn : ""}`}
-        ref={headerRef}
-      >
+      {/* Header */}
+      <div className={`${styles.header} ${headerIn ? styles.headerIn : ""}`} ref={headerRef}>
         <div className={styles.headerAccent}>
           <span className={styles.accentNum}>
             {isLoading ? "—" : String(trending.length).padStart(2, "0")}
@@ -302,7 +315,7 @@ export default function Trending() {
         </div>
       </div>
 
-      {/* ── Grid ── */}
+      {/* Grid */}
       {hasError || isEmpty ? (
         <ErrorState
           message={
@@ -313,27 +326,15 @@ export default function Trending() {
           onRetry={refreshTrending}
         />
       ) : (
-        <div
-          className={`${styles.grid} ${gridIn ? styles.gridIn : ""}`}
-          ref={gridRef}
-        >
+        <div className={styles.grid}>
           {isLoading
-            ? Array.from({ length: SKELETON_COUNT }, (_, i) => (
-                <SkeletonCard key={`sk-${i}`} index={i} />
-              ))
-            : trending.map((p, i) => (
-                <ProductCard
-                  key={p._id}
-                  product={p}
-                  index={i}
-                  visible={gridIn}
-                />
-              ))
+            ? Array.from({ length: 6 }, (_, i) => <SkeletonCard key={`sk-${i}`} index={i} />)
+            : trending.map((p, i) => <ProductCard key={p._id} product={p} index={i} />)
           }
         </div>
       )}
 
-      {/* ── Bottom ticker ── */}
+      {/* Bottom ticker */}
       <div className={`${styles.tickerBottom} ${inView ? styles.tickerIn : ""}`}>
         <div className={`${styles.tickerTrack} ${styles.tickerTrackRev}`}>
           {Array(6).fill("LUXURIA SELECTION · MOST COVETED · STYLE ICONS CHOOSE · ").map((t, i) => (

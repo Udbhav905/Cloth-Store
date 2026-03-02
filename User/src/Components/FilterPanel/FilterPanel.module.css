@@ -1,0 +1,209 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Jost:wght@200;300;400&display=swap');
+
+:root {
+  --gold:   #c9a84c;
+  --gold-d: rgba(201,168,76,.1);
+  --black:  #080808;
+  --surf:   #0d0d0d;
+  --surf2:  #131313;
+  --cream:  #f2ece2;
+  --muted:  rgba(242,236,226,.4);
+  --border: rgba(201,168,76,.11);
+  --sans:   'Jost', sans-serif;
+  --serif:  'Cormorant Garamond', serif;
+  --silk:   cubic-bezier(.25,.46,.45,.94);
+}
+
+/* Backdrop (mobile) */
+.backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  backdrop-filter: blur(4px); z-index: 199;
+  display: none;
+}
+
+/* Panel */
+.panel {
+  background: var(--surf);
+  border-right: 1px solid var(--border);
+  overflow-y: auto; overflow-x: hidden;
+  width: 0; opacity: 0;
+  transition: width .38s var(--silk), opacity .28s;
+  display: flex; flex-direction: column;
+  scrollbar-width: none; position: sticky; top: 56px;
+  height: calc(100vh - 56px);
+}
+.panel::-webkit-scrollbar { display: none; }
+.panelOpen { width: 280px; opacity: 1; }
+
+/* Header */
+.panelHead {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.headLeft  { display: flex; align-items: center; gap: 8px; }
+.headTitle {
+  font-family: var(--sans); font-size: 9px; font-weight: 400;
+  letter-spacing: .3em; text-transform: uppercase; color: var(--cream);
+}
+.headCount {
+  font-family: var(--sans); font-size: 8.5px; font-weight: 300;
+  background: var(--gold); color: var(--black);
+  padding: 2px 7px; letter-spacing: .1em;
+}
+.headRight { display: flex; align-items: center; gap: 10px; }
+.clearBtn {
+  font-family: var(--sans); font-size: 8.5px; font-weight: 300;
+  letter-spacing: .16em; text-transform: uppercase;
+  background: none; border: none; color: var(--muted);
+  cursor: pointer; transition: color .2s;
+}
+.clearBtn:hover { color: var(--gold); }
+.closeBtn {
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  background: none; border: 1px solid var(--border); color: var(--muted);
+  cursor: pointer; transition: color .2s, border-color .2s;
+}
+.closeBtn svg { width: 13px; height: 13px; }
+.closeBtn:hover { color: var(--gold); border-color: rgba(201,168,76,.3); }
+
+.panelBody { flex: 1; overflow-y: auto; scrollbar-width: none; }
+.panelBody::-webkit-scrollbar { display: none; }
+
+/* Sections */
+.section { border-bottom: 1px solid var(--border); }
+.secHead {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; padding: 14px 20px; background: none; border: none;
+  cursor: pointer;
+}
+.secTitle {
+  font-family: var(--sans); font-size: 9px; font-weight: 300;
+  letter-spacing: .26em; text-transform: uppercase; color: var(--cream);
+}
+.secChev { width: 13px; height: 13px; color: var(--muted); transition: transform .25s var(--silk); }
+.secChevUp { transform: rotate(180deg); }
+.secBody { padding: 4px 20px 18px; }
+
+/* Toggle switches */
+.toggleRow { display: flex; flex-direction: column; gap: 10px; }
+.toggle {
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
+  font-family: var(--sans); font-size: 11px; font-weight: 300;
+  letter-spacing: .06em; color: var(--muted);
+  transition: color .2s; user-select: none;
+}
+.toggle input { display: none; }
+.toggleTrack {
+  width: 32px; height: 17px; border-radius: 9px;
+  background: var(--surf2); border: 1px solid var(--border);
+  position: relative; transition: background .25s, border-color .25s;
+  flex-shrink: 0;
+}
+.toggleThumb {
+  position: absolute; top: 2px; left: 2px;
+  width: 11px; height: 11px; border-radius: 50%;
+  background: var(--muted); transition: transform .25s var(--silk), background .25s;
+}
+.toggleOn .toggleTrack { background: var(--gold-d); border-color: rgba(201,168,76,.3); }
+.toggleOn .toggleThumb { transform: translateX(15px); background: var(--gold); }
+.toggleOn { color: var(--cream); }
+
+/* Price presets */
+.pricePresets { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+.pricePreset {
+  font-family: var(--sans); font-size: 10.5px; font-weight: 300;
+  letter-spacing: .06em; text-align: left; padding: 7px 12px;
+  background: none; border: 1px solid transparent; color: var(--muted);
+  cursor: pointer; transition: all .2s;
+}
+.pricePreset:hover { color: var(--cream); border-color: var(--border); }
+.pricePresetOn { border-color: var(--gold) !important; color: var(--gold) !important; background: var(--gold-d) !important; }
+
+.priceInputs { display: flex; align-items: center; gap: 8px; }
+.priceDash { color: var(--muted); font-size: 12px; flex-shrink: 0; }
+.priceField {
+  flex: 1; display: flex; align-items: center;
+  border: 1px solid var(--border); background: var(--surf2);
+  transition: border-color .2s;
+}
+.priceField:focus-within { border-color: rgba(201,168,76,.35); }
+.priceCur { font-family: var(--sans); font-size: 11px; color: var(--muted); padding: 0 8px; flex-shrink: 0; }
+.priceInput {
+  flex: 1; background: none; border: none; outline: none;
+  font-family: var(--sans); font-size: 11px; font-weight: 300; color: var(--cream);
+  padding: 8px 8px 8px 0; min-width: 0;
+}
+.priceInput::placeholder { color: rgba(242,236,226,.2); font-style: italic; }
+
+/* Size grid */
+.sizeGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.sizeChip {
+  font-family: var(--sans); font-size: 9.5px; font-weight: 300;
+  letter-spacing: .1em; text-align: center; padding: 8px 4px;
+  background: none; border: 1px solid var(--border); color: var(--muted);
+  cursor: pointer; transition: all .2s;
+}
+.sizeChip:hover { color: var(--cream); border-color: rgba(242,236,226,.2); }
+.sizeChipOn { border-color: var(--gold) !important; color: var(--gold) !important; background: var(--gold-d) !important; }
+
+/* Color grid */
+.colorGrid { display: flex; flex-direction: column; gap: 5px; }
+.colorBtn {
+  display: flex; align-items: center; gap: 10px;
+  background: none; border: 1px solid transparent; padding: 7px 10px;
+  cursor: pointer; transition: all .2s; position: relative;
+}
+.colorBtn:hover { border-color: var(--border); background: rgba(255,255,255,.02); }
+.colorBtnOn { border-color: var(--gold) !important; background: var(--gold-d) !important; }
+.colorCircle { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(255,255,255,.12); flex-shrink: 0; }
+.colorName { font-family: var(--sans); font-size: 11px; font-weight: 300; color: var(--muted); flex: 1; text-align: left; }
+.colorBtnOn .colorName { color: var(--cream); }
+.colorTick { position: absolute; right: 10px; width: 13px; height: 13px; color: var(--gold); }
+
+/* Radio */
+.radioGroup { display: flex; flex-direction: column; gap: 8px; }
+.radio {
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
+  font-family: var(--sans); font-size: 11px; font-weight: 300;
+  letter-spacing: .06em; color: var(--muted); transition: color .2s;
+}
+.radio input { display: none; }
+.radioMark {
+  width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--border);
+  flex-shrink: 0; position: relative; transition: border-color .2s;
+}
+.radioOn .radioMark::after {
+  content: ''; position: absolute; inset: 3px;
+  border-radius: 50%; background: var(--gold);
+}
+.radioOn .radioMark { border-color: var(--gold); }
+.radioOn { color: var(--cream); }
+
+/* Footer apply button (mobile) */
+.panelFoot {
+  padding: 14px 20px; border-top: 1px solid var(--border);
+  background: var(--surf); flex-shrink: 0;
+}
+.applyBtn {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px;
+  background: var(--gold); border: none; color: var(--black);
+  font-family: var(--sans); font-size: 10px; font-weight: 300;
+  letter-spacing: .22em; text-transform: uppercase;
+  padding: 13px; cursor: pointer; transition: background .25s;
+}
+.applyBtn svg { width: 14px; height: 14px; }
+.applyBtn:hover { background: #e8c97a; }
+
+/* Mobile — panel as drawer */
+@media (max-width: 900px) {
+  .backdrop { display: block; }
+  .panel {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    z-index: 200; height: 100vh !important;
+    width: 0 !important; border-right: none;
+    box-shadow: 4px 0 40px rgba(0,0,0,.5);
+  }
+  .panelOpen { width: min(320px, 90vw) !important; }
+}

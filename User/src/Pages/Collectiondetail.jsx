@@ -1,6 +1,6 @@
 import React from 'react'
 import { useParams } from 'react-router-dom'
-import styles from './Page.module.css'
+import styles from '../Pages/styles/Page.module.css'
 
 // Converts slug back to readable label e.g. "evening-gowns" → "Evening Gowns"
 const toLabel = (slug) =>

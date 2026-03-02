@@ -1,5 +1,5 @@
 import React from 'react'
-import styles from './Page.module.css'
+import styles from '../Pages/styles/Page.module.css'
 
 export const MyOrders = () => (
   <main className={styles.page}>

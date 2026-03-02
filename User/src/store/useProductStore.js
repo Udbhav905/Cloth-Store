@@ -109,6 +109,8 @@ const useProductStore = create((set, get) => ({
       }
 
       const data = await res.json();
+            console.log("res-->",data);
+
       // Your controller returns a plain array for these endpoints
       const products = Array.isArray(data) ? data : (data.products ?? []);
 

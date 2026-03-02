@@ -170,9 +170,10 @@ const useCategoryStore = create((set, get) => ({
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || `Server error ${res.status}`);
       }
-
+      
       /* Your getCategories controller returns a plain array */
       const raw = await res.json(); // → Category[]
+      // console.log("res-->",raw);
 
       if (!Array.isArray(raw)) {
         throw new Error("Unexpected response format from /api/categories");

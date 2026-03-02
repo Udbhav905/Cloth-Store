@@ -9,6 +9,7 @@ import Home from './Pages/Home'
 import Collections from './Pages/Collections'
 import CollectionDetail from './Pages/CollectionDetail'
 import AuthModal from './Components/Authmodal/Authmodal'
+import CategoryPage from './Pages/CategoryPage'
 // import ProductDetail from './Pages/ProductDetail'
 // import MyOrders from './Pages/MyOrders'
 // import Wishlist from './Pages/Wishlist'
@@ -29,9 +30,10 @@ const App = () => {
 
         {/* ── Collections ── */}
         {/* /collections  →  all collections grid */}
-         <Route path="/collections" element={<Collections />} /> 
+         {/* <Route path="/collections" element={<Collections />} />  */}
         {/* /collections/evening-gowns  →  specific collection */}
-         <Route path="/collections/:slug" element={<CollectionDetail />} /> 
+         <Route path="/collections/:slug" element={<CategoryPage />} />
+         {/* <Route path="/collections/:slug" element={<CollectionDetail />} />  */}
 
         {/* ── Products ── */}
         {/* /products/1  →  specific product detail */}
