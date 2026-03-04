@@ -1,85 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import useProductStore, { calcFinalPrice, formatPrice, hasDiscount } from "../../Store/useProductStore";
 import styles from "./NewArrivals.module.css";
 
-/* ─────────────────────────────────────────────
-   DATA  (6 real items — duplicated for infinite loop)
-───────────────────────────────────────────── */
-const BASE_ITEMS = [
-  {
-    id: 1,
-    slug: "/collections/celestine-gown",
-    tag: "SS 2025",
-    name: "Célestine",
-    type: "Evening Gown",
-    material: "Silk Organza",
-    origin: "Milan",
-    price: "€4,850",
-    img: "https://images.unsplash.com/photo-1566479179817-0b1c6a6f5c9b?w=800&q=85&auto=format&fit=crop&crop=top",
-  },
-  {
-    id: 2,
-    slug: "/collections/aurore-blazer",
-    tag: "Resort 2025",
-    name: "Aurore",
-    type: "Structured Blazer",
-    material: "Cashmere Wool",
-    origin: "Florence",
-    price: "€2,290",
-    img: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&q=85&auto=format&fit=crop",
-  },
-  {
-    id: 3,
-    slug: "/collections/lumiere-dress",
-    tag: "Limited",
-    name: "Lumière",
-    type: "Draped Midi Dress",
-    material: "Duchess Satin",
-    origin: "Paris",
-    price: "€3,100",
-    img: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=85&auto=format&fit=crop&crop=top",
-  },
-  {
-    id: 4,
-    slug: "/collections/noir-coat",
-    tag: "AW 2025",
-    name: "Noir Absolut",
-    type: "Maxi Overcoat",
-    material: "Double-face Wool",
-    origin: "London",
-    price: "€5,600",
-    img: "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=85&auto=format&fit=crop&crop=top",
-  },
-  {
-    id: 5,
-    slug: "/collections/soleil-suit",
-    tag: "SS 2025",
-    name: "Soleil",
-    type: "Tailored Suit",
-    material: "Linen Blend",
-    origin: "Naples",
-    price: "€3,850",
-    img: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&q=85&auto=format&fit=crop&crop=top",
-  },
-  {
-    id: 6,
-    slug: "/collections/velours-jumpsuit",
-    tag: "Limited",
-    name: "Velours",
-    type: "Silk Jumpsuit",
-    material: "Velvet Silk",
-    origin: "Lyon",
-    price: "€2,750",
-    img: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=800&q=85&auto=format&fit=crop&crop=top",
-  },
+const FALLBACK_IMGS = [
+  "https://images.unsplash.com/photo-1566479179817-0b1c6a6f5c9b?w=800&q=85&auto=format&fit=crop&crop=top",
+  "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&q=85&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=85&auto=format&fit=crop&crop=top",
+  "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=85&auto=format&fit=crop&crop=top",
+  "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&q=85&auto=format&fit=crop&crop=top",
+  "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=800&q=85&auto=format&fit=crop&crop=top",
 ];
 
-/* Duplicate so the CSS loop looks seamless */
-const ITEMS = [...BASE_ITEMS, ...BASE_ITEMS];
-
-/* ─────────────────────────────────────────────
-   INTERSECTION HOOK
-───────────────────────────────────────────── */
+/* ── Scroll reveal ── */
 function useInView(threshold = 0.1) {
   const ref = useRef(null);
   const [inView, setInView] = useState(false);
@@ -96,63 +29,91 @@ function useInView(threshold = 0.1) {
   return [ref, inView];
 }
 
-/* ─────────────────────────────────────────────
-   SINGLE CARD
-───────────────────────────────────────────── */
-function Card({ item, onPause, onResume }) {
+/* ── Skeleton card ── */
+function SkeletonCard() {
+  return (
+    <div className={styles.card} aria-hidden="true" style={{ pointerEvents: "none" }}>
+      <div className={styles.imgWrap}>
+        <div className={styles.shimmer} />
+      </div>
+      <div className={styles.info}>
+        <div style={{ height: 9,  width: "55%", background: "rgba(201,168,76,.07)", borderRadius: 2, marginBottom: 10 }} />
+        <div style={{ height: 20, width: "70%", background: "rgba(201,168,76,.07)", borderRadius: 2, marginBottom: 8  }} />
+        <div style={{ height: 9,  width: "35%", background: "rgba(201,168,76,.07)", borderRadius: 2 }} />
+      </div>
+    </div>
+  );
+}
+
+/* ── Single product card ── */
+function Card({ product: p, idx, onPause, onResume }) {
   const [hovered, setHovered] = useState(false);
   const [loaded,  setLoaded]  = useState(false);
 
   const enter = () => { setHovered(true);  onPause();  };
   const leave = () => { setHovered(false); onResume(); };
 
+  const finalPrice = calcFinalPrice(p);
+  const discounted = hasDiscount(p);
+  const priceLabel = formatPrice(finalPrice);
+  const origLabel  = discounted ? formatPrice(p.basePrice) : null;
+
+  const tag = p.isBestSeller      ? "Best Seller"
+            : p.isNewArrival      ? "New Arrival"
+            : (p.season?.length   ? p.season[0] : "SS 2025");
+
+  const material = p.fabric || p.brand || p.pattern || "Fine Fabric";
+  const origin   = p.subCategory?.name || p.category?.name || "LUXURIA";
+  const imgSrc   = p.mainImage || FALLBACK_IMGS[idx % FALLBACK_IMGS.length];
+
   return (
     <Link
-      to={item.slug}
+      to={`/products/${p._id}`}
       className={`${styles.card} ${hovered ? styles.cardHovered : ""}`}
       onMouseEnter={enter}
       onMouseLeave={leave}
       onFocus={enter}
       onBlur={leave}
-      aria-label={`${item.name} — ${item.type}`}
+      aria-label={`${p.name} — ${p.category?.name ?? ""}`}
       draggable={false}
     >
-      {/* ── Image ── */}
+      {/* Image */}
       <div className={styles.imgWrap}>
         {!loaded && <div className={styles.shimmer} />}
         <img
-          src={item.img}
-          alt={item.name}
+          src={imgSrc}
+          alt={p.name}
           className={`${styles.img} ${loaded ? styles.imgLoaded : ""}`}
           onLoad={() => setLoaded(true)}
+          onError={e => { e.currentTarget.src = FALLBACK_IMGS[idx % FALLBACK_IMGS.length]; }}
           draggable={false}
+          loading="lazy"
         />
-
-        {/* Hover reveal */}
         <div className={styles.reveal}>
           <span className={styles.revealLine} />
           <span className={styles.revealText}>Discover</span>
           <span className={styles.revealLine} />
         </div>
-
-        {/* Tag */}
-        <span className={styles.tag}>{item.tag}</span>
+        <span className={styles.tag}>{tag}</span>
       </div>
 
-      {/* ── Info ── */}
+      {/* Info */}
       <div className={styles.info}>
         <div className={styles.meta}>
-          <span>{item.type}</span>
+          <span>{p.category?.name ?? "Collection"}</span>
           <span className={styles.dot}>·</span>
-          <span>{item.material}</span>
+          <span>{material}</span>
         </div>
         <div className={styles.nameRow}>
-          <h3 className={styles.name}>{item.name}</h3>
-          <span className={styles.price}>{item.price}</span>
+          <h3 className={styles.name}>{p.name}</h3>
+          <div className={styles.priceBlock}>
+            <span className={styles.price}>{priceLabel}</span>
+            {origLabel && <span className={styles.origPrice}>{origLabel}</span>}
+          </div>
         </div>
         <div className={styles.origin}>
           <span className={styles.diamond}>◆</span>
-          {item.origin}
+          {origin}
         </div>
         <div className={`${styles.underline} ${hovered ? styles.underlineOn : ""}`} />
       </div>
@@ -160,41 +121,45 @@ function Card({ item, onPause, onResume }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   MAIN — auto-scroll via requestAnimationFrame
-   Pause on hover, resume smoothly on leave
-───────────────────────────────────────────── */
+/* ════════════════════════════════════
+   MAIN COMPONENT
+════════════════════════════════════ */
 export default function NewArrivals() {
   const [sectionRef, inView] = useInView(0.05);
 
-  /* rAF-based scroll state */
-  const trackRef   = useRef(null);
-  const offsetRef  = useRef(0);       // current translateX (negative = moved left)
-  const pausedRef  = useRef(true);    // start paused until inView
-  const rafRef     = useRef(null);
-  const SPEED      = 0.55;            // px per frame (~33px/s at 60fps)
+  /* ── Real data from store ── */
+  const { newArrivals, newArrivalsLoading, fetchNewArrivals } = useProductStore();
 
-  /* Total width of ONE set of cards (calculated after mount) */
+  /* Fetch eagerly on mount — 5-min cache prevents redundant calls */
+  useEffect(() => { fetchNewArrivals(); }, []);
+
+  const isLoading = newArrivalsLoading && newArrivals.length === 0;
+
+  /* Double the array for seamless infinite loop */
+  const ITEMS = [...newArrivals, ...newArrivals];
+
+  /* ── rAF infinite scroll ── */
+  const trackRef     = useRef(null);
+  const offsetRef    = useRef(0);
+  const pausedRef    = useRef(true);
+  const rafRef       = useRef(null);
   const halfWidthRef = useRef(0);
+  const SPEED        = 0.55;
 
   useEffect(() => {
-    if (!inView) return;
+    if (!inView || isLoading || newArrivals.length === 0) return;
 
-    /* Measure once after DOM is ready */
     const measure = () => {
       if (!trackRef.current) return;
-      /* The track contains ITEMS.length cards; half is BASE_ITEMS.length */
       halfWidthRef.current = trackRef.current.scrollWidth / 2;
     };
-    measure();
+    const tid = setTimeout(measure, 120);
     window.addEventListener("resize", measure, { passive: true });
-
     pausedRef.current = false;
 
     const tick = () => {
       if (!pausedRef.current && trackRef.current && halfWidthRef.current > 0) {
         offsetRef.current -= SPEED;
-        /* When we've scrolled exactly one full set, snap back seamlessly */
         if (Math.abs(offsetRef.current) >= halfWidthRef.current) {
           offsetRef.current = 0;
         }
@@ -202,22 +167,22 @@ export default function NewArrivals() {
       }
       rafRef.current = requestAnimationFrame(tick);
     };
-
     rafRef.current = requestAnimationFrame(tick);
 
     return () => {
+      clearTimeout(tid);
       cancelAnimationFrame(rafRef.current);
       window.removeEventListener("resize", measure);
     };
-  }, [inView]);
+  }, [inView, isLoading, newArrivals.length]);
 
-  const pause  = () => { pausedRef.current = true; };
+  const pause  = () => { pausedRef.current = true;  };
   const resume = () => { pausedRef.current = false; };
 
   return (
     <section className={styles.section} ref={sectionRef}>
 
-      {/* ── Header ── */}
+      {/* Header */}
       <div className={`${styles.header} ${inView ? styles.headerIn : ""}`}>
         <div className={styles.hLeft}>
           <span className={styles.eyebrow}>
@@ -234,32 +199,41 @@ export default function NewArrivals() {
             to the relentless pursuit of perfection.
           </p>
           <div className={styles.pills}>
-            <span className={styles.pill}><span className={styles.pillDot}>◆</span> 6 New Pieces</span>
+            <span className={styles.pill}>
+              <span className={styles.pillDot}>◆</span>
+              {isLoading
+                ? "Loading…"
+                : `${newArrivals.length} New Piece${newArrivals.length !== 1 ? "s" : ""}`
+              }
+            </span>
             <span className={styles.pillDiv} />
             <span className={styles.pill}>SS 2025</span>
           </div>
         </div>
       </div>
 
-      {/* ── Infinite auto-scroll track ── */}
+      {/* Infinite scroll viewport */}
       <div className={styles.viewport}>
-        {/* Left + right edge fades */}
         <div className={`${styles.fade} ${styles.fadeL}`} />
         <div className={`${styles.fade} ${styles.fadeR}`} />
 
         <div ref={trackRef} className={styles.track}>
-          {ITEMS.map((item, i) => (
-            <Card
-              key={`${item.id}-${i}`}
-              item={item}
-              onPause={pause}
-              onResume={resume}
-            />
-          ))}
+          {isLoading
+            ? Array.from({ length: 6 }, (_, i) => <SkeletonCard key={i} />)
+            : ITEMS.map((p, i) => (
+                <Card
+                  key={`${p._id}-${i}`}
+                  product={p}
+                  idx={i % newArrivals.length}
+                  onPause={pause}
+                  onResume={resume}
+                />
+              ))
+          }
         </div>
       </div>
 
-      {/* ── Bottom ornament ── */}
+      {/* Bottom ornament */}
       <div className={`${styles.rule} ${inView ? styles.ruleIn : ""}`}>
         <span className={styles.ruleLine} />
         <span className={styles.ruleDiamond}>◆</span>

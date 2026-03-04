@@ -21,6 +21,21 @@ const defaultForm = {
   returnPolicy: { isReturnable: true, returnPeriod: 7 }
 };
 
+// ── Helper: safely parse possibly double-encoded arrays from API ──
+const safeArray = (val) => {
+  if (!val) return [];
+  if (Array.isArray(val)) {
+    if (val.length > 0 && typeof val[0] === 'string' && val[0].startsWith('[')) {
+      try { return JSON.parse(val[0]); } catch { return val; }
+    }
+    return val;
+  }
+  if (typeof val === 'string') {
+    try { return JSON.parse(val); } catch { return [val]; }
+  }
+  return [];
+};
+
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -40,9 +55,9 @@ const Products = () => {
     category: '', isActive: '', isFeatured: '', page: 1, limit: 10
   });
 
-  useEffect(() => { 
-    fetchProducts(); 
-    fetchCategories(); 
+  useEffect(() => {
+    fetchProducts();
+    fetchCategories();
   }, [filters.page, filters.category, filters.isActive, filters.isFeatured]);
 
   useEffect(() => {
@@ -56,23 +71,23 @@ const Products = () => {
       setLoading(true);
       const token = localStorage.getItem('token');
       const q = new URLSearchParams({
-        page: filters.page, 
+        page: filters.page,
         limit: filters.limit,
         ...(filters.category && { category: filters.category }),
         ...(filters.isActive !== '' && { isActive: filters.isActive }),
         ...(filters.isFeatured !== '' && { isFeatured: filters.isFeatured })
       });
       const res = await fetch(`http://localhost:3000/api/products?${q}`, {
-        headers: { Authorization: `Bearer ${token}` }, 
+        headers: { Authorization: `Bearer ${token}` },
         credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to fetch products');
       const data = await res.json();
       setProducts(data.products || []);
-    } catch (error) { 
+    } catch (error) {
       console.error('Failed to fetch products', error);
-    } finally { 
-      setLoading(false); 
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -80,47 +95,47 @@ const Products = () => {
     try {
       const token = localStorage.getItem('token');
       const res = await fetch('http://localhost:3000/api/categories', {
-        headers: { Authorization: `Bearer ${token}` }, 
+        headers: { Authorization: `Bearer ${token}` },
         credentials: 'include'
       });
       if (!res.ok) throw new Error('Failed to fetch categories');
       setCategories(await res.json());
-    } catch (error) { 
-      console.error('Failed to fetch categories', error); 
+    } catch (error) {
+      console.error('Failed to fetch categories', error);
     }
   };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked, files } = e.target;
-    
+
     if (type === 'file') {
       if (name === 'mainImage') {
         const file = files[0];
         setFormData(p => ({ ...p, mainImage: file }));
-        if (file) { 
-          const r = new FileReader(); 
-          r.onloadend = () => setImagePreviews(p => ({ ...p, mainImage: r.result })); 
-          r.readAsDataURL(file); 
+        if (file) {
+          const r = new FileReader();
+          r.onloadend = () => setImagePreviews(p => ({ ...p, mainImage: r.result }));
+          r.readAsDataURL(file);
         }
       } else if (name === 'galleryImages') {
         const arr = Array.from(files);
         setFormData(p => ({ ...p, galleryImages: arr }));
         const previews = [];
-        arr.forEach(f => { 
-          const r = new FileReader(); 
-          r.onloadend = () => { 
-            previews.push(r.result); 
-            if (previews.length === arr.length) 
-              setImagePreviews(p => ({ ...p, galleryImages: [...previews] })); 
-          }; 
-          r.readAsDataURL(f); 
+        arr.forEach(f => {
+          const r = new FileReader();
+          r.onloadend = () => {
+            previews.push(r.result);
+            if (previews.length === arr.length)
+              setImagePreviews(p => ({ ...p, galleryImages: [...previews] }));
+          };
+          r.readAsDataURL(f);
         });
       }
     } else if (name.includes('.')) {
       const [parent, child] = name.split('.');
-      setFormData(p => ({ 
-        ...p, 
-        [parent]: { ...p[parent], [child]: type === 'checkbox' ? checked : value } 
+      setFormData(p => ({
+        ...p,
+        [parent]: { ...p[parent], [child]: type === 'checkbox' ? checked : value }
       }));
     } else if (type === 'checkbox') {
       setFormData(p => ({ ...p, [name]: checked }));
@@ -136,12 +151,11 @@ const Products = () => {
 
   const addVariant = () => {
     if (!currentVariant.size || !currentVariant.color || !currentVariant.sku || !currentVariant.price || !currentVariant.stock) {
-      alert('Please fill all required variant fields'); 
+      alert('Please fill all required variant fields');
       return;
     }
-    
-    // Check for duplicate SKU
-    const skuExists = formData.variants.some((v, idx) => 
+
+    const skuExists = formData.variants.some((v, idx) =>
       v.sku === currentVariant.sku && idx !== editingVariantIndex
     );
     if (skuExists) {
@@ -160,181 +174,166 @@ const Products = () => {
     setCurrentVariant(defaultVariant);
   };
 
-  const editVariant = (i) => { 
-    setCurrentVariant(formData.variants[i]); 
-    setEditingVariantIndex(i); 
+  const editVariant = (i) => {
+    setCurrentVariant(formData.variants[i]);
+    setEditingVariantIndex(i);
   };
 
   const removeVariant = (i) => {
     setFormData(p => ({ ...p, variants: p.variants.filter((_, idx) => idx !== i) }));
-    if (editingVariantIndex === i) { 
-      setEditingVariantIndex(-1); 
-      setCurrentVariant(defaultVariant); 
+    if (editingVariantIndex === i) {
+      setEditingVariantIndex(-1);
+      setCurrentVariant(defaultVariant);
     }
   };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  try {
-    const token = localStorage.getItem('token');
-    const formDataToSend = new FormData();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-    // Helper function to append data properly
-    const appendIfValid = (key, value) => {
-      if (value === null || value === undefined) return;
-      
-      if (key === 'subCategory') {
-        if (value && value !== '') {
+    try {
+      const token = localStorage.getItem('token');
+      const formDataToSend = new FormData();
+
+      const appendIfValid = (key, value) => {
+        if (value === null || value === undefined) return;
+
+        if (key === 'subCategory') {
+          if (value && value !== '') {
+            formDataToSend.append(key, value);
+          }
+        }
+        else if (key === 'category') {
+          if (value) {
+            formDataToSend.append(key, value);
+          }
+        }
+        else if (key === 'occasion' || key === 'season') {
+          if (Array.isArray(value) && value.length > 0) {
+            formDataToSend.append(key, JSON.stringify(value));
+          } else {
+            formDataToSend.append(key, JSON.stringify([]));
+          }
+        }
+        else if (key === 'metaKeywords') {
+          if (Array.isArray(value) && value.length > 0) {
+            formDataToSend.append(key, JSON.stringify(value));
+          } else if (typeof value === 'string' && value.trim()) {
+            const keywords = value.split(',').map(k => k.trim()).filter(k => k);
+            formDataToSend.append(key, JSON.stringify(keywords));
+          } else {
+            formDataToSend.append(key, JSON.stringify([]));
+          }
+        }
+        else if (key === 'variants') {
+          formDataToSend.append(key, JSON.stringify(value || []));
+        }
+        else if (key === 'returnPolicy') {
+          formDataToSend.append(key, JSON.stringify(value));
+        }
+        else if (typeof value === 'boolean') {
+          formDataToSend.append(key, value.toString());
+        }
+        else if (value !== '' && value !== null && value !== undefined) {
           formDataToSend.append(key, value);
         }
-      } 
-      else if (key === 'category') {
-        if (value) {
-          formDataToSend.append(key, value);
-        }
-      } 
-      else if (key === 'occasion' || key === 'season') {
-        if (Array.isArray(value) && value.length > 0) {
-          formDataToSend.append(key, JSON.stringify(value));
-        } else {
-          formDataToSend.append(key, JSON.stringify([]));
-        }
-      }
-      else if (key === 'metaKeywords') {
-        if (Array.isArray(value) && value.length > 0) {
-          formDataToSend.append(key, JSON.stringify(value));
-        } else if (typeof value === 'string' && value.trim()) {
-          const keywords = value.split(',').map(k => k.trim()).filter(k => k);
-          formDataToSend.append(key, JSON.stringify(keywords));
-        } else {
-          formDataToSend.append(key, JSON.stringify([]));
-        }
-      }
-      else if (key === 'variants') {
-        formDataToSend.append(key, JSON.stringify(value || []));
-      } 
-      else if (key === 'returnPolicy') {
-        formDataToSend.append(key, JSON.stringify(value));
-      } 
-      else if (typeof value === 'boolean') {
-        formDataToSend.append(key, value.toString());
-      }
-      else if (value !== '' && value !== null && value !== undefined) {
-        formDataToSend.append(key, value);
-      }
-    };
+      };
 
-    // Append all form fields
-    appendIfValid('name', formData.name);
-    appendIfValid('description', formData.description);
-    appendIfValid('shortDescription', formData.shortDescription);
-    appendIfValid('category', formData.category);
-    appendIfValid('subCategory', formData.subCategory);
-    appendIfValid('brand', formData.brand);
-    appendIfValid('fabric', formData.fabric);
-    appendIfValid('pattern', formData.pattern);
-    appendIfValid('occasion', formData.occasion);
-    appendIfValid('season', formData.season);
-    appendIfValid('basePrice', formData.basePrice);
-    appendIfValid('discountType', formData.discountType);
-    appendIfValid('discountValue', formData.discountValue);
-    appendIfValid('variants', formData.variants);
-    appendIfValid('isFeatured', formData.isFeatured);
-    appendIfValid('isNewArrival', formData.isNewArrival);
-    appendIfValid('isBestSeller', formData.isBestSeller);
-    appendIfValid('isActive', formData.isActive);
-    appendIfValid('returnPolicy', formData.returnPolicy);
-    appendIfValid('metaTitle', formData.metaTitle);
-    appendIfValid('metaDescription', formData.metaDescription);
-    appendIfValid('metaKeywords', formData.metaKeywords);
+      appendIfValid('name', formData.name);
+      appendIfValid('description', formData.description);
+      appendIfValid('shortDescription', formData.shortDescription);
+      appendIfValid('category', formData.category);
+      appendIfValid('subCategory', formData.subCategory);
+      appendIfValid('brand', formData.brand);
+      appendIfValid('fabric', formData.fabric);
+      appendIfValid('pattern', formData.pattern);
+      appendIfValid('occasion', formData.occasion);
+      appendIfValid('season', formData.season);
+      appendIfValid('basePrice', formData.basePrice);
+      appendIfValid('discountType', formData.discountType);
+      appendIfValid('discountValue', formData.discountValue);
+      appendIfValid('variants', formData.variants);
+      appendIfValid('isFeatured', formData.isFeatured);
+      appendIfValid('isNewArrival', formData.isNewArrival);
+      appendIfValid('isBestSeller', formData.isBestSeller);
+      appendIfValid('isActive', formData.isActive);
+      appendIfValid('returnPolicy', formData.returnPolicy);
+      appendIfValid('metaTitle', formData.metaTitle);
+      appendIfValid('metaDescription', formData.metaDescription);
+      appendIfValid('metaKeywords', formData.metaKeywords);
 
-    // Append images only if they are new files (for update)
-    if (formData.mainImage && typeof formData.mainImage !== 'string') {
-      formDataToSend.append('mainImage', formData.mainImage);
-    }
+      if (formData.mainImage && typeof formData.mainImage !== 'string') {
+        formDataToSend.append('mainImage', formData.mainImage);
+      }
 
-    if (formData.galleryImages && formData.galleryImages.length > 0) {
-      // Check if they are new files (not strings)
-      formData.galleryImages.forEach(image => {
-        if (typeof image !== 'string') {
-          formDataToSend.append('galleryImages', image);
-        }
+      if (formData.galleryImages && formData.galleryImages.length > 0) {
+        formData.galleryImages.forEach(image => {
+          if (typeof image !== 'string') {
+            formDataToSend.append('galleryImages', image);
+          }
+        });
+      }
+
+      const url = editingId
+        ? `http://localhost:3000/api/products/${editingId}`
+        : 'http://localhost:3000/api/products';
+
+      const method = editingId ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Authorization': `Bearer ${token}` },
+        credentials: 'include',
+        body: formDataToSend
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to save product');
+      }
+
+      await fetchProducts();
+      resetForm();
+      setShowAddForm(false);
+
+    } catch (error) {
+      console.error('Error saving product:', error);
+      alert(error.message || 'Failed to save product. Please try again.');
     }
+  };
 
-    const url = editingId 
-      ? `http://localhost:3000/api/products/${editingId}`
-      : 'http://localhost:3000/api/products';
-    
-    const method = editingId ? 'PUT' : 'POST';
-
-    console.log('Sending product data...', {
-      url,
-      method,
-      editingId: editingId || 'new',
-      formDataEntries: [...formDataToSend.entries()]
-    });
-
-    const response = await fetch(url, {
-      method,
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      credentials: 'include',
-      body: formDataToSend
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Server error:', errorData);
-      throw new Error(errorData.message || 'Failed to save product');
-    }
-
-    const data = await response.json();
-    console.log('Product saved successfully:', data);
-
-    await fetchProducts();
-    resetForm();
-    setShowAddForm(false);
-    
-  } catch (error) {
-    console.error('Error saving product:', error);
-    alert(error.message || 'Failed to save product. Please try again.');
-  }
-};
   const handleEdit = (product) => {
     setEditingId(product._id);
     setFormData({
-      name: product.name || '', 
+      name: product.name || '',
       description: product.description || '',
       shortDescription: product.shortDescription || '',
       category: product.category?._id || product.category || '',
-      // CRITICAL FIX: Ensure subCategory is set correctly
       subCategory: product.subCategory?._id || product.subCategory || '',
-      brand: product.brand || '', 
-      fabric: product.fabric || '', 
+      brand: product.brand || '',
+      fabric: product.fabric || '',
       pattern: product.pattern || '',
-      occasion: product.occasion || [], 
-      season: product.season || [],
-      mainImage: null, 
+      // ── FIX: use safeArray to prevent double-encoding on re-save ──
+      occasion: safeArray(product.occasion),
+      season: safeArray(product.season),
+      mainImage: null,
       galleryImages: [],
-      basePrice: product.basePrice || '', 
+      basePrice: product.basePrice || '',
       discountType: product.discountType || 'none',
-      discountValue: product.discountValue || 0, 
+      discountValue: product.discountValue || 0,
       variants: product.variants || [],
-      isFeatured: product.isFeatured || false, 
+      isFeatured: product.isFeatured || false,
       isNewArrival: product.isNewArrival || false,
-      isBestSeller: product.isBestSeller || false, 
+      isBestSeller: product.isBestSeller || false,
       isActive: product.isActive !== undefined ? product.isActive : true,
-      metaTitle: product.metaTitle || '', 
+      metaTitle: product.metaTitle || '',
       metaDescription: product.metaDescription || '',
-      metaKeywords: product.metaKeywords?.join(', ') || '',
+      // ── FIX: safeArray prevents '["[\\"keyword\\"]"]' corruption ──
+      metaKeywords: safeArray(product.metaKeywords).join(', '),
       returnPolicy: product.returnPolicy || { isReturnable: true, returnPeriod: 7 }
     });
-    setImagePreviews({ 
-      mainImage: product.mainImage, 
-      galleryImages: product.galleryImages || [] 
+    setImagePreviews({
+      mainImage: product.mainImage,
+      galleryImages: product.galleryImages || []
     });
     setShowAddForm(true);
   };
@@ -344,13 +343,13 @@ const Products = () => {
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`http://localhost:3000/api/products/${id}`, {
-        method: 'DELETE', 
-        headers: { Authorization: `Bearer ${token}` }, 
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
         credentials: 'include'
       });
       if (!res.ok) throw new Error('Delete failed');
       await fetchProducts();
-    } catch (error) { 
+    } catch (error) {
       console.error('Delete failed', error);
       alert('Failed to delete product. Please try again.');
     }
@@ -396,26 +395,26 @@ const Products = () => {
         </div>
 
         <div className={styles.filterWrapper}>
-          <select 
-            value={filters.category} 
-            onChange={e => setFilters(p => ({ ...p, category: e.target.value, page: 1 }))} 
+          <select
+            value={filters.category}
+            onChange={e => setFilters(p => ({ ...p, category: e.target.value, page: 1 }))}
             className={styles.filterSelect}
           >
             <option value="">All Collections</option>
             {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
           </select>
-          <select 
-            value={filters.isActive} 
-            onChange={e => setFilters(p => ({ ...p, isActive: e.target.value, page: 1 }))} 
+          <select
+            value={filters.isActive}
+            onChange={e => setFilters(p => ({ ...p, isActive: e.target.value, page: 1 }))}
             className={styles.filterSelect}
           >
             <option value="">All Status</option>
             <option value="true">Active</option>
             <option value="false">Inactive</option>
           </select>
-          <select 
-            value={filters.isFeatured} 
-            onChange={e => setFilters(p => ({ ...p, isFeatured: e.target.value, page: 1 }))} 
+          <select
+            value={filters.isFeatured}
+            onChange={e => setFilters(p => ({ ...p, isFeatured: e.target.value, page: 1 }))}
             className={styles.filterSelect}
           >
             <option value="">All Types</option>
@@ -634,9 +633,9 @@ const Products = () => {
                 {imagePreviews.mainImage ? (
                   <div className={styles.imagePreview}>
                     <img src={imagePreviews.mainImage} alt="Preview" className={styles.previewImage} />
-                    <button type="button" className={styles.removeImage} onClick={() => { 
-                      setImagePreviews(p => ({ ...p, mainImage: null })); 
-                      setFormData(p => ({ ...p, mainImage: null })); 
+                    <button type="button" className={styles.removeImage} onClick={() => {
+                      setImagePreviews(p => ({ ...p, mainImage: null }));
+                      setFormData(p => ({ ...p, mainImage: null }));
                     }}>×</button>
                   </div>
                 ) : (
@@ -750,7 +749,7 @@ const Products = () => {
               <div className={styles.productImageContainer} onClick={() => { setSelectedProduct(product); setShowDetailModal(true); }}>
                 <img src={product.mainImage} alt={product.name} className={styles.productImage} />
                 {product.isFeatured   && <span className={styles.featuredBadge}>Featured</span>}
-                {product.isNewArrival && <span className={styles.newBadge}>New Arraival</span>}
+                {product.isNewArrival && <span className={styles.newBadge}>New Arrival</span>}
                 {product.isBestSeller && <span className={styles.bestsellerBadge}>Best Seller</span>}
                 {!product.isActive    && <span className={styles.inactiveOverlay}>Inactive</span>}
               </div>
@@ -818,8 +817,8 @@ const Products = () => {
                   {selectedProduct.subCategory && <p><strong>Sub-collection:</strong> {selectedProduct.subCategory.name}</p>}
                   <p><strong>Fabric:</strong> {selectedProduct.fabric || '—'}</p>
                   <p><strong>Pattern:</strong> {selectedProduct.pattern || '—'}</p>
-                  <p><strong>Occasion:</strong> {selectedProduct.occasion?.join(', ') || '—'}</p>
-                  <p><strong>Season:</strong> {selectedProduct.season?.join(', ') || '—'}</p>
+                  <p><strong>Occasion:</strong> {safeArray(selectedProduct.occasion).join(', ') || '—'}</p>
+                  <p><strong>Season:</strong> {safeArray(selectedProduct.season).join(', ') || '—'}</p>
                 </div>
                 <div className={styles.modalSection}>
                   <h3>Pricing & Stock</h3>
