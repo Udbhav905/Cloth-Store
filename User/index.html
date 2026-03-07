@@ -2,25 +2,52 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
-    <link rel="icon" type="image/png" href="./src/assets/logo.png" style="scale: 2;">
+    <title>Luxuria</title>
+
+    <!-- ── Step 1: DNS warm-up for Google Fonts (zero cost, big win) ── -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- ── Step 2: Load fonts WITHOUT blocking render                 ── -->
+    <!-- media="print" trick: browser fetches it low-priority,        -->
+    <!-- onload switches it to 'all' so it applies once ready         -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap"
+      media="print"
+      onload="this.media = 'all'"
+    />
+    <!-- ── Fallback for JS-disabled browsers ── -->
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap"
+      />
+    </noscript>
+
+    <link
+      rel="icon"
+      type="image/png"
+      href="./src/assets/logo.png"
+      style="scale: 2"
+    />
     <script>
-  const titles = [
-    "Cloth Store 💭",
-    "Premium Collection 👔",
-    " Come Back 🥹",
-    " We Miss You 💔"
-  ];
+      const titles = [
+        "Cloth Store 💭",
+        "Premium Collection 👔",
+        " Come Back 🥹",
+        " We Miss You 💔",
+      ];
 
-  let i = 0;
+      let i = 0;
 
-  setInterval(() => {
-    document.title = titles[i];
-    i = (i + 1) % titles.length;
-  }, 2000);
-   </script>
+      setInterval(() => {
+        document.title = titles[i];
+        i = (i + 1) % titles.length;
+      }, 2000);
+    </script>
   </head>
   <body>
     <div id="root"></div>

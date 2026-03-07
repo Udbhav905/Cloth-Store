@@ -170,17 +170,24 @@ const useCategoryStore = create((set, get) => ({
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || `Server error ${res.status}`);
       }
-      
+
       /* Your getCategories controller returns a plain array */
       const raw = await res.json(); // → Category[]
-      // console.log("res-->",raw);
 
       if (!Array.isArray(raw)) {
         throw new Error("Unexpected response format from /api/categories");
       }
 
-      /* Sort by sortOrder (already done by backend, but just in case) */
-      const sorted = [...raw].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+      /* Sort by sortOrder ascending.
+         Tiebreaker: createdAt ascending → preserves the order you created
+         them in the admin panel when all sortOrders are 0 (the default).
+         If sortOrders differ, that takes full priority.               */
+      const sorted = [...raw].sort((a, b) => {
+        const orderDiff = (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+        if (orderDiff !== 0) return orderDiff;
+        // Same sortOrder → use creation date so first-created appears first
+        return new Date(a.createdAt ?? 0) - new Date(b.createdAt ?? 0);
+      });
 
       /* Enrich with design props */
       const categories = sorted.map((cat, i) => enrichCategory(cat, i));
