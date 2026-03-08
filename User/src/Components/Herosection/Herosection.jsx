@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import img1 from '../../assets/confident-young-handsome-man-holds-his-coat-shoulder-near-lake-autumn-forest.jpg'
+import img1 from '../../assets/men.png'
 import img2 from '../../assets/women.jpg'
 import img3 from '../../assets/medium-shot-man-posing-outdoors.jpg'
 import styles from "./HeroSection.module.css";
