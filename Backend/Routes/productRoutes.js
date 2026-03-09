@@ -8,7 +8,8 @@ import {
   deleteProduct,
   getFeaturedProducts,
   getNewArrivals,
-  getBestSellers
+  getBestSellers,
+  searchProducts
 } from "../Controllers/productController.js";
 import { protect, admin } from "../Middleware/authMiddleware.js";
 import upload from "../Middleware/uploadMiddleware.js";
@@ -20,6 +21,7 @@ router.get("/featured", getFeaturedProducts);
 router.get("/new-arrivals", getNewArrivals);
 router.get("/best-sellers", getBestSellers);
 router.get("/slug/:slug", getProductBySlug);
+router.get("/search",       searchProducts); 
 
 router.route("/")
   .get(getProducts)
@@ -48,5 +50,7 @@ router.route("/:id")
     updateProduct
   )
   .delete(protect, admin, deleteProduct);
+
+
 
 export default router;

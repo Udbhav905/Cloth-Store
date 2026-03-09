@@ -378,3 +378,116 @@ export const getBestSellers = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// ───────────────────────────────────────────────────────────── *
+export const searchProducts = async (req, res) => {
+  try {
+    const {
+      q        = "",
+      minPrice,
+      maxPrice,
+      page     = 1,
+      limit    = 40,
+    } = req.query;
+
+    const filter = { isActive: true };
+
+    /* ── Natural language price parsing ──────────────────────
+       Supports: "under 500", "below 1000", "above 300", "over 200"
+    ──────────────────────────────────────────────────────── */
+    if (q) {
+      const underMatch = q.match(/(?:under|below|less\s*than)\s*₹?\$?(\d+)/i);
+      const overMatch  = q.match(/(?:over|above|more\s*than)\s*₹?\$?(\d+)/i);
+      if (underMatch) filter.basePrice = { ...(filter.basePrice || {}), $lte: parseInt(underMatch[1]) };
+      if (overMatch)  filter.basePrice = { ...(filter.basePrice || {}), $gte: parseInt(overMatch[1]) };
+    }
+
+    /* ── Explicit minPrice / maxPrice params ─────────────── */
+    if (minPrice) filter.basePrice = { ...(filter.basePrice || {}), $gte: Number(minPrice) };
+    if (maxPrice) filter.basePrice = { ...(filter.basePrice || {}), $lte: Number(maxPrice) };
+
+    /* ── Text search (uses MongoDB text index on name + description) ──
+       Only apply $text when query is NOT purely a price expression
+    ──────────────────────────────────────────────────────── */
+    const isPriceOnly = q
+      ? /^(under|below|above|over|less|more|₹|\$|\d)/.test(q.trim().toLowerCase())
+      : true;
+
+    if (q.trim() && !isPriceOnly) {
+      filter.$text = { $search: q.trim() };
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    /* ── Main DB query ──────────────────────────────────── */
+    let products = await Product.find(filter)
+      .populate("category",    "name slug")
+      .populate("subCategory", "name slug")
+      .sort(
+        filter.$text
+          ? { score: { $meta: "textScore" } }
+          : { createdAt: -1 }
+      )
+      .skip(skip)
+      .limit(Number(limit))
+      .lean();
+
+    /* ── Post-filter: category / brand / fabric / occasion ──
+       MongoDB $text index does NOT cover populated refs like
+       category.name, so we do a second pass here.
+    ──────────────────────────────────────────────────────── */
+    if (q.trim()) {
+      const term = q.trim().toLowerCase();
+      // Strip price phrases to get pure keyword
+      const keyword = term
+        .replace(/(?:under|below|less\s*than|over|above|more\s*than)\s*₹?\$?\d+/gi, "")
+        .trim();
+
+      if (keyword) {
+        // Filter already-fetched products by keyword
+        products = products.filter((p) =>
+          p.name?.toLowerCase().includes(keyword) ||
+          p.category?.name?.toLowerCase().includes(keyword) ||
+          p.subCategory?.name?.toLowerCase().includes(keyword) ||
+          p.slug?.toLowerCase().includes(keyword) ||
+          p.brand?.toLowerCase().includes(keyword) ||
+          p.fabric?.toLowerCase().includes(keyword) ||
+          (p.occasion || []).some((o) => o.toLowerCase().includes(keyword)) ||
+          (p.season   || []).some((s) => s.toLowerCase().includes(keyword)) ||
+          (p.metaKeywords || []).some((k) => k.toLowerCase().includes(keyword))
+        );
+
+        /* ── Extra pass: fetch products whose category NAME matches
+           but were missed by $text (text index doesn't cover refs)
+        ──────────────────────────────────────────────────────────── */
+        const fetchedIds = new Set(products.map((p) => p._id.toString()));
+
+        const categoryMatches = await Product.find({
+          isActive: true,
+          ...(filter.basePrice ? { basePrice: filter.basePrice } : {}),
+        })
+          .populate("category",    "name slug")
+          .populate("subCategory", "name slug")
+          .lean()
+          .then((all) =>
+            all.filter(
+              (p) =>
+                p.category?.name?.toLowerCase().includes(keyword) &&
+                !fetchedIds.has(p._id.toString())
+            )
+          );
+
+        products = [...products, ...categoryMatches];
+      }
+    }
+
+    res.status(200).json({
+      products,
+      total: products.length,
+      page:  Number(page),
+      limit: Number(limit),
+    });
+  } catch (err) {
+    console.error("[searchProducts] error:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
