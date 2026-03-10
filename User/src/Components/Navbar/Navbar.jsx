@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import useAuthStore from "../../store/Useauthstore";
 import useCartStore from "../../store/Usecartstore";
 import styles from "./Navbar.module.css";
@@ -21,6 +21,8 @@ const getInitials = (name = "") =>
   name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
 
 export default function Navbar() {
+  const navigate = useNavigate(); // ← added
+
   const { user, isLoggedIn, logout, openAuthModal, fetchProfile } = useAuthStore();
   const { items, wishlist } = useCartStore();
   const cartCount = items.reduce((s, i) => s + i.quantity, 0);
@@ -84,6 +86,35 @@ export default function Navbar() {
     await logout();
   };
 
+  /* ── Search Handlers ───────────────────────── */
+  const handleSearchSubmit = () => {
+    const q = searchQuery.trim();
+    if (!q) return;
+    setSearchOpen(false);
+    setSearchQuery("");
+    navigate(`/search?q=${encodeURIComponent(q)}`);
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Enter") handleSearchSubmit();
+    if (e.key === "Escape") { setSearchOpen(false); setSearchQuery(""); }
+  };
+
+  const handleSearchIconClick = () => {
+    if (searchOpen && searchQuery.trim()) {
+      // If search is open and has a query → submit
+      handleSearchSubmit();
+    } else if (searchOpen) {
+      // If search is open but empty → close
+      setSearchOpen(false);
+      setSearchQuery("");
+    } else {
+      // Open search
+      setSearchOpen(true);
+    }
+  };
+  /* ─────────────────────────────────────────── */
+
   return (
     <>
       <div className={styles.cursor} ref={cursorRef} />
@@ -133,18 +164,19 @@ export default function Navbar() {
                   ref={searchRef}
                   className={styles.searchInput}
                   type="text"
-                  placeholder="Search pieces, collections…"
+                  placeholder="Search pieces, collections, price…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === "Escape" && setSearchOpen(false)}
+                  onKeyDown={handleSearchKeyDown}
                 />
               )}
               <button
                 className={styles.iconBtn}
-                onClick={() => { setSearchOpen((p) => !p); setSearchQuery(""); }}
-                aria-label="Search"
+                onClick={handleSearchIconClick}
+                aria-label={searchOpen && searchQuery.trim() ? "Submit search" : searchOpen ? "Close search" : "Open search"}
               >
-                {searchOpen
+                {/* Show X only when open AND query is empty, else always show search icon */}
+                {searchOpen && !searchQuery.trim()
                   ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 }
@@ -220,7 +252,7 @@ export default function Navbar() {
             </Link>
 
             {/* Wishlist */}
-            <Link to="/wishlist" className={styles.iconBtn} aria-label="Wishlist">
+            <Link to="/cart" className={styles.iconBtn} aria-label="cart">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
                 <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
               </svg>
@@ -296,6 +328,26 @@ export default function Navbar() {
         </button>
         <div className={styles.mobileMenuInner}>
           <div className={styles.mobileMenuLogo}>◆ LUXURIA ◆</div>
+
+          {/* Mobile Search */}
+          <div className={styles.mobileSearchWrap}>
+            <input
+              className={styles.mobileSearchInput}
+              type="text"
+              placeholder="Search pieces, collections, price…"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && e.target.value.trim()) {
+                  setMenuOpen(false);
+                  navigate(`/search?q=${encodeURIComponent(e.target.value.trim())}`);
+                  e.target.value = "";
+                }
+              }}
+            />
+            <svg className={styles.mobileSearchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
+              <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </div>
+
           {categories[0].subcategories.map((sub, si) => (
             <div key={sub.title} className={styles.mobileSection} style={{ "--delay": `${si * 0.08}s` }}>
               <h4 className={styles.mobileSectionTitle}>{sub.title}</h4>

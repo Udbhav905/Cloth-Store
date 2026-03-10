@@ -64,6 +64,7 @@ export function getSoldText(product) {
    ZUSTAND STORE
 ─────────────────────────────────────────────────── */
 const useProductStore = create((set, get) => ({
+
   /* ── Trending (best sellers) ── */
   trending:        [],
   trendingLoading: false,
@@ -82,7 +83,14 @@ const useProductStore = create((set, get) => ({
   featuredError:   null,
   featuredFetchedAt: null,
 
-  /* ─── INTERNAL fetch helper ─── */
+  /* ── Search ── */
+  searchResults:       [],
+  searchLoading:       false,
+  searchError:         null,
+  searchQuery:         "",      // last query that was fetched
+  searchTotal:         0,       // total count from server (for pagination later)
+
+  /* ─── INTERNAL fetch helper (for trending / arrivals / featured) ─── */
   _fetch: async (endpoint, stateKey, { force = false } = {}) => {
     const loadingKey   = `${stateKey}Loading`;
     const errorKey     = `${stateKey}Error`;
@@ -109,9 +117,8 @@ const useProductStore = create((set, get) => ({
       }
 
       const data = await res.json();
-            console.log("res-->",data);
+      console.log("res-->", data);
 
-      // Your controller returns a plain array for these endpoints
       const products = Array.isArray(data) ? data : (data.products ?? []);
 
       set({
@@ -125,7 +132,47 @@ const useProductStore = create((set, get) => ({
     }
   },
 
-  /* ── Public actions ── */
+  /* ─────────────────────────────────────────────────
+     SEARCH — calls GET /api/products/search?q=...
+     Falls back to client-side filter if no search
+     endpoint exists yet on your backend.
+  ─────────────────────────────────────────────────── */
+  fetchSearchResults: async (query) => {
+    const q = (query || "").trim();
+
+    // Don't re-fetch if same query is already loaded
+    if (get().searchQuery === q && get().searchResults.length > 0) return;
+
+    set({ searchLoading: true, searchError: null, searchQuery: q });
+
+    try {
+      // Build query string — supports: ?q=men&minPrice=0&maxPrice=500
+      const params = new URLSearchParams();
+      if (q) params.set("q", q);
+
+      const res = await fetch(`${API}/products/search?${params.toString()}`, {
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `Server error ${res.status}`);
+      }
+
+      const data = await res.json();
+      // Accept: { products: [...], total: N }  OR  plain array
+      const products = Array.isArray(data) ? data : (data.products ?? []);
+      const total    = data.total ?? products.length;
+
+      set({ searchResults: products, searchTotal: total, searchLoading: false });
+    } catch (err) {
+      set({ searchLoading: false, searchError: err.message });
+    }
+  },
+
+  clearSearch: () => set({ searchResults: [], searchQuery: "", searchTotal: 0, searchError: null }),
+
+  /* ── Public actions (existing) ── */
   fetchTrending:    (opts) => get()._fetch("best-sellers",  "trending",    opts),
   fetchNewArrivals: (opts) => get()._fetch("new-arrivals",  "newArrivals", opts),
   fetchFeatured:    (opts) => get()._fetch("featured",      "featured",    opts),
