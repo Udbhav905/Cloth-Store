@@ -283,7 +283,7 @@ export default function Navbar() {
                 <span className={styles.drawerTag}>New Arrival</span>
                 <h2 className={styles.drawerHeadline}>Spring<br /><em>Séduction</em></h2>
                 <p className={styles.drawerSub}>2025 Resort Collection</p>
-                <Link to="/collections/resort-2025" className={styles.drawerCta}>
+                <Link to="/collections/" className={styles.drawerCta}>
                   Explore Now
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
