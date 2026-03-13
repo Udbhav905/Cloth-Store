@@ -870,6 +870,7 @@
 }
 .emptyBtn svg { width: 16px; height: 16px; position: relative; z-index: 1; transition: transform var(--tr); }
 .emptyBtn span { position: relative; z-index: 1; }
+.emptyBtn span a{text-decoration: none; color: black;}
 .emptyBtn:hover { background: var(--gold2); transform: translateY(-2px); box-shadow: 0 6px 28px rgba(201,168,76,.28); gap: 16px; }
 .emptyBtn:hover svg { transform: translateX(3px); }
 

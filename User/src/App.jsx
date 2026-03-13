@@ -6,6 +6,7 @@ import Navbar    from "./Components/Navbar/Navbar";
 import AuthModal from "./Components/Authmodal/Authmodal";
 import SearchPage from "./Pages/SearchPage";
 import Collections from "./Pages/Collections";
+import Wishlist from "./Pages/Wishlist";
 
 // ── Every page/heavy component is lazy — only loads when route is visited ──
 const Home          = lazy(() => import("./Pages/Home"));
@@ -60,6 +61,7 @@ const App = () => {
           <Route path="/collections/:slug" element={<CategoryPage />} />
           <Route path="/products/:id"      element={<ProductDetail />} />
           <Route path="/cart"              element={<Cart />} />
+          <Route path="/wishlist"                  element={<Wishlist />} />
           <Route path="/search" element={<SearchPage />} />
           {/* Uncomment as you add pages: */}
           {/* <Route path="/collections"    element={<Collections />} /> */}

@@ -9,7 +9,7 @@ const useCartStore = create(
     (set, get) => ({
       items:     [],   // [{ productId, name, price, size, color, quantity, image }]
       wishlist:  [],   // [productId, ...]
-
+       
       /* ── Cart ── */
       cartCount: () => get().items.reduce((s, i) => s + i.quantity, 0),
 
@@ -49,6 +49,7 @@ const useCartStore = create(
 
       isWishlisted: (productId) => get().wishlist.includes(productId),
     }),
+   
     { name: "luxuria-cart" }
   )
 );

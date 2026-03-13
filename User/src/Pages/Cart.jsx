@@ -132,8 +132,8 @@ function EmptyCart() {
       <p className={styles.emptyText}>
         Discover our curated collection and add pieces that speak to you.
       </p>
-      <span onClick={()=>nav(-1)} className={styles.emptyBtn}>
-        <span>Explore Collections</span>
+      <span  className={styles.emptyBtn}>
+       <span> <Link to={'/collections'}>Explore Collections</Link></span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
           <path d="M5 12h14M12 5l7 7-7 7" />
         </svg>
