@@ -172,16 +172,14 @@ function Gallery({ images, name }) {
 
 /* ── Toast ── */
 function Toast({ msg, visible }) {
-  const nav=useNavigate();
+  const nav = useNavigate();
   return (
     <div className={`${styles.toast} ${visible ? styles.toastIn : ""}`}>
-      <section onClick={()=>nav('/cart')}>
-
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-        <polyline points="20 6 9 17 4 12"/>
-      </svg>
-
-      {msg}
+      <section onClick={() => nav('/cart')}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        {msg}
       </section>
     </div>
   );
@@ -193,6 +191,7 @@ function Toast({ msg, visible }) {
 export default function ProductDetail() {
   const { id }       = useParams();
   const navigate     = useNavigate();
+  const { user }     = useAuthStore();
   const { addToCart, toggleWishlist, isWishlisted } = useCartStore();
 
   const [product,  setProduct]  = useState(null);
@@ -226,7 +225,6 @@ export default function ProductDetail() {
         )][0];
         if (firstColor) setSelColor(firstColor);
 
-        // ── FIX: safely get category ID whether populated object or raw string ──
         const catId = p.category?._id || (typeof p.category === "string" ? p.category : null);
         if (catId) {
           fetch(`${API}/products?category=${catId}&limit=8`)
@@ -238,7 +236,7 @@ export default function ProductDetail() {
       .catch(e => { setError(e.message); setLoading(false); });
   }, [id]);
 
-  /* ── Loading skeleton — must come BEFORE any derived calculations ── */
+  /* ── Loading skeleton ── */
   if (loading) return (
     <div className={styles.page}>
       <div className={styles.skWrap}>
@@ -255,7 +253,7 @@ export default function ProductDetail() {
     </div>
   );
 
-  /* ── Error / not found — must come BEFORE any derived calculations ── */
+  /* ── Error / not found ── */
   if (error || !product) return (
     <div className={styles.page}>
       <div className={styles.errFull}>
@@ -267,7 +265,7 @@ export default function ProductDetail() {
     </div>
   );
 
-  /* ── Derived — product is guaranteed non-null from here ── */
+  /* ── Derived ── */
   const allImages   = [product.mainImage, ...(product.galleryImages || [])].filter(Boolean);
   const colorOpts   = [...new Map((product.variants || []).filter(v => v.isActive !== false).map(v => [v.color, { name: v.color, code: v.colorCode }])).values()];
   const sizeOpts    = selColor
@@ -285,7 +283,6 @@ export default function ProductDetail() {
   const inStock     = selVariant ? selVariant.stock > 0 : product?.totalStock > 0;
   const lowStock    = stockCount > 0 && stockCount <= (product?.lowStockThreshold ?? 5);
 
-  // ── FIX: safely parse occasion/season in case of corrupted DB data ──
   const occasionList = safeArray(product.occasion);
   const seasonList   = safeArray(product.season);
 
@@ -294,13 +291,57 @@ export default function ProductDetail() {
     setTimeout(() => setToast(t => ({ ...t, visible: false })), 2800);
   };
 
+  /* ── Validate selection before any cart/buy action ── */
+  const validateSelection = () => {
+    if (!selColor) { showToast("Please select a colour"); return false; }
+    if (!selSize)  { showToast("Please select a size");   return false; }
+    if (!inStock)  { showToast("Out of stock");           return false; }
+    return true;
+  };
+
   const handleAddToCart = () => {
-    if (!selColor) { showToast("Please select a colour"); return; }
-    if (!selSize)  { showToast("Please select a size");   return; }
-    if (!inStock)  { showToast("Out of stock");           return; }
+    if (!validateSelection()) return;
     setAdding(true);
-    addToCart({ productId: product._id, name: product.name, price: finalPrice, size: selSize, color: selColor, image: product.mainImage, quantity: qty });
-    setTimeout(() => { setAdding(false); showToast(`${product.name} added to cart ✓`); }, 600);
+    addToCart({
+      productId: product._id,
+      name:      product.name,
+      price:     finalPrice,
+      size:      selSize,
+      color:     selColor,
+      image:     product.mainImage,
+      quantity:  qty,
+    });
+    setTimeout(() => {
+      setAdding(false);
+      showToast(`${product.name} added to cart ✓`);
+    }, 600);
+  };
+
+  /* ── BUY NOW: validate → navigate to /checkout with buyNow state ── */
+  const handleBuyNow = () => {
+    if (!validateSelection()) return;
+
+    // If user is not logged in, redirect to login first
+    if (!user) {
+      showToast("Please sign in to place an order");
+      setTimeout(() => navigate("/profile"), 1200);
+      return;
+    }
+
+    navigate("/checkout", {
+      state: {
+        buyNow: {
+          product,
+          selectedVariant: selVariant || {
+            size:  selSize,
+            color: selColor,
+            price: finalPrice,
+            discountedPrice: finalPrice,
+          },
+          quantity: qty,
+        },
+      },
+    });
   };
 
   const handleWish = () => {
@@ -313,7 +354,6 @@ export default function ProductDetail() {
       <Toast msg={toast.msg} visible={toast.visible} />
 
       {/* Breadcrumb */}
-      {/* ── FIX: guard against unpopulated category (raw ID string) ── */}
       <nav className={styles.crumbs}>
         <Link to="/" className={styles.crumb}>Home</Link>
         <span className={styles.crumbSep}>◆</span>
@@ -347,7 +387,6 @@ export default function ProductDetail() {
             {disc != null         && <span className={`${styles.bdg} ${styles.bdgSale}`}>-{disc}% Off</span>}
           </div>
 
-          {/* ── FIX: guard against unpopulated category ── */}
           {product.category?.slug && product.category?.name && (
             <Link to={`/collections/${product.category.slug}`} className={styles.catLink}>
               {product.category.name}
@@ -430,13 +469,31 @@ export default function ProductDetail() {
             </p>
           )}
 
-          {/* Qty + CTA */}
-          <div className={styles.ctaRow}>
+          {/* ── Qty + CTA row ── */}
+          <div className={styles.qtyCtaRow}>
+            {/* Quantity */}
             <div className={styles.qtyBox}>
               <button className={styles.qtyBtn} onClick={() => setQty(q => Math.max(1, q - 1))}>−</button>
               <span className={styles.qtyNum}>{qty}</span>
               <button className={styles.qtyBtn} onClick={() => setQty(q => Math.min(stockCount || 10, q + 1))}>+</button>
             </div>
+
+            {/* Wishlist */}
+            <button
+              className={`${styles.wishBtn} ${wishlisted ? styles.wishOn : ""}`}
+              onClick={handleWish}
+              aria-label="Wishlist"
+            >
+              <svg viewBox="0 0 24 24" fill={wishlisted ? "currentColor" : "none"}
+                stroke="currentColor" strokeWidth="1.5">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            </button>
+          </div>
+
+          {/* ── Primary action buttons ── */}
+          <div className={styles.actionBtns}>
+            {/* Add to Cart */}
             <button
               className={`${styles.addBtn} ${adding ? styles.addBtnLoading : ""}`}
               onClick={handleAddToCart}
@@ -447,15 +504,18 @@ export default function ProductDetail() {
                 : (inStock || !selSize) ? "Add to Cart" : "Out of Stock"
               }
             </button>
+
+            {/* Buy Now */}
             <button
-              className={`${styles.wishBtn} ${wishlisted ? styles.wishOn : ""}`}
-              onClick={handleWish}
-              aria-label="Wishlist"
+              className={styles.buyNowBtn}
+              onClick={handleBuyNow}
+              disabled={!inStock && !!selSize}
+              title={!selColor ? "Select colour first" : !selSize ? "Select size first" : "Buy Now"}
             >
-              <svg viewBox="0 0 24 24" fill={wishlisted ? "currentColor" : "none"}
-                stroke="currentColor" strokeWidth="1.5">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
+              Buy Now
             </button>
           </div>
 
@@ -483,7 +543,6 @@ export default function ProductDetail() {
             {product.brand    && <><span className={styles.mKey}>Brand</span>   <span className={styles.mVal}>{product.brand}</span></>}
             {product.fabric   && <><span className={styles.mKey}>Fabric</span>  <span className={styles.mVal}>{product.fabric}</span></>}
             {product.pattern  && <><span className={styles.mKey}>Pattern</span> <span className={styles.mVal}>{product.pattern}</span></>}
-            {/* ── FIX: use safeArray so corrupted DB values display correctly ── */}
             {occasionList.length > 0 && <><span className={styles.mKey}>Occasion</span><span className={styles.mVal}>{occasionList.join(", ")}</span></>}
             {seasonList.length   > 0 && <><span className={styles.mKey}>Season</span>  <span className={styles.mVal}>{seasonList.join(", ")}</span></>}
             {product.totalSold > 0   && <><span className={styles.mKey}>Sold</span>    <span className={styles.mVal}>{product.totalSold}+ pieces</span></>}
@@ -515,7 +574,6 @@ export default function ProductDetail() {
           {activeTab === "details" && (
             <div className={styles.descTab}>
               <p className={styles.descText}>{product.description}</p>
-
               {(product.variants || []).length > 0 && (
                 <div className={styles.varTable}>
                   <h4 className={styles.varTitle}>Available Variants</h4>
@@ -623,7 +681,6 @@ export default function ProductDetail() {
               <span className={styles.relEye}>◆</span>
               You may also like
             </div>
-            {/* ── FIX: guard against unpopulated category on related section ── */}
             {product.category?.slug && product.category?.name && (
               <Link to={`/collections/${product.category.slug}`} className={styles.relMore}>
                 View all in {product.category.name} →

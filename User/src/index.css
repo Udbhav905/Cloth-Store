@@ -1,0 +1,16 @@
+/* Add to your global CSS file (index.css or App.css) */
+iframe[src*="stripe"] {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: auto !important;
+  border: none !important;
+}
+
+/* Ensure no parent elements block interaction */
+.stripe-element-wrapper,
+.CardElement,
+.__PrivateStripeElement {
+  pointer-events: auto !important;
+  width: 100% !important;
+}

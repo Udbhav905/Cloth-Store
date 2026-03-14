@@ -929,7 +929,81 @@
 }
 .sizeTRow span:last-child { border-right: none; }
 .sizeTSize { font-weight: 500; color: var(--ink) !important; }
+/* ════════════════════════════════════════════════════════
+   ADD THESE TO THE BOTTOM OF ProductDetail.module.css
+   (Only new classes — do NOT replace your existing file)
+════════════════════════════════════════════════════════ */
 
+/* ── Qty + wishlist row (replaces old .ctaRow) ── */
+.qtyCtaRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+/* ── Action buttons container (Add to Cart + Buy Now) ── */
+.actionBtns {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+/* Add to Cart stays as existing .addBtn — no change */
+
+/* ── Buy Now button ── */
+.buyNowBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid rgba(201, 169, 110, 0.5);
+  color: #c9a96e;
+  font-family: "DM Sans", "Helvetica Neue", sans-serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 14px 20px;
+  cursor: pointer;
+  transition: background 0.22s, color 0.22s, border-color 0.22s;
+  white-space: nowrap;
+}
+.buyNowBtn:hover:not(:disabled) {
+  background: #c9a96e;
+  color: #060606;
+  border-color: #c9a96e;
+}
+.buyNowBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.buyNowBtn svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+/* ── Responsive adjustments ── */
+@media (max-width: 480px) {
+  .actionBtns {
+    flex-direction: column;
+  }
+  .buyNowBtn {
+    padding: 13px 16px;
+    font-size: 0.78rem;
+  }
+  .qtyCtaRow {
+    gap: 8px;
+  }
+}
+@media (max-width: 360px) {
+  .buyNowBtn {
+    padding: 11px 12px;
+    font-size: 0.72rem;
+  }
+}
 /* ════════════════════════════════════
    RELATED PRODUCTS
 ════════════════════════════════════ */
