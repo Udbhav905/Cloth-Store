@@ -18,6 +18,7 @@ import orderRoutes from "./Routes/orderRoutes.js";
 import cartRoutes from "./Routes/cartRoutes.js";
 import reviewRoutes from "./Routes/reviewRoutes.js";
 import couponRoutes from "./Routes/couponRoutes.js";
+import paymentRoutes from "./Routes/paymentRoutes.js"; // ✅ Stripe payments
 
 // Middleware
 import { errorHandler, notFound } from "./Middleware/errorMiddleware.js";
@@ -27,40 +28,66 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Middleware
+/* =========================================================
+   STRIPE WEBHOOK (MUST BE BEFORE express.json())
+   ========================================================= */
+app.use(
+  "/api/payments/webhook",
+  express.raw({ type: "application/json" }),
+  paymentRoutes
+);
+
+/* =========================================================
+   NORMAL MIDDLEWARE
+   ========================================================= */
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// CORS configuration
-// Simpler fix - using a function to handle multiple origins
-app.use(cors({
-  // origin: true, // Allow all origins in production 
-  // credentials: true
-  origin: function(origin, callback) {
-    const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'];  //for devlopment
-    
-    // Allow requests with no origin (like mobile apps, curl, etc)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
-}));
+/* =========================================================
+   CORS
+   ========================================================= */
 
-// Logging
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      const allowedOrigins = [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:3000",
+      ];
+
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
+
+/* =========================================================
+   LOGGING
+   ========================================================= */
+
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
-// Static files
+/* =========================================================
+   STATIC FILES
+   ========================================================= */
+
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Routes
+/* =========================================================
+   ROUTES
+   ========================================================= */
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/categories", categoryRoutes);
@@ -70,19 +97,28 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/coupons", couponRoutes);
 
-// Health check
+/* Stripe Payment Routes */
+app.use("/api/payments", paymentRoutes);
+
+/* =========================================================
+   HEALTH CHECK
+   ========================================================= */
+
 app.get("/api/health", (req, res) => {
-  res.json({ 
-    status: "OK", 
+  res.json({
+    status: "OK",
     message: "Server Running ✅",
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV
+    environment: process.env.NODE_ENV,
   });
 });
 
-// Root route
+/* =========================================================
+   ROOT ROUTE
+   ========================================================= */
+
 app.get("/", (req, res) => {
-  res.json({ 
+  res.json({
     message: "Clothing Store API",
     version: "1.0.0",
     endpoints: {
@@ -93,31 +129,41 @@ app.get("/", (req, res) => {
       orders: "/api/orders",
       cart: "/api/cart",
       reviews: "/api/reviews",
-      coupons: "/api/coupons"
-    }
+      coupons: "/api/coupons",
+      payments: "/api/payments",
+    },
   });
 });
 
-// Error handling - ORDER IS IMPORTANT
-app.use(notFound);      // 404 handler for undefined routes
-app.use(errorHandler);  // Global error handler
+/* =========================================================
+   ERROR HANDLING
+   ========================================================= */
 
-// Connect to MongoDB
+app.use(notFound);
+app.use(errorHandler);
+
+/* =========================================================
+   DATABASE CONNECTION
+   ========================================================= */
+
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI);
-    console.log(`MongoDB Connected`);
-    // console.log(`MongoDB Connected: ${conn.connection.host}`);
-    
+
+    console.log("MongoDB Connected");
+
     const PORT = process.env.PORT || 3000;
+
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV}`);
     });
   } catch (error) {
-    console.error(`Error: ${error.message}`);
+    console.error(`DB Error: ${error.message}`);
     process.exit(1);
   }
 };
 
 connectDB();
+
+export default app;

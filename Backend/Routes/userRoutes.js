@@ -1,5 +1,7 @@
 import express from "express";
 import {
+  getMe,
+  updateMe,
   getUsers,
   getUserById,
   updateUser,
@@ -11,32 +13,43 @@ import {
   getAddresses,
   getAddressById,
   setDefaultAddress,
-  getUserOrders
-} from "../Controllers/authController.js"; // Make sure path is correct
+  getUserOrders,
+} from "../Controllers/userController.js";
 import { protect, admin } from "../Middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// All routes are protected with authentication
+/* ─────────────────────────────────────────────
+   My Profile  (logged-in user's own data)
+   MUST be declared BEFORE /:id routes
+───────────────────────────────────────────── */
+router.get  ("/me",  protect, getMe);
+router.put  ("/me",  protect, updateMe);
 
-// Address routes
-router.get("/addresses", protect, getAddresses);
-router.post("/address", protect, addAddress);
-router.get("/address/:addressId", protect, getAddressById);
-router.put("/address/:addressId", protect, updateAddress);
-router.delete("/address/:addressId", protect, deleteAddress);
-router.put("/address/:addressId/default", protect, setDefaultAddress);
+/* ─────────────────────────────────────────────
+   My Addresses
+───────────────────────────────────────────── */
+router.get   ("/addresses",                  protect, getAddresses);
+router.post  ("/address",                    protect, addAddress);
+router.get   ("/address/:addressId",         protect, getAddressById);
+router.put   ("/address/:addressId",         protect, updateAddress);
+router.delete("/address/:addressId",         protect, deleteAddress);
+router.put   ("/address/:addressId/default", protect, setDefaultAddress);
 
-// User orders
+/* ─────────────────────────────────────────────
+   My Orders
+───────────────────────────────────────────── */
 router.get("/orders", protect, getUserOrders);
 
-// Admin only routes
+/* ─────────────────────────────────────────────
+   Admin routes
+───────────────────────────────────────────── */
 router.route("/")
   .get(protect, admin, getUsers);
 
 router.route("/:id")
-  .get(protect, admin, getUserById)
-  .put(protect, admin, updateUser)
+  .get   (protect, admin, getUserById)
+  .put   (protect, admin, updateUser)
   .delete(protect, admin, deleteUser);
 
 router.put("/:id/toggle-block", protect, admin, toggleUserBlock);

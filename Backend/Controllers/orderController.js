@@ -1,137 +1,122 @@
 import Order from "../model/Order.js";
 import Cart from "../model/Cart.js";
 import Product from "../model/Product.js";
-import Coupon from "../model/Coupon.js";
+// import Coupon from "../model/Coupon.js";
 
 // @desc    Create new order
 // @route   POST /api/orders
 // @access  Private
+// In orderController.js, update the createOrder function:
+
 export const createOrder = async (req, res) => {
   try {
     const {
       items,
-      shippingAddress,
-      billingAddress,
-      paymentMethod,
-      couponCode,
-      customerNotes
-    } = req.body;
-
-    // Get user's cart if items not provided
-    let orderItems = items;
-    if (!items) {
-      const cart = await Cart.findOne({ userId: req.user._id });
-      if (!cart || cart.items.length === 0) {
-        return res.status(400).json({ message: "Cart is empty" });
-      }
-      orderItems = cart.items;
-    }
-
-    // Calculate totals
-    let subtotal = 0;
-    for (const item of orderItems) {
-      const product = await Product.findById(item.productId);
-      if (!product) {
-        return res.status(400).json({ message: `Product ${item.productId} not found` });
-      }
-
-      // Check stock
-      const variant = product.variants.find(v => 
-        v.size === item.size && v.color === item.color
-      );
-      
-      if (!variant || variant.stock < item.quantity) {
-        return res.status(400).json({ 
-          message: `Insufficient stock for ${product.name} (${item.size}, ${item.color})` 
-        });
-      }
-
-      // Calculate price
-      const price = variant.discountedPrice || variant.price;
-      item.price = price;
-      item.totalPrice = price * item.quantity;
-      subtotal += item.totalPrice;
-    }
-
-    // Apply coupon
-    let discount = 0;
-    if (couponCode) {
-      const coupon = await Coupon.findOne({ 
-        code: couponCode.toUpperCase(),
-        isActive: true,
-        startDate: { $lte: new Date() },
-        endDate: { $gte: new Date() }
-      });
-
-      if (coupon) {
-        if (subtotal >= coupon.minOrderAmount) {
-          if (coupon.discountType === "percentage") {
-            discount = (subtotal * coupon.discountValue) / 100;
-            if (coupon.maxDiscountAmount) {
-              discount = Math.min(discount, coupon.maxDiscountAmount);
-            }
-          } else {
-            discount = coupon.discountValue;
-          }
-        }
-      }
-    }
-
-    // Calculate tax and shipping
-    const tax = subtotal * 0.18; // 18% GST example
-    const shippingCharge = subtotal > 500 ? 0 : 50;
-
-    const totalAmount = subtotal - discount + shippingCharge + tax;
-
-    // Create order
-    const order = await Order.create({
-      userId: req.user._id,
-      items: orderItems.map(item => ({
-        productId: item.productId,
-        productName: item.name,
-        variant: {
-          size: item.size,
-          color: item.color,
-          sku: item.sku
-        },
-        quantity: item.quantity,
-        price: item.price,
-        totalPrice: item.price * item.quantity,
-        image: item.image
-      })),
       subtotal,
       discount,
       shippingCharge,
       tax,
       totalAmount,
       shippingAddress,
-      billingAddress: billingAddress || shippingAddress,
+      billingAddress,
       paymentMethod,
+      paymentStatus,
+      orderStatus,
+      couponCode,
       customerNotes,
-      orderStatus: "pending",
-      paymentStatus: paymentMethod === "cod" ? "pending" : "pending"
+      paymentDetails
+    } = req.body;
+
+    // Validate required fields
+    if (!items || !items.length) {
+      return res.status(400).json({ message: "Order items are required" });
+    }
+
+    if (!shippingAddress) {
+      return res.status(400).json({ message: "Shipping address is required" });
+    }
+
+    // Calculate totals if not provided
+    let calculatedSubtotal = subtotal;
+    let calculatedTotal = totalAmount;
+    
+    if (!calculatedSubtotal) {
+      calculatedSubtotal = items.reduce((acc, item) => 
+        acc + (item.price * item.quantity), 0
+      );
+    }
+    
+    if (!calculatedTotal) {
+      const calculatedTax = tax || (calculatedSubtotal * 0.18);
+      const calculatedShipping = shippingCharge || (calculatedSubtotal > 500 ? 0 : 50);
+      const calculatedDiscount = discount || 0;
+      calculatedTotal = calculatedSubtotal - calculatedDiscount + calculatedShipping + calculatedTax;
+    }
+
+    // Process items to match schema
+    const processedItems = items.map(item => ({
+      productId: item.productId,
+      productName: item.name || item.productName,
+      variant: {
+        size: item.size || "FREE",
+        color: item.color || "Default",
+        sku: item.sku || "",
+      },
+      quantity: item.quantity,
+      price: item.price,
+      totalPrice: item.price * item.quantity,
+      image: item.image || "",
+    }));
+
+    // Create order
+    const order = await Order.create({
+      userId: req.user._id,
+      items: processedItems,
+      subtotal: calculatedSubtotal,
+      discount: discount || 0,
+      shippingCharge: shippingCharge || (calculatedSubtotal > 500 ? 0 : 50),
+      tax: tax || (calculatedSubtotal * 0.18),
+      totalAmount: calculatedTotal,
+      shippingAddress,
+      billingAddress: billingAddress || shippingAddress,
+      paymentMethod: paymentMethod || "cod",
+      paymentStatus: paymentStatus || "pending",
+      orderStatus: orderStatus || "pending",
+      paymentDetails: paymentDetails || {},
+      customerNotes: customerNotes || "",
+      statusHistory: [{
+        status: orderStatus || "pending",
+        note: "Order created",
+        changedAt: new Date(),
+        changedBy: req.user._id,
+      }],
     });
 
     // Update product stock
-    for (const item of orderItems) {
+    for (const item of processedItems) {
       const product = await Product.findById(item.productId);
-      const variant = product.variants.find(v => 
-        v.size === item.size && v.color === item.color
-      );
-      if (variant) {
-        variant.stock -= item.quantity;
-        await product.save();
+      if (product) {
+        const variant = product.variants?.find(v => 
+          v.size === item.variant.size && v.color === item.variant.color
+        );
+        if (variant) {
+          variant.stock -= item.quantity;
+          await product.save();
+        }
       }
     }
 
-    // Clear cart
-    await Cart.findOneAndUpdate(
-      { userId: req.user._id },
-      { $set: { items: [] } }
-    );
+    // Clear cart only for COD or if not coming from buy now
+    if (paymentMethod === "cod" || !req.body.fromBuyNow) {
+      await Cart.findOneAndUpdate(
+        { userId: req.user._id },
+        { $set: { items: [] } }
+      );
+    }
 
     res.status(201).json(order);
   } catch (error) {
+    console.error("Order creation error:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -291,9 +276,18 @@ export const updatePaymentStatus = async (req, res) => {
 // @desc    Cancel order
 // @route   PUT /api/orders/:id/cancel
 // @access  Private
+// @desc    Cancel order
+// @route   PUT /api/orders/:id/cancel
+// @access  Private
 export const cancelOrder = async (req, res) => {
   try {
     const { reason } = req.body;
+    
+    // Validate order ID
+    if (!req.params.id) {
+      return res.status(400).json({ message: "Order ID is required" });
+    }
+
     const order = await Order.findById(req.params.id);
 
     if (!order) {
@@ -302,37 +296,70 @@ export const cancelOrder = async (req, res) => {
 
     // Check if user is authorized
     if (order.userId.toString() !== req.user._id.toString() && req.user.role !== "admin") {
-      return res.status(403).json({ message: "Not authorized" });
+      return res.status(403).json({ message: "Not authorized to cancel this order" });
     }
 
     // Check if order can be cancelled
-    if (!["pending", "confirmed"].includes(order.orderStatus)) {
+    const cancellableStatuses = ["pending", "confirmed", "processing"]; // Added "processing"
+    
+    if (!cancellableStatuses.includes(order.orderStatus)) {
       return res.status(400).json({ 
-        message: "Order cannot be cancelled at this stage" 
+        message: `Order cannot be cancelled at '${order.orderStatus}' stage. Only orders with status: ${cancellableStatuses.join(', ')} can be cancelled.`
       });
     }
 
+    // Update order status
     order.orderStatus = "cancelled";
-    order.cancellationReason = reason;
+    order.cancellationReason = reason || "Cancelled by customer";
     order.cancelledAt = new Date();
 
-    // Restore stock
+    // Add to status history
+    order.statusHistory.push({
+      status: "cancelled",
+      note: reason || "Cancelled by customer",
+      changedAt: new Date(),
+      changedBy: req.user._id
+    });
+
+    // Restore stock for each item
     for (const item of order.items) {
-      const product = await Product.findById(item.productId);
-      if (product) {
-        const variant = product.variants.find(v => 
-          v.size === item.variant.size && v.color === item.variant.color
-        );
-        if (variant) {
-          variant.stock += item.quantity;
-          await product.save();
+      try {
+        const product = await Product.findById(item.productId);
+        if (product) {
+          // Handle different product structures
+          if (product.variants && product.variants.length > 0) {
+            // If product has variants
+            const variant = product.variants.find(v => 
+              v.size === item.variant?.size && v.color === item.variant?.color
+            );
+            if (variant) {
+              variant.stock = (variant.stock || 0) + item.quantity;
+              await product.save();
+            }
+          } else {
+            // If product doesn't have variants, update main stock
+            product.stock = (product.stock || 0) + item.quantity;
+            await product.save();
+          }
         }
+      } catch (stockError) {
+        console.error(`Error restoring stock for product ${item.productId}:`, stockError);
+        // Continue with cancellation even if stock restore fails
       }
     }
 
     await order.save();
-    res.json({ message: "Order cancelled successfully", order });
+    
+    res.json({ 
+      success: true,
+      message: "Order cancelled successfully", 
+      order 
+    });
+    
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Cancel order error:", error);
+    res.status(500).json({ 
+      message: error.message || "Internal server error while cancelling order" 
+    });
   }
 };

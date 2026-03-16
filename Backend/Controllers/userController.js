@@ -1,203 +1,276 @@
 import User from "../model/User.js";
 import Order from "../model/Order.js";
 
-// @desc    Get all users
-// @route   GET /api/users
-// @access  Private/Admin
-export const getUsers = async (req, res) => {
+/* ══════════════════════════════════════════════════════════
+   PROFILE — controllers for the logged-in user's own data
+   All routes use req.user._id (set by protect middleware)
+══════════════════════════════════════════════════════════ */
+
+// @desc    Get my profile
+// @route   GET /api/users/me
+// @access  Private
+export const getMe = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+    const user = await User.findById(req.user._id)
+      .select("-password -refreshToken");
 
-    const users = await User.find({})
-      .select("-password -refreshToken")
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    const total = await User.countDocuments({});
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// @desc    Update my profile  (name only — email & mobile are locked)
+// @route   PUT /api/users/me
+// @access  Private
+export const updateMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Only allow name update — email & mobileNo are intentionally excluded
+    if (req.body.name !== undefined) user.name = req.body.name.trim();
+
+    const updated = await user.save();
 
     res.json({
-      users,
-      page,
-      pages: Math.ceil(total / limit),
-      total
+      _id:       updated._id,
+      name:      updated.name,
+      email:     updated.email,
+      mobileNo:  updated.mobileNo,
+      role:      updated.role,
+      isVerified:updated.isVerified,
+      addresses: updated.addresses,
     });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Get user by ID
-// @route   GET /api/users/:id
-// @access  Private/Admin
-export const getUserById = async (req, res) => {
+// @desc    Get all my addresses
+// @route   GET /api/users/addresses
+// @access  Private
+export const getAddresses = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id)
-      .select("-password -refreshToken")
-      .populate("addresses")
-      .populate("orders");
-
-    if (user) {
-      res.json(user);
-    } else {
-      res.status(404).json({ message: "User not found" });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    const user = await User.findById(req.user._id).select("addresses");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user.addresses);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Update user
-// @route   PUT /api/users/:id
-// @access  Private/Admin
-export const updateUser = async (req, res) => {
+// @desc    Get single address by ID
+// @route   GET /api/users/address/:addressId
+// @access  Private
+export const getAddressById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.user._id).select("addresses");
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (user) {
-      user.name = req.body.name || user.name;
-      user.email = req.body.email || user.email;
-      user.mobileNo = req.body.mobileNo || user.mobileNo;
-      user.role = req.body.role || user.role;
-      user.isBlocked = req.body.isBlocked !== undefined ? req.body.isBlocked : user.isBlocked;
+    const address = user.addresses.id(req.params.addressId);
+    if (!address) return res.status(404).json({ message: "Address not found" });
 
-      const updatedUser = await user.save();
-
-      res.json({
-        _id: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        mobileNo: updatedUser.mobileNo,
-        role: updatedUser.role,
-        isBlocked: updatedUser.isBlocked
-      });
-    } else {
-      res.status(404).json({ message: "User not found" });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.json(address);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Delete user
-// @route   DELETE /api/users/:id
-// @access  Private/Admin
-export const deleteUser = async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-
-    if (user) {
-      await user.deleteOne();
-      res.json({ message: "User removed successfully" });
-    } else {
-      res.status(404).json({ message: "User not found" });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Block/Unblock user
-// @route   PUT /api/users/:id/toggle-block
-// @access  Private/Admin
-export const toggleUserBlock = async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-
-    if (user) {
-      user.isBlocked = !user.isBlocked;
-      await user.save();
-      
-      res.json({ 
-        message: `User ${user.isBlocked ? 'blocked' : 'unblocked'} successfully`,
-        isBlocked: user.isBlocked
-      });
-    } else {
-      res.status(404).json({ message: "User not found" });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Add user address
+// @desc    Add a new address
 // @route   POST /api/users/address
 // @access  Private
 export const addAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (user) {
-      user.addresses.push(req.body);
-      await user.save();
-      
-      res.json(user.addresses);
-    } else {
-      res.status(404).json({ message: "User not found" });
+    const { address1, address2, city, state, pincode, country, isDefault } = req.body;
+
+    if (!address1) return res.status(400).json({ message: "address1 is required" });
+
+    // If new address is default, unset others
+    if (isDefault) {
+      user.addresses.forEach((a) => { a.isDefault = false; });
     }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+
+    user.addresses.push({ address1, address2, city, state, pincode, country: country || "India", isDefault: !!isDefault });
+    await user.save();
+
+    res.status(201).json(user.addresses);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Update user address
+// @desc    Update an address
 // @route   PUT /api/users/address/:addressId
 // @access  Private
 export const updateAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (user) {
-      const address = user.addresses.id(req.params.addressId);
-      if (address) {
-        Object.assign(address, req.body);
-        await user.save();
-        res.json(user.addresses);
-      } else {
-        res.status(404).json({ message: "Address not found" });
-      }
-    } else {
-      res.status(404).json({ message: "User not found" });
+    const address = user.addresses.id(req.params.addressId);
+    if (!address) return res.status(404).json({ message: "Address not found" });
+
+    const { address1, address2, city, state, pincode, country, isDefault } = req.body;
+
+    if (isDefault) {
+      user.addresses.forEach((a) => { a.isDefault = false; });
     }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+
+    if (address1  !== undefined) address.address1 = address1;
+    if (address2  !== undefined) address.address2 = address2;
+    if (city      !== undefined) address.city      = city;
+    if (state     !== undefined) address.state     = state;
+    if (pincode   !== undefined) address.pincode   = pincode;
+    if (country   !== undefined) address.country   = country;
+    if (isDefault !== undefined) address.isDefault = isDefault;
+
+    await user.save();
+    res.json(user.addresses);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Delete user address
+// @desc    Delete an address
 // @route   DELETE /api/users/address/:addressId
 // @access  Private
 export const deleteAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (user) {
-      user.addresses = user.addresses.filter(
-        addr => addr._id.toString() !== req.params.addressId
-      );
-      await user.save();
-      res.json({ message: "Address removed" });
-    } else {
-      res.status(404).json({ message: "User not found" });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    const before = user.addresses.length;
+    user.addresses = user.addresses.filter(
+      (a) => a._id.toString() !== req.params.addressId
+    );
+
+    if (user.addresses.length === before)
+      return res.status(404).json({ message: "Address not found" });
+
+    await user.save();
+    res.json({ message: "Address removed", addresses: user.addresses });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-// @desc    Get user orders
+// @desc    Set an address as default
+// @route   PUT /api/users/address/:addressId/default
+// @access  Private
+export const setDefaultAddress = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    let found = false;
+    user.addresses.forEach((a) => {
+      if (a._id.toString() === req.params.addressId) {
+        a.isDefault = true;
+        found = true;
+      } else {
+        a.isDefault = false;
+      }
+    });
+
+    if (!found) return res.status(404).json({ message: "Address not found" });
+
+    await user.save();
+    res.json(user.addresses);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// @desc    Get my orders
 // @route   GET /api/users/orders
 // @access  Private
 export const getUserOrders = async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.user._id })
       .sort({ createdAt: -1 })
-      .populate("items.productId", "name images");
+      .populate("items.productId", "name mainImage slug");
 
     res.json(orders);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+/* ══════════════════════════════════════════════════════════
+   ADMIN controllers (kept here for single-file clarity)
+══════════════════════════════════════════════════════════ */
+
+export const getUsers = async (req, res) => {
+  try {
+    const page  = parseInt(req.query.page)  || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip  = (page - 1) * limit;
+
+    const users = await User.find({})
+      .select("-password -refreshToken")
+      .skip(skip).limit(limit).sort({ createdAt: -1 });
+
+    const total = await User.countDocuments({});
+    res.json({ users, page, pages: Math.ceil(total / limit), total });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .select("-password -refreshToken");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const updateUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.name      = req.body.name      ?? user.name;
+    user.email     = req.body.email     ?? user.email;
+    user.mobileNo  = req.body.mobileNo  ?? user.mobileNo;
+    user.role      = req.body.role      ?? user.role;
+    user.isBlocked = req.body.isBlocked ?? user.isBlocked;
+
+    const u = await user.save();
+    res.json({ _id: u._id, name: u.name, email: u.email, mobileNo: u.mobileNo, role: u.role, isBlocked: u.isBlocked });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    await user.deleteOne();
+    res.json({ message: "User removed successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const toggleUserBlock = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    user.isBlocked = !user.isBlocked;
+    await user.save();
+    res.json({ message: `User ${user.isBlocked ? "blocked" : "unblocked"} successfully`, isBlocked: user.isBlocked });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };

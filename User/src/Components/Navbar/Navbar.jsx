@@ -210,10 +210,10 @@ export default function Navbar() {
                     </div>
                     <div className={styles.profileDivider} />
                     {[
+                      { label: "Profile", to: "/profile" },
                       { label: "My Orders",    to: "/my-orders" },
                       { label: "Wishlist",      to: "/wishlist" },
-                      { label: "Style Profile", to: "/style-profile" },
-                      { label: "Settings",      to: "/settings" },
+                      // { label: "Settings",      to: "/settings" },
                     ].map((item) => (
                       <Link key={item.label} to={item.to} className={styles.profileItem} onClick={() => setProfileOpen(false)}>
                         {item.label}
