@@ -432,7 +432,9 @@ export default function PaymentPage() {
               {orderBody.items.map((item, i) => (
                 <div key={i} className={styles.summaryItem}>
                   <div className={styles.summaryImg}>
-                    {item.image ? <img src={item.image} alt={item.name} /> : <span>◆</span>}
+                    <div className={styles.summaryImgInner}>
+                      {item.image ? <img src={item.image} alt={item.name} /> : <span>◆</span>}
+                    </div>
                     <span className={styles.summaryQty}>{item.quantity}</span>
                   </div>
                   <div className={styles.summaryInfo}>

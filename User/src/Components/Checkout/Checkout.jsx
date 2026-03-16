@@ -185,101 +185,51 @@ export default function Checkout() {
   };
 
   /* ── Place order ────────────────────────────────────── */
- // In Checkout.jsx, update the handlePlaceOrder function for COD:
+  const handlePlaceOrder = async () => {
+    if (!selAddr) { setError("Please select a delivery address"); return; }
+    setError("");
+    setLoading(true);
 
-/* ── Place order ────────────────────────────────────── */
-const handlePlaceOrder = async () => {
-  if (!selAddr) { 
-    setError("Please select a delivery address"); 
-    return; 
-  }
-  
-  if (payMethod === "cod" && total > 10000) {
-    setError("Cash on Delivery not available for orders above ₹10,000");
-    return;
-  }
-  
-  setError("");
-  setLoading(true);
+    const body = {
+      items: orderItems.map((i) => ({
+        productId: i.productId,
+        name:      i.name,
+        price:     i.price,
+        size:      i.size,
+        color:     i.color,
+        sku:       i.sku || "",
+        quantity:  i.quantity,
+        image:     i.image,
+      })),
+      shippingAddress: {
+        address1: selAddr.address1,
+        address2: selAddr.address2 || "",
+        city:     selAddr.city,
+        state:    selAddr.state,
+        pincode:  selAddr.pincode,
+        country:  selAddr.country || "India",
+      },
+      paymentMethod: payMethod,
+      couponCode:    coupon || undefined,
+    };
 
-  const body = {
-    items: orderItems.map((i) => ({
-      productId: i.productId,
-      name: i.name,
-      price: i.price,
-      size: i.size,
-      color: i.color,
-      sku: i.sku || "",
-      quantity: i.quantity,
-      image: i.image,
-      totalPrice: i.price * i.quantity,
-    })),
-    subtotal,
-    discount,
-    shippingCharge: shipping,
-    tax,
-    totalAmount: total,
-    shippingAddress: {
-      address1: selAddr.address1,
-      address2: selAddr.address2 || "",
-      city: selAddr.city,
-      state: selAddr.state,
-      pincode: selAddr.pincode,
-      country: selAddr.country || "India",
-    },
-    billingAddress: {
-      address1: selAddr.address1,
-      address2: selAddr.address2 || "",
-      city: selAddr.city,
-      state: selAddr.state,
-      pincode: selAddr.pincode,
-      country: selAddr.country || "India",
-    },
-    paymentMethod: payMethod,
-    paymentStatus: "pending",
-    orderStatus: "pending",
-    couponCode: couponApplied?.code || undefined,
-    customerNotes: "",
-  };
-
-  try {
-    if (payMethod === "cod") {
-      console.log("Creating COD order:", body);
-      const order = await apiFetch("/orders", { 
-        method: "POST", 
-        body: JSON.stringify(body) 
-      });
-      
-      console.log("COD order created:", order);
-      
-      if (!buyNow) {
-        clearCart();
+    try {
+      if (payMethod === "cod") {
+        const order = await apiFetch("/orders", { method: "POST", body: JSON.stringify(body) });
+        if (!buyNow) clearCart();
+        navigate("/order-success", { state: { order }, replace: true });
+      } else {
+        // card — pass order body to Stripe page
+        navigate("/checkout/payment", {
+          state: { orderBody: body, subtotal, shipping, tax, discount, total },
+        });
       }
-      
-      navigate("/order-success", { 
-        state: { order }, 
-        replace: true 
-      });
-    } else {
-      // card — pass order body to Stripe page
-      navigate("/checkout/payment", {
-        state: { 
-          orderBody: body, 
-          subtotal, 
-          shipping, 
-          tax, 
-          discount, 
-          total 
-        },
-      });
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
     }
-  } catch (e) {
-    console.error("Order creation error:", e);
-    setError(e.message || "Failed to create order. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   /* ─────────────────────────────────────────────────── */
   return (
@@ -527,9 +477,11 @@ const handlePlaceOrder = async () => {
             {orderItems.map((item, i) => (
               <div key={i} className={styles.summaryItem}>
                 <div className={styles.summaryItemImg}>
-                  {item.image
-                    ? <img src={item.image} alt={item.name} />
-                    : <span>◆</span>}
+                  <div className={styles.summaryItemImgInner}>
+                    {item.image
+                      ? <img src={item.image} alt={item.name} />
+                      : <span>◆</span>}
+                  </div>
                   <span className={styles.summaryItemQty}>{item.quantity}</span>
                 </div>
                 <div className={styles.summaryItemInfo}>
