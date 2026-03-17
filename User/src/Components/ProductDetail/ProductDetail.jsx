@@ -25,7 +25,6 @@ function discPct(p) {
   return Math.round((p.discountValue / p.basePrice) * 100);
 }
 
-// ── FIX: safely unwrap possibly double-encoded arrays from API ──
 function safeArray(val) {
   if (!val) return [];
   if (Array.isArray(val)) {
@@ -83,7 +82,6 @@ function Gallery({ images, name }) {
 
   return (
     <div className={styles.gallery}>
-      {/* Thumbnails strip */}
       {imgs.length > 1 && (
         <div className={styles.thumbs}>
           {imgs.map((src, i) => (
@@ -98,7 +96,6 @@ function Gallery({ images, name }) {
         </div>
       )}
 
-      {/* Main image */}
       <div className={styles.mainImgWrap}
         onMouseEnter={() => setZoomed(true)}
         onMouseLeave={() => setZoomed(false)}
@@ -117,7 +114,6 @@ function Gallery({ images, name }) {
           onError={e => { e.currentTarget.src = "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80"; }}
         />
 
-        {/* Arrows */}
         {imgs.length > 1 && <>
           <button className={`${styles.gNav} ${styles.gPrev}`}
             onClick={() => setActive(a => (a - 1 + imgs.length) % imgs.length)}>
@@ -133,7 +129,6 @@ function Gallery({ images, name }) {
           </button>
         </>}
 
-        {/* Counter pill */}
         {imgs.length > 1 && (
           <div className={styles.imgCounter}>
             {String(active + 1).padStart(2, "0")}
@@ -142,7 +137,6 @@ function Gallery({ images, name }) {
           </div>
         )}
 
-        {/* Zoom hint */}
         {!zoomed && (
           <div className={styles.zoomHint}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3">
@@ -156,7 +150,6 @@ function Gallery({ images, name }) {
         )}
       </div>
 
-      {/* Dot indicators (mobile) */}
       {imgs.length > 1 && (
         <div className={styles.imgDots}>
           {imgs.map((_, i) => (
@@ -191,7 +184,9 @@ function Toast({ msg, visible }) {
 export default function ProductDetail() {
   const { id }       = useParams();
   const navigate     = useNavigate();
-  const { user }     = useAuthStore();
+
+  // ── AUTH: get isLoggedIn + openAuthModal ──────────────────────────
+  const { user, isLoggedIn, openAuthModal } = useAuthStore();
   const { addToCart, toggleWishlist, isWishlisted } = useCartStore();
 
   const [product,  setProduct]  = useState(null);
@@ -299,7 +294,12 @@ export default function ProductDetail() {
     return true;
   };
 
+  // ── UPDATED: Add to Cart — requires login ─────────────────────────
   const handleAddToCart = () => {
+    if (!isLoggedIn) {
+      openAuthModal("login");
+      return;
+    }
     if (!validateSelection()) return;
     setAdding(true);
     addToCart({
@@ -317,17 +317,13 @@ export default function ProductDetail() {
     }, 600);
   };
 
-  /* ── BUY NOW: validate → navigate to /checkout with buyNow state ── */
+  // ── UPDATED: Buy Now — requires login ────────────────────────────
   const handleBuyNow = () => {
-    if (!validateSelection()) return;
-
-    // If user is not logged in, redirect to login first
-    if (!user) {
-      showToast("Please sign in to place an order");
-      setTimeout(() => navigate("/profile"), 1200);
+    if (!isLoggedIn) {
+      openAuthModal("login");
       return;
     }
-
+    if (!validateSelection()) return;
     navigate("/checkout", {
       state: {
         buyNow: {
@@ -344,7 +340,12 @@ export default function ProductDetail() {
     });
   };
 
+  // ── UPDATED: Wishlist — requires login ───────────────────────────
   const handleWish = () => {
+    if (!isLoggedIn) {
+      openAuthModal("login");
+      return;
+    }
     toggleWishlist(product._id);
     showToast(wishlisted ? "Removed from wishlist" : "Saved to wishlist ♡");
   };
@@ -394,15 +395,12 @@ export default function ProductDetail() {
             </Link>
           )}
 
-          {/* Name */}
           <h1 className={styles.pName}>{product.name}</h1>
 
-          {/* Rating */}
           {product.averageRating > 0 && (
             <Stars rating={product.averageRating} count={product.totalReviews} />
           )}
 
-          {/* Price */}
           <div className={styles.priceBlock}>
             <span className={styles.finalPrice}>{fmtPrice(finalPrice)}</span>
             {hasDis && <span className={styles.origPrice}>{fmtPrice(product.basePrice)}</span>}
@@ -471,7 +469,6 @@ export default function ProductDetail() {
 
           {/* ── Qty + CTA row ── */}
           <div className={styles.qtyCtaRow}>
-            {/* Quantity */}
             <div className={styles.qtyBox}>
               <button className={styles.qtyBtn} onClick={() => setQty(q => Math.max(1, q - 1))}>−</button>
               <span className={styles.qtyNum}>{qty}</span>
@@ -493,7 +490,6 @@ export default function ProductDetail() {
 
           {/* ── Primary action buttons ── */}
           <div className={styles.actionBtns}>
-            {/* Add to Cart */}
             <button
               className={`${styles.addBtn} ${adding ? styles.addBtnLoading : ""}`}
               onClick={handleAddToCart}
@@ -505,7 +501,6 @@ export default function ProductDetail() {
               }
             </button>
 
-            {/* Buy Now */}
             <button
               className={styles.buyNowBtn}
               onClick={handleBuyNow}
@@ -570,7 +565,6 @@ export default function ProductDetail() {
 
         <div className={styles.tabContent}>
 
-          {/* Description tab */}
           {activeTab === "details" && (
             <div className={styles.descTab}>
               <p className={styles.descText}>{product.description}</p>
@@ -601,7 +595,6 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* Reviews tab */}
           {activeTab === "reviews" && (
             <div className={styles.reviewsTab}>
               {product.totalReviews === 0 ? (
@@ -649,7 +642,6 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* Size guide tab */}
           {activeTab === "size-guide" && (
             <div className={styles.sizeTab}>
               <p className={styles.sizeNote}>All measurements in inches. When between sizes, we recommend sizing up.</p>

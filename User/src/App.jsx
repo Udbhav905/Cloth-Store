@@ -19,8 +19,8 @@ import OrderSuccess from "./Pages/Ordersuccess";
 // ── Lazy pages ──────────────────────────────────────────────────────────────
 const Home = lazy(() => import("./Pages/Home"));
 const CategoryPage = lazy(() => import("./Pages/CategoryPage"));
-const ProductDetail = lazy(() =>
-  import("./Components/ProductDetail/ProductDetail")
+const ProductDetail = lazy(
+  () => import("./Components/ProductDetail/ProductDetail"),
 );
 const Cart = lazy(() => import("./Pages/Cart"));
 
@@ -28,6 +28,7 @@ const Cart = lazy(() => import("./Pages/Cart"));
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import MyOrders from "./Pages/MyOrders";
+import ProtectedRoute from "./Components/ProtectedRoute";
 
 // IMPORTANT: create stripe promise OUTSIDE component
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
@@ -69,16 +70,27 @@ const App = () => {
 
       <Suspense fallback={<PageSkeleton />}>
         <Routes>
-
           {/* Core Pages */}
           <Route path="/" element={<Home />} />
           <Route path="/collections" element={<Collections />} />
           <Route path="/collections/:slug" element={<CategoryPage />} />
           <Route path="/products/:id" element={<ProductDetail />} />
-          <Route path="/cart" element={<Cart />} />
-
-          {/* User Pages */}
-          <Route path="/wishlist" element={<Wishlist />} />
+          <Route
+            path="/cart"
+            element={
+              <ProtectedRoute>
+                <Cart />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/wishlist"
+            element={
+              <ProtectedRoute>
+                <Wishlist />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/my-orders" element={<MyOrders />} />
@@ -98,7 +110,6 @@ const App = () => {
 
           {/* Success */}
           <Route path="/order-success" element={<OrderSuccess />} />
-
         </Routes>
       </Suspense>
     </BrowserRouter>

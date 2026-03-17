@@ -1,399 +1,403 @@
-import Product from "../model/Product.js";
+import Product  from "../model/Product.js";
 import Category from "../model/Category.js";
-import Review from "../model/Review.js";
-import { generateSlug } from "../utils/generateSlug.js";
-import { ApiFeatures } from "../utils/apiFeatures.js";
-
-// @desc    Create product
-// @route   POST /api/products
-import cloudinary from "../config/cloudinary.js"; // Make sure you have this
+import Review   from "../model/Review.js";
+import cache    from "../utils/cache.js";
+import { generateSlug }      from "../utils/generateSlug.js";
+import { ApiFeatures }       from "../utils/apiFeatures.js";
 import { uploadToCloudinary } from "../utils/cloudinaryUpload.js";
 
-// @desc    Create product
-// @route   POST /api/products
-// @access  Private/Admin
+/* ─────────────────────────────────────────────
+   HELPERS
+───────────────────────────────────────────── */
+
+// Fields safe to send for list/card views — never send full description, ratings array, etc.
+const LIST_SELECT  = "name slug mainImage basePrice discountType discountValue averageRating totalReviews isBestSeller isNewArrival isFeatured totalStock category subCategory";
+const CARD_SELECT  = "name slug mainImage basePrice discountType discountValue averageRating totalReviews totalStock category";
+
+// Invalidate all product-related cache keys after any write
+const bustProductCache = () => {
+  ["featured", "new-arrivals", "best-sellers"].forEach((k) => cache.del(k));
+};
+
+/* ─────────────────────────────────────────────
+   CREATE PRODUCT
+   POST /api/products
+───────────────────────────────────────────── */
 export const createProduct = async (req, res) => {
   try {
     const { name, category, variants, ...otherData } = req.body;
 
-    // Validate Category
-    const categoryExists = await Category.findById(category);
+    // ── Validate category ──
+    const categoryExists = await Category.findById(category).lean();
     if (!categoryExists) {
       return res.status(400).json({ message: "Category not found" });
     }
 
-    // Generate Slug
     const slug = generateSlug(name);
 
-    // Prevent Duplicate Product
-    const existingProduct = await Product.findOne({
-      $or: [{ name }, { slug }]
-    });
-
+    // ── Duplicate check ──
+    const existingProduct = await Product.findOne(
+      { $or: [{ name }, { slug }] },
+      "_id"          // only fetch _id — fastest possible check
+    ).lean();
     if (existingProduct) {
       return res.status(400).json({ message: "Product already exists" });
     }
 
-    // Upload to Cloudinary (you need to implement this function)
-    
+    // ── Upload images in parallel ──
+    const [mainImageUrl, galleryUrls] = await Promise.all([
+      req.files?.mainImage?.length > 0
+        ? uploadToCloudinary(req.files.mainImage[0].buffer)
+        : Promise.resolve(""),
+      req.files?.galleryImages?.length > 0
+        ? Promise.all(req.files.galleryImages.map((f) => uploadToCloudinary(f.buffer)))
+        : Promise.resolve([]),
+    ]);
 
-    // Upload MAIN IMAGE
-    let mainImageUrl = "";
-    if (req.files?.mainImage?.length > 0) {
-mainImageUrl = await uploadToCloudinary(req.files.mainImage[0].buffer);    }
+    // ── Parse + validate variants ──
+    let parsedVariants = [];
+    if (variants) {
+      parsedVariants = typeof variants === "string" ? JSON.parse(variants) : variants;
+    }
 
-    // Upload GALLERY IMAGES
-    let galleryUrls = [];
-    if (req.files?.galleryImages?.length > 0) {
-      galleryUrls = await Promise.all(
-        req.files.galleryImages.map(file => uploadToCloudinary(file.buffer))
+    // ── Upload variant images in parallel ──
+    if (req.files?.variantImages?.length > 0 && parsedVariants.length > 0) {
+      await Promise.all(
+        parsedVariants.map(async (v, i) => {
+          if (req.files.variantImages[i]) {
+            v.images = [await uploadToCloudinary(req.files.variantImages[i].buffer)];
+          }
+        })
       );
     }
 
-    // Parse Variants (form-data sends string)
-    let parsedVariants = [];
-    if (variants) {
-      parsedVariants = JSON.parse(variants);
-    }
-
-    // Upload Variant Images
-    if (req.files?.variantImages?.length > 0 && parsedVariants.length > 0) {
-      for (let i = 0; i < parsedVariants.length; i++) {
-        if (req.files.variantImages[i]) {
-          const imageUrl = await uploadToCloudinary(req.files.variantImages[i].buffer);
-          parsedVariants[i].images = [imageUrl];
-        }
-      }
-    }
-
-    // Duplicate SKU Check
+    // ── Duplicate SKU check ──
     if (parsedVariants.length > 0) {
-      const skus = parsedVariants.map(v => v.sku);
+      const skus = parsedVariants.map((v) => v.sku);
       if (new Set(skus).size !== skus.length) {
         return res.status(400).json({ message: "Duplicate SKUs found" });
       }
     }
 
-    // Total Stock Calculation
-    const totalStock = parsedVariants.reduce(
-      (sum, v) => sum + (Number(v.stock) || 0),
-      0
-    );
+    const totalStock = parsedVariants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
 
-    // Create Product
     const product = await Product.create({
       ...otherData,
       name,
       slug,
       category,
-      mainImage: mainImageUrl,
+      mainImage:     mainImageUrl,
       galleryImages: galleryUrls,
-      variants: parsedVariants,
-      totalStock
+      variants:      parsedVariants,
+      totalStock,
     });
 
-    res.status(201).json(product);
-
+    bustProductCache();
+    return res.status(201).json(product);
   } catch (error) {
-    console.log("CREATE PRODUCT ERROR:", error);
+    console.error("CREATE PRODUCT ERROR:", error);
     res.status(500).json({ message: error.message });
   }
 };
 
-// ... rest of your controller functions remain the same
-// @desc    Get all products
-// @route   GET /api/products
-// @access  Public
+/* ─────────────────────────────────────────────
+   GET ALL PRODUCTS
+   GET /api/products
+───────────────────────────────────────────── */
 export const getProducts = async (req, res) => {
   try {
-    const features = new ApiFeatures(Product.find(), req.query)
+    // ── Build base query with lean ──
+    const baseQuery = Product.find().lean();
+
+    const features = new ApiFeatures(baseQuery, req.query)
       .filter()
       .search()
       .sort()
       .paginate();
 
-    const products = await features.query
-      .populate("category", "name slug")
-      .populate("subCategory", "name slug");
+    // ── Run query + count in parallel ──
+    const [products, totalCount] = await Promise.all([
+      features.query
+        .populate("category",    "name slug")
+        .populate("subCategory", "name slug")
+        .select(LIST_SELECT),
+      Product.countDocuments(features.filterQuery || {}),
+    ]);
 
-    const totalCount = await Product.countDocuments();
+    const limit = parseInt(req.query.limit) || 10;
+    const page  = parseInt(req.query.page)  || 1;
 
-    res.json({
+    return res.json({
       success: true,
-      count: products.length,
-      total: totalCount,
-      page: parseInt(req.query.page) || 1,
-      pages: Math.ceil(totalCount / (parseInt(req.query.limit) || 10)),
-      products
+      count:   products.length,
+      total:   totalCount,
+      page,
+      pages:   Math.ceil(totalCount / limit),
+      products,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Get product by ID
-// @route   GET /api/products/:id
-// @access  Public
+/* ─────────────────────────────────────────────
+   GET PRODUCT BY ID
+   GET /api/products/:id
+───────────────────────────────────────────── */
 export const getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id)
-      .populate("category", "name slug")
-      .populate("subCategory", "name slug");
-
-    if (product) {
-      // Get reviews for this product
-      const reviews = await Review.find({ 
-        productId: product._id,
-        isApproved: true 
-      }).populate("userId", "name");
-
-      res.json({
-        ...product.toObject(),
-        reviews
-      });
-    } else {
-      res.status(404).json({ message: "Product not found" });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Get product by slug
-// @route   GET /api/products/slug/:slug
-// @access  Public
-export const getProductBySlug = async (req, res) => {
-  try {
-    const product = await Product.findOne({ slug: req.params.slug })
-      .populate("category", "name slug")
-      .populate("subCategory", "name slug");
-
-    if (product) {
-      // Get reviews
-      const reviews = await Review.find({ 
-        productId: product._id,
-        isApproved: true 
-      }).populate("userId", "name");
-
-      // Get related products
-      const relatedProducts = await Product.find({
-        category: product.category,
-        _id: { $ne: product._id },
-        isActive: true
-      })
-      .limit(4)
-      .select("name slug mainImage basePrice discountType discountValue variants");
-
-      res.json({
-        ...product.toObject(),
-        reviews,
-        relatedProducts
-      });
-    } else {
-      res.status(404).json({ message: "Product not found" });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Update product
-// @route   PUT /api/products/:id
-// @access  Private/Admin
-// @desc    Update product
-// @route   PUT /api/products/:id
-// @access  Private/Admin
-export const updateProduct = async (req, res) => {
-  try {
-    const product = await Product.findById(req.params.id);
+    // ── Fetch product + reviews in parallel ──
+    const [product, reviews] = await Promise.all([
+      Product.findById(req.params.id)
+        .lean()
+        .populate("category",    "name slug")
+        .populate("subCategory", "name slug"),
+      Review.find({ productId: req.params.id, isApproved: true })
+        .lean()
+        .populate("userId", "name")
+        .select("userId rating review createdAt")
+        .sort({ createdAt: -1 })
+        .limit(20),
+    ]);
 
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    console.log("Update product - req.body:", req.body);
-    console.log("Update product - req.files:", req.files);
+    return res.json({ product: { ...product, reviews } });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
-    // Handle FormData - req.body might be empty if using FormData without proper middleware
-    // The data will be in req.body after multer processes it
+/* ─────────────────────────────────────────────
+   GET PRODUCT BY SLUG
+   GET /api/products/slug/:slug
+───────────────────────────────────────────── */
+export const getProductBySlug = async (req, res) => {
+  try {
+    const product = await Product.findOne({ slug: req.params.slug })
+      .lean()
+      .populate("category",    "name slug")
+      .populate("subCategory", "name slug");
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // ── Fetch reviews + related products in parallel ──
+    const [reviews, relatedProducts] = await Promise.all([
+      Review.find({ productId: product._id, isApproved: true })
+        .lean()
+        .populate("userId", "name")
+        .select("userId rating review createdAt")
+        .sort({ createdAt: -1 })
+        .limit(20),
+      Product.find({
+        category: product.category._id,
+        _id:      { $ne: product._id },
+        isActive: true,
+      })
+        .lean()
+        .select(CARD_SELECT)
+        .limit(4),
+    ]);
+
+    return res.json({ ...product, reviews, relatedProducts });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/* ─────────────────────────────────────────────
+   UPDATE PRODUCT
+   PUT /api/products/:id
+───────────────────────────────────────────── */
+export const updateProduct = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
     const { name, variants, ...otherData } = req.body;
 
-    // If req.body is empty but we have form data, parse it
-    let productData = otherData;
-    
-    // Parse variants if it's a string
-    let parsedVariants = variants;
-    if (variants && typeof variants === 'string') {
-      try {
-        parsedVariants = JSON.parse(variants);
-      } catch (e) {
-        console.error("Error parsing variants:", e);
-      }
-    }
-
-    // Update slug if name changed
+    // ── Update slug if name changed ──
     if (name && name !== product.name) {
+      product.name = name;
       product.slug = generateSlug(name);
-      product.name = name;
-    } else if (name) {
-      product.name = name;
     }
 
-    // Handle image uploads if present
+    // ── Upload new images in parallel ──
     if (req.files) {
-      // Handle main image update
-      if (req.files.mainImage && req.files.mainImage.length > 0) {
-        const mainImageUrl = await uploadToCloudinary(req.files.mainImage[0].buffer);
-        product.mainImage = mainImageUrl;
-      }
+      const [mainImageUrl, galleryUrls] = await Promise.all([
+        req.files.mainImage?.length > 0
+          ? uploadToCloudinary(req.files.mainImage[0].buffer)
+          : Promise.resolve(null),
+        req.files.galleryImages?.length > 0
+          ? Promise.all(req.files.galleryImages.map((f) => uploadToCloudinary(f.buffer)))
+          : Promise.resolve(null),
+      ]);
 
-      // Handle gallery images update
-      if (req.files.galleryImages && req.files.galleryImages.length > 0) {
-        const galleryUrls = await Promise.all(
-          req.files.galleryImages.map(file => uploadToCloudinary(file.buffer))
-        );
-        product.galleryImages = [...(product.galleryImages || []), ...galleryUrls];
-      }
+      if (mainImageUrl)  product.mainImage     = mainImageUrl;
+      if (galleryUrls)   product.galleryImages = [...(product.galleryImages || []), ...galleryUrls];
     }
 
-    // Check for duplicate SKUs in variants
-    if (parsedVariants && parsedVariants.length > 0) {
-      const skus = parsedVariants.map(v => v.sku);
-      const uniqueSkus = new Set(skus);
-      if (uniqueSkus.size !== skus.length) {
+    // ── Parse + validate variants ──
+    if (variants) {
+      const parsedVariants = typeof variants === "string" ? JSON.parse(variants) : variants;
+
+      const skus = parsedVariants.map((v) => v.sku);
+      if (new Set(skus).size !== skus.length) {
         return res.status(400).json({ message: "Duplicate SKUs found in variants" });
       }
-      
-      product.variants = parsedVariants;
-      
-      // Recalculate total stock
+
+      product.variants   = parsedVariants;
       product.totalStock = parsedVariants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
     }
 
-    // Update other fields from productData
-    Object.keys(productData).forEach(key => {
-      if (productData[key] !== undefined && productData[key] !== null) {
-        // Handle nested objects like returnPolicy
-        if (key === 'returnPolicy' && typeof productData[key] === 'string') {
-          try {
-            product[key] = JSON.parse(productData[key]);
-          } catch {
-            product[key] = productData[key];
-          }
-        }
-        // Handle arrays that might be JSON strings
-        else if (['occasion', 'season', 'metaKeywords'].includes(key) && typeof productData[key] === 'string') {
-          try {
-            product[key] = JSON.parse(productData[key]);
-          } catch {
-            product[key] = productData[key].split(',').map(item => item.trim());
-          }
-        }
-        else {
-          product[key] = productData[key];
-        }
+    // ── Apply scalar + parsed fields ──
+    const JSON_FIELDS  = ["returnPolicy"];
+    const ARRAY_FIELDS = ["occasion", "season", "metaKeywords"];
+
+    Object.entries(otherData).forEach(([key, value]) => {
+      if (value === undefined || value === null) return;
+
+      if (JSON_FIELDS.includes(key) && typeof value === "string") {
+        try { product[key] = JSON.parse(value); } catch { product[key] = value; }
+      } else if (ARRAY_FIELDS.includes(key) && typeof value === "string") {
+        try { product[key] = JSON.parse(value); }
+        catch { product[key] = value.split(",").map((s) => s.trim()); }
+      } else {
+        product[key] = value;
       }
     });
 
     const updatedProduct = await product.save();
-    res.json(updatedProduct);
+
+    bustProductCache();
+    return res.json(updatedProduct);
   } catch (error) {
     console.error("Update product error:", error);
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Delete product
-// @route   DELETE /api/products/:id
-// @access  Private/Admin
+/* ─────────────────────────────────────────────
+   DELETE PRODUCT
+   DELETE /api/products/:id
+───────────────────────────────────────────── */
 export const deleteProduct = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findByIdAndDelete(req.params.id).lean();
 
-    if (product) {
-      await product.deleteOne();
-      res.json({ message: "Product removed successfully" });
-    } else {
-      res.status(404).json({ message: "Product not found" });
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
     }
+
+    bustProductCache();
+    return res.json({ message: "Product removed successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Get featured products
-// @route   GET /api/products/featured
-// @access  Public
+/* ─────────────────────────────────────────────
+   GET FEATURED PRODUCTS
+   GET /api/products/featured
+───────────────────────────────────────────── */
 export const getFeaturedProducts = async (req, res) => {
   try {
-    const products = await Product.find({ 
-      isFeatured: true, 
-      isActive: true 
-    })
-    .limit(8)
-    .populate("category", "name slug")
-    .select("name slug mainImage basePrice discountType discountValue variants");
+    const CACHE_KEY = "featured";
+    const cached = cache.get(CACHE_KEY);
+    if (cached) return res.json(cached);
 
-    res.json(products);
+    const products = await Product.find({ isFeatured: true, isActive: true })
+      .lean()
+      .select(LIST_SELECT)
+      .populate("category", "name slug")
+      .sort({ createdAt: -1 })
+      .limit(12);
+
+    cache.set(CACHE_KEY, products);
+    return res.json(products);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Get new arrivals
-// @route   GET /api/products/new-arrivals
-// @access  Public
+/* ─────────────────────────────────────────────
+   GET NEW ARRIVALS
+   GET /api/products/new-arrivals
+───────────────────────────────────────────── */
 export const getNewArrivals = async (req, res) => {
   try {
-    const products = await Product.find({ 
-      isNewArrival: true, 
-      isActive: true 
-    })
-    .limit(8)
-    .sort({ createdAt: -1 })
-    .populate("category", "name slug")
-    .select("name slug mainImage basePrice discountType discountValue variants");
+    const CACHE_KEY = "new-arrivals";
+    const cached = cache.get(CACHE_KEY);
+    if (cached) return res.json(cached);
 
-    res.json(products);
+    const products = await Product.find({ isNewArrival: true, isActive: true })
+      .lean()
+      .select(LIST_SELECT)
+      .populate("category", "name slug")
+      .sort({ createdAt: -1 })
+      .limit(12);
+
+    cache.set(CACHE_KEY, products);
+    return res.json(products);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Get best sellers
-// @route   GET /api/products/best-sellers
-// @access  Public
+/* ─────────────────────────────────────────────
+   GET BEST SELLERS
+   GET /api/products/best-sellers
+───────────────────────────────────────────── */
 export const getBestSellers = async (req, res) => {
   try {
-    const products = await Product.find({ 
-      isBestSeller: true, 
-      isActive: true 
-    })
-    .limit(8)
-    .populate("category", "name slug")
-    .select("name slug mainImage basePrice discountType discountValue variants");
+    const CACHE_KEY = "best-sellers";
+    const cached = cache.get(CACHE_KEY);
+    if (cached) return res.json(cached);
 
-    res.json(products);
+    const products = await Product.find({ isBestSeller: true, isActive: true })
+      .lean()
+      .select(LIST_SELECT)
+      .populate("category", "name slug")
+      .sort({ totalSold: -1 })
+      .limit(12);
+
+    cache.set(CACHE_KEY, products);
+    return res.json(products);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-// ───────────────────────────────────────────────────────────── *
+
+/* ─────────────────────────────────────────────
+   SEARCH PRODUCTS
+   GET /api/products/search
+───────────────────────────────────────────── */
 export const searchProducts = async (req, res) => {
   try {
     const {
       q        = "",
       minPrice,
       maxPrice,
-      page     = 1,
-      limit    = 40,
+      page  = 1,
+      limit = 40,
     } = req.query;
 
     const filter = { isActive: true };
 
-    /* ── Natural language price parsing ──────────────────────
-       Supports: "under 500", "below 1000", "above 300", "over 200"
-    ──────────────────────────────────────────────────────── */
+    // ── Price filter ──
+    if (minPrice || maxPrice) {
+      filter.basePrice = {};
+      if (minPrice) filter.basePrice.$gte = Number(minPrice);
+      if (maxPrice) filter.basePrice.$lte = Number(maxPrice);
+    }
+
+    // ── Natural language price parsing ──
     if (q) {
       const underMatch = q.match(/(?:under|below|less\s*than)\s*₹?\$?(\d+)/i);
       const overMatch  = q.match(/(?:over|above|more\s*than)\s*₹?\$?(\d+)/i);
@@ -401,93 +405,75 @@ export const searchProducts = async (req, res) => {
       if (overMatch)  filter.basePrice = { ...(filter.basePrice || {}), $gte: parseInt(overMatch[1]) };
     }
 
-    /* ── Explicit minPrice / maxPrice params ─────────────── */
-    if (minPrice) filter.basePrice = { ...(filter.basePrice || {}), $gte: Number(minPrice) };
-    if (maxPrice) filter.basePrice = { ...(filter.basePrice || {}), $lte: Number(maxPrice) };
+    const skip    = (Number(page) - 1) * Number(limit);
+    const keyword = q
+      .replace(/(?:under|below|less\s*than|over|above|more\s*than)\s*₹?\$?\d+/gi, "")
+      .trim()
+      .toLowerCase();
 
-    /* ── Text search (uses MongoDB text index on name + description) ──
-       Only apply $text when query is NOT purely a price expression
-    ──────────────────────────────────────────────────────── */
-    const isPriceOnly = q
-      ? /^(under|below|above|over|less|more|₹|\$|\d)/.test(q.trim().toLowerCase())
-      : true;
-
-    if (q.trim() && !isPriceOnly) {
-      filter.$text = { $search: q.trim() };
+    // ── Use $text index when keyword exists ──
+    if (keyword) {
+      filter.$text = { $search: keyword };
     }
 
-    const skip = (Number(page) - 1) * Number(limit);
+    // ── Single DB query with lean ──
+    const [products, total] = await Promise.all([
+      Product.find(filter)
+        .lean()
+        .select(LIST_SELECT)
+        .populate("category",    "name slug")
+        .populate("subCategory", "name slug")
+        .sort(keyword ? { score: { $meta: "textScore" } } : { createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
+      Product.countDocuments(filter),
+    ]);
 
-    /* ── Main DB query ──────────────────────────────────── */
-    let products = await Product.find(filter)
-      .populate("category",    "name slug")
-      .populate("subCategory", "name slug")
-      .sort(
-        filter.$text
-          ? { score: { $meta: "textScore" } }
-          : { createdAt: -1 }
-      )
-      .skip(skip)
-      .limit(Number(limit))
-      .lean();
+    // ── Post-filter for category/brand/fabric matches missed by $text ──
+    let results = products;
+    if (keyword) {
+      const directMatches = new Set(products.map((p) => p._id.toString()));
 
-    /* ── Post-filter: category / brand / fabric / occasion ──
-       MongoDB $text index does NOT cover populated refs like
-       category.name, so we do a second pass here.
-    ──────────────────────────────────────────────────────── */
-    if (q.trim()) {
-      const term = q.trim().toLowerCase();
-      // Strip price phrases to get pure keyword
-      const keyword = term
-        .replace(/(?:under|below|less\s*than|over|above|more\s*than)\s*₹?\$?\d+/gi, "")
-        .trim();
+      // Only run the extra query if the keyword might match category/brand
+      const extraProducts = await Product.find({
+        isActive: true,
+        ...(filter.basePrice ? { basePrice: filter.basePrice } : {}),
+        $or: [
+          { brand:   { $regex: keyword, $options: "i" } },
+          { fabric:  { $regex: keyword, $options: "i" } },
+          { occasion:{ $regex: keyword, $options: "i" } },
+          { season:  { $regex: keyword, $options: "i" } },
+        ],
+      })
+        .lean()
+        .select(LIST_SELECT)
+        .populate("category",    "name slug")
+        .populate("subCategory", "name slug")
+        .limit(Number(limit));
 
-      if (keyword) {
-        // Filter already-fetched products by keyword
-        products = products.filter((p) =>
-          p.name?.toLowerCase().includes(keyword) ||
-          p.category?.name?.toLowerCase().includes(keyword) ||
-          p.subCategory?.name?.toLowerCase().includes(keyword) ||
-          p.slug?.toLowerCase().includes(keyword) ||
-          p.brand?.toLowerCase().includes(keyword) ||
-          p.fabric?.toLowerCase().includes(keyword) ||
-          (p.occasion || []).some((o) => o.toLowerCase().includes(keyword)) ||
-          (p.season   || []).some((s) => s.toLowerCase().includes(keyword)) ||
-          (p.metaKeywords || []).some((k) => k.toLowerCase().includes(keyword))
-        );
+      // Merge — also check populated category name
+      const merged = extraProducts.filter(
+        (p) =>
+          !directMatches.has(p._id.toString()) &&
+          (p.category?.name?.toLowerCase().includes(keyword) ||
+            p.subCategory?.name?.toLowerCase().includes(keyword) ||
+            p.brand?.toLowerCase().includes(keyword) ||
+            p.fabric?.toLowerCase().includes(keyword) ||
+            (p.occasion || []).some((o) => o.toLowerCase().includes(keyword)) ||
+            (p.season   || []).some((s) => s.toLowerCase().includes(keyword)))
+      );
 
-        /* ── Extra pass: fetch products whose category NAME matches
-           but were missed by $text (text index doesn't cover refs)
-        ──────────────────────────────────────────────────────────── */
-        const fetchedIds = new Set(products.map((p) => p._id.toString()));
-
-        const categoryMatches = await Product.find({
-          isActive: true,
-          ...(filter.basePrice ? { basePrice: filter.basePrice } : {}),
-        })
-          .populate("category",    "name slug")
-          .populate("subCategory", "name slug")
-          .lean()
-          .then((all) =>
-            all.filter(
-              (p) =>
-                p.category?.name?.toLowerCase().includes(keyword) &&
-                !fetchedIds.has(p._id.toString())
-            )
-          );
-
-        products = [...products, ...categoryMatches];
-      }
+      results = [...products, ...merged];
     }
 
-    res.status(200).json({
-      products,
-      total: products.length,
-      page:  Number(page),
-      limit: Number(limit),
+    return res.status(200).json({
+      products: results,
+      total:    results.length,
+      page:     Number(page),
+      limit:    Number(limit),
     });
-  } catch (err) {
-    console.error("[searchProducts] error:", err);
-    res.status(500).json({ message: err.message });
+  } catch (error) {
+    console.error("[searchProducts] error:", error);
+    res.status(500).json({ message: error.message });
   }
 };
