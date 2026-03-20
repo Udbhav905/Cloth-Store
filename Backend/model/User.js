@@ -4,63 +4,61 @@ import jwt from "jsonwebtoken";
 
 /* ─────────────────────────────────────────────
    Address Schema
-   Added: isDefault (needed by profile/checkout)
-   Added: _id: true  (needed by address.id() in profileController)
 ───────────────────────────────────────────── */
 const addressSchema = new mongoose.Schema({
-  address1: { type: String, required: true, trim: true },
-  address2: { type: String, trim: true },
-  city:     String,
-  state:    String,
-  pincode:  String,
-  country:  { type: String, default: "India" },
-  isDefault: { type: Boolean, default: false },   // ← added for profile/checkout
-}, { _id: true });  // ← changed to true so address.id() works in profileController
+  address1:  { type: String, required: true, trim: true },
+  address2:  { type: String, trim: true },
+  city:      String,
+  state:     String,
+  pincode:   String,
+  country:   { type: String, default: "India" },
+  isDefault: { type: Boolean, default: false },
+}, { _id: true });
 
 /* ─────────────────────────────────────────────
-   Cart Item Schema (unchanged)
+   Cart Item Schema
 ───────────────────────────────────────────── */
 const cartItemSchema = new mongoose.Schema({
   productId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Product",
-    required: true
+    required: true,
   },
   name:     String,
   price:    Number,
   size:     String,
   color:    String,
   quantity: { type: Number, default: 1 },
-  image:    String
+  image:    String,
 }, { _id: false });
 
 /* ─────────────────────────────────────────────
-   User Schema (unchanged from your original)
+   User Schema
 ───────────────────────────────────────────── */
 const userSchema = new mongoose.Schema({
 
   name: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
   },
 
   mobileNo: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
   },
 
   email: {
     type: String,
     required: true,
     unique: true,
-    lowercase: true
+    lowercase: true,
   },
 
   password: {
     type: String,
-    required: true
+    required: true,
   },
 
   addresses: [addressSchema],
@@ -68,89 +66,73 @@ const userSchema = new mongoose.Schema({
 
   orders: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Order"
+    ref: "Order",
   }],
 
   role: {
     type: String,
     enum: ["admin", "user"],
-    default: "user"
+    default: "user",
   },
 
   refreshToken: String,
 
   isVerified: {
     type: Boolean,
-    default: false
+    default: false,
   },
 
   isBlocked: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
+
+  lastLogin: Date,
 
 }, { timestamps: true });
 
 
 /* ─────────────────────────────────────────────
-   Pre-save hook — FIXED
-
-   Original problems:
-   1. `next` was not declared as a parameter → "next is not a function"
-   2. `return next(new Error(...))` called before isModified check
-   3. `return 0` instead of `return next()` when password not modified
-   4. `next()` was commented out at the end → Mongoose hung on every save
-
-   Fix: declare `next`, check isModified first, always call next()
+   Pre-save Hook — Hash password only when modified
+   FIX: `next` properly declared, always called
 ───────────────────────────────────────────── */
-userSchema.pre("save", async function (next) {   // ← next MUST be declared here
-
-  // If password was not changed, skip hashing entirely
-  if (!this.isModified("password")) {
-    return next();                               // ← always call next()
-  }
-
-  // Password was modified — hash it
-  try {
-    this.password = await bcrypt.hash(this.password, 10);
-    next();                                      // ← call next() after hashing
-  } catch (err) {
-    next(err);                                   // ← forward any bcrypt error
-  }
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
+  this.password = await bcrypt.hash(this.password, 10);
 });
 
-
 /* ─────────────────────────────────────────────
-   Methods (unchanged from your original)
+   Instance Methods
 ───────────────────────────────────────────── */
 
-// ✅ Password comparison
+// Compare entered password with hashed password
 userSchema.methods.comparePassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// ✅ Generate access token
+// Generate short-lived access token
+// Uses JWT_SECRET as fallback so authController.js works too
 userSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     {
       _id:   this._id,
       email: this.email,
-      role:  this.role
+      role:  this.role,
     },
-    process.env.ACCESS_TOKEN_SECRET,
+    process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET,
     {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "15m"
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "15m",
     }
   );
 };
 
-// ✅ Generate refresh token
+// Generate long-lived refresh token
 userSchema.methods.generateRefreshToken = function () {
   return jwt.sign(
     { _id: this._id },
-    process.env.REFRESH_TOKEN_SECRET,
+    process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET,
     {
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRY || "7d"
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRY || "7d",
     }
   );
 };
