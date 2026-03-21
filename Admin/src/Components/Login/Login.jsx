@@ -4,8 +4,8 @@ import styles from './Login.module.css';
 
 const Login = ({ onLogin }) => {
   const [credentials, setCredentials] = useState({ email: '', password: '' });
-  const [error, setError]           = useState('');
-  const [isLoading, setIsLoading]   = useState(false);
+  const [error, setError]             = useState('');
+  const [isLoading, setIsLoading]     = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -28,20 +28,41 @@ const Login = ({ onLogin }) => {
 
       const data = await response.json();
 
-      if (!response.ok) throw new Error(data.message || 'Login failed');
+      // ── Debug helper (remove in production) ──────────────────────────
+      console.log('Login response:', data);
+      // ─────────────────────────────────────────────────────────────────
 
-      if (data.role !== 'admin' && data.role !== 'superadmin') {
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      // The controller returns { user: { _id, name, email, role }, token }
+      // So we read from data.user, not data directly
+      const user = data.user;
+
+      if (!user) {
+        throw new Error('Unexpected response from server');
+      }
+
+      if (user.role !== 'admin' && user.role !== 'superadmin') {
         throw new Error('Unauthorized: Admin access only');
       }
 
+      // Persist user info and token
       localStorage.setItem('admin', JSON.stringify({
-        _id: data._id, name: data.name, email: data.email, role: data.role,
+        _id:   user._id,
+        name:  user.name,
+        email: user.email,
+        role:  user.role,
       }));
 
-      if (data.token) localStorage.setItem('token', data.token);
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
 
-      onLogin(data);
+      onLogin(user);
       navigate('/dashboard');
+
     } catch (err) {
       setError(err.message || 'Invalid email or password');
     } finally {
@@ -56,7 +77,6 @@ const Login = ({ onLogin }) => {
         {/* ── Logo Section ── */}
         <div className={styles.logoSection}>
           <div className={styles.logoWrapper}>
-            {/* Needle & thread mark */}
             <svg className={styles.logoIcon} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 3C9.5 3 7.5 5 7.5 7.5C7.5 10 9.5 12 12 12C14.5 12 16.5 10 16.5 7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
               <path d="M12 12V21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>

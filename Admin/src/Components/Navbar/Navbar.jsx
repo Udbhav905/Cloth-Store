@@ -53,7 +53,7 @@ const Navbar = ({ onLogout, user, onMenuToggle, sidebarOpen }) => {
           </button>
 
           {/* Search */}
-          <div className={`${styles.searchWrap} ${searchFocus ? styles.searchFocused : ''}`}>
+          {/* <div className={`${styles.searchWrap} ${searchFocus ? styles.searchFocused : ''}`}>
             <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none">
               <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.5"/>
               <path d="M16 16L21 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
@@ -66,7 +66,7 @@ const Navbar = ({ onLogout, user, onMenuToggle, sidebarOpen }) => {
               onBlur={() => setSearchFocus(false)}
             />
             <span className={styles.searchShortcut}>⌘K</span>
-          </div>
+          </div> */}
         </div>
 
         {/* ── Centre wordmark ── */}

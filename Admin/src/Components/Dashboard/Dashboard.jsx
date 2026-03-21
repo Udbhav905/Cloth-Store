@@ -1,36 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from './Dashboard.module.css';
 
-const stats = [
-  { title: 'Total Revenue',  value: '$45,678', change: '+12.5%', positive: true,  icon: '◈', sub: 'vs last month' },
-  { title: 'Total Orders',   value: '1,234',   change: '+8.2%',  positive: true,  icon: '◻', sub: 'vs last month' },
-  { title: 'Products',       value: '567',     change: '+3.1%',  positive: true,  icon: '◇', sub: 'in catalogue' },
-  { title: 'Customers',      value: '892',     change: '+15.3%', positive: true,  icon: '◉', sub: 'registered' },
-];
-
-const recentOrders = [
-  { id: '#LX-1234', customer: 'John Doe',      product: 'Silk Evening Gown',     amount: '$234', status: 'Delivered' },
-  { id: '#LX-1235', customer: 'Jane Smith',     product: 'Cashmere Overcoat',     amount: '$567', status: 'Processing' },
-  { id: '#LX-1236', customer: 'Robert Johnson', product: 'Merino Wool Blazer',    amount: '$123', status: 'Shipped' },
-  { id: '#LX-1237', customer: 'Alice Brûlée',   product: 'Embroidered Shawl',     amount: '$890', status: 'Pending' },
-  { id: '#LX-1238', customer: 'Marcus Wei',     product: 'Linen Summer Suit',     amount: '$340', status: 'Delivered' },
-];
-
-const statusMeta = {
-  Delivered:  { label: 'Delivered',  symbol: '✦' },
-  Processing: { label: 'Processing', symbol: '◌' },
-  Shipped:    { label: 'Shipped',    symbol: '△' },
-  Pending:    { label: 'Pending',    symbol: '◯' },
-};
-
+/* ─────────────────────────────────────────────
+   Animated counter
+───────────────────────────────────────────── */
 const Counter = ({ target, prefix = '', suffix = '' }) => {
   const [count, setCount] = useState(0);
-  const numeric = parseFloat(target.replace(/[^0-9.]/g, ''));
+  const numeric = parseFloat(String(target).replace(/[^0-9.]/g, '')) || 0;
 
   useEffect(() => {
+    if (numeric === 0) { setCount(0); return; }
     let start = 0;
     const steps = 60;
-    const inc = numeric / steps;
+    const inc   = numeric / steps;
     const timer = setInterval(() => {
       start += inc;
       if (start >= numeric) { setCount(numeric); clearInterval(timer); }
@@ -39,78 +22,205 @@ const Counter = ({ target, prefix = '', suffix = '' }) => {
     return () => clearInterval(timer);
   }, [numeric]);
 
-  const formatted = target.includes(',')
-    ? count.toLocaleString()
-    : count.toLocaleString();
-
-  return <>{prefix}{formatted}{suffix}</>;
+  return <>{prefix}{count.toLocaleString()}{suffix}</>;
 };
 
-const Dashboard = ({ user }) => {
-  const userName = user?.name || 'Admin';
-  const [mounted, setMounted] = useState(false);
+/* ─────────────────────────────────────────────
+   Skeleton loaders
+───────────────────────────────────────────── */
+const SkeletonCard = () => (
+  <div className={`${styles.statCard} ${styles.skeletonCard}`}>
+    <div className={styles.skLine} style={{ width: '40%', height: 10 }} />
+    <div className={styles.skLine} style={{ width: '55%', height: 30, margin: '14px 0 10px' }} />
+    <div className={styles.skLine} style={{ width: '70%', height: 10 }} />
+  </div>
+);
 
+const SkeletonRow = () => (
+  <tr>
+    {[80, 110, 150, 65, 85].map((w, i) => (
+      <td key={i} style={{ padding: '14px 12px' }}>
+        <div className={styles.skLine} style={{ width: w, height: 11 }} />
+      </td>
+    ))}
+  </tr>
+);
+
+/* ─────────────────────────────────────────────
+   Status badge config
+───────────────────────────────────────────── */
+const STATUS_META = {
+  delivered:        { label: 'Delivered',        symbol: '✦', cls: 'delivered'  },
+  processing:       { label: 'Processing',       symbol: '◌', cls: 'processing' },
+  shipped:          { label: 'Shipped',          symbol: '△', cls: 'shipped'    },
+  pending:          { label: 'Pending',          symbol: '◯', cls: 'pending'    },
+  confirmed:        { label: 'Confirmed',        symbol: '✓', cls: 'confirmed'  },
+  out_for_delivery: { label: 'Out for Delivery', symbol: '⟳', cls: 'shipped'    },
+  cancelled:        { label: 'Cancelled',        symbol: '✕', cls: 'cancelled'  },
+  returned:         { label: 'Returned',         symbol: '↩', cls: 'cancelled'  },
+  refunded:         { label: 'Refunded',         symbol: '↺', cls: 'cancelled'  },
+};
+
+/* ─────────────────────────────────────────────
+   Stat card config — route added to each card
+───────────────────────────────────────────── */
+const STAT_CONFIG = [
+  { key: 'revenue',   title: 'Total Revenue', icon: '◈', sub: 'vs last month', prefix: '₹', route: '/analytics' },
+  { key: 'orders',    title: 'Total Orders',  icon: '◻', sub: 'vs last month', prefix: '',  route: '/orders'    },
+  { key: 'products',  title: 'Products',      icon: '◇', sub: 'in catalogue',  prefix: '',  route: '/products'  },
+  { key: 'customers', title: 'Customers',     icon: '◉', sub: 'registered',    prefix: '',  route: '/customers' },
+];
+
+/* ─────────────────────────────────────────────
+   Quick actions — each wired to a real route
+───────────────────────────────────────────── */
+const QUICK_ACTIONS = [
+  { label: 'Add Product',   route: '/products'  },
+  { label: 'View Reports',  route: '/analytics' },
+  { label: 'Manage Orders', route: '/orders'    },
+];
+
+/* ─────────────────────────────────────────────
+   Dashboard Component
+───────────────────────────────────────────── */
+const Dashboard = ({ user }) => {
+  const navigate = useNavigate();
+  const userName = user?.name || 'Admin';
+
+  const [mounted,         setMounted]         = useState(false);
+  const [loading,         setLoading]         = useState(true);
+  const [error,           setError]           = useState(null);
+  const [stats,           setStats]           = useState(null);
+  const [recentOrders,    setRecentOrders]    = useState([]);
+  const [statusBreakdown, setStatusBreakdown] = useState({});
+
+  /* mount animation */
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
   }, []);
 
+  /* fetch data — sends both cookie and Bearer token */
+  const fetchDashboard = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:3000/api/admin/dashboard', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Failed to load dashboard');
+      }
+      const data = await res.json();
+      setStats(data.stats);
+      setRecentOrders(data.recentOrders || []);
+      setStatusBreakdown(data.orderStatusBreakdown || {});
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
+
+  /* derived metrics */
+  const avgOrderValue  = stats
+    ? Math.round((stats.revenue.value || 0) / Math.max(stats.orders.value, 1))
+    : 0;
+  const totalOrders    = stats?.orders.value || 1;
+  const deliveredCount = statusBreakdown['delivered'] || 0;
+  const cancelledCount = statusBreakdown['cancelled'] || 0;
+  const conversionRate = Math.round((deliveredCount / totalOrders) * 100);
+  const returnRate     = Math.round((cancelledCount  / totalOrders) * 100);
+
+  const perfMetrics = [
+    { label: 'Delivery Rate',   value: conversionRate,                  display: `${conversionRate}%`                },
+    { label: 'Avg Order Value', value: Math.min(avgOrderValue / 100, 100), display: `₹${avgOrderValue.toLocaleString()}` },
+    { label: 'Cancellation',    value: returnRate,                      display: `${returnRate}%`                    },
+    { label: 'Satisfaction',    value: 94,                              display: '94%'                               },
+  ];
+
   return (
     <div className={`${styles.dashboard} ${mounted ? styles.mounted : ''}`}>
+
       {/* ── Welcome ── */}
       <section className={styles.welcome}>
         <div className={styles.welcomeLeft}>
           <span className={styles.welcomeEyebrow}>Atelier Dashboard</span>
           <h1 className={styles.welcomeTitle}>
-            નમસ્તે ,&nbsp;<em>{userName}</em>
+            નમસ્તે,&nbsp;<em>{userName}</em>
           </h1>
           <p className={styles.welcomeSub}>Here is your store's performance at a glance.</p>
         </div>
         <div className={styles.welcomeRight}>
           <div className={styles.datePill}>
-            {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            {new Date().toLocaleDateString('en-GB', {
+              weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+            })}
           </div>
+          <button
+            className={styles.refreshBtn}
+            onClick={fetchDashboard}
+            disabled={loading}
+          >
+            <span className={loading ? styles.spinning : ''}>↺</span>
+            {loading ? 'Loading…' : 'Refresh'}
+          </button>
         </div>
       </section>
 
-      {/* ── Stats Grid ── */}
+      {/* ── Error banner ── */}
+      {error && (
+        <div className={styles.errorBanner}>
+          ⚠ {error}
+          <button onClick={fetchDashboard} className={styles.retryBtn}>Retry</button>
+        </div>
+      )}
+
+      {/* ── Stats Grid — each card navigates to its page ── */}
       <section className={styles.statsGrid}>
-        {stats.map((s, i) => (
-          <div
-            key={i}
-            className={styles.statCard}
-            style={{ animationDelay: `${0.1 + i * 0.08}s` }}
-          >
-            {/* Background shimmer */}
-            <div className={styles.statShimmer} />
-
-            <div className={styles.statTop}>
-              <span className={styles.statIcon}>{s.icon}</span>
-              <span className={`${styles.statBadge} ${s.positive ? styles.positive : styles.negative}`}>
-                {s.change}
-              </span>
-            </div>
-
-            <div className={styles.statValue}>
-              {s.value.startsWith('$') ? (
-                <Counter target={s.value.replace('$', '')} prefix="$" />
-              ) : (
-                <Counter target={s.value} />
-              )}
-            </div>
-
-            <div className={styles.statMeta}>
-              <span className={styles.statTitle}>{s.title}</span>
-              <span className={styles.statSub}>{s.sub}</span>
-            </div>
-
-            <div className={styles.statRule} />
-          </div>
-        ))}
+        {loading
+          ? STAT_CONFIG.map((_, i) => <SkeletonCard key={i} />)
+          : STAT_CONFIG.map((s, i) => {
+              const stat = stats?.[s.key];
+              return (
+                <div
+                  key={i}
+                  className={styles.statCard}
+                  style={{ animationDelay: `${0.1 + i * 0.08}s`, cursor: 'pointer' }}
+                  onClick={() => navigate(s.route)}
+                  title={`Go to ${s.title}`}
+                >
+                  <div className={styles.statShimmer} />
+                  <div className={styles.statTop}>
+                    <span className={styles.statIcon}>{s.icon}</span>
+                    <span className={`${styles.statBadge} ${stat?.positive ? styles.positive : styles.negative}`}>
+                      {stat?.change ?? '—'}
+                    </span>
+                  </div>
+                  <div className={styles.statValue}>
+                    <Counter target={stat?.value ?? 0} prefix={s.prefix} />
+                  </div>
+                  <div className={styles.statMeta}>
+                    <span className={styles.statTitle}>{s.title}</span>
+                    <span className={styles.statSub}>{s.sub}</span>
+                  </div>
+                  <div className={styles.statRule} />
+                </div>
+              );
+            })}
       </section>
 
       {/* ── Bottom row ── */}
       <section className={styles.bottomRow}>
+
         {/* Recent Orders */}
         <div className={styles.ordersPanel}>
           <div className={styles.panelHeader}>
@@ -118,14 +228,20 @@ const Dashboard = ({ user }) => {
               <h2 className={styles.panelTitle}>Recent Orders</h2>
               <p className={styles.panelSub}>Latest transactions across all channels</p>
             </div>
-            <button className={styles.viewAllBtn}>View All →</button>
+            {/* View All → navigates to /orders */}
+            <button
+              className={styles.viewAllBtn}
+              onClick={() => navigate('/orders')}
+            >
+              View All →
+            </button>
           </div>
 
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>Order</th>
+                  <th>Order #</th>
                   <th>Client</th>
                   <th className={styles.hideTablet}>Item</th>
                   <th>Amount</th>
@@ -133,51 +249,73 @@ const Dashboard = ({ user }) => {
                 </tr>
               </thead>
               <tbody>
-                {recentOrders.map((o, i) => (
-                  <tr
-                    key={i}
-                    className={styles.tableRow}
-                    style={{ animationDelay: `${0.5 + i * 0.07}s` }}
-                  >
-                    <td className={styles.orderId}>{o.id}</td>
-                    <td className={styles.customer}>{o.customer}</td>
-                    <td className={`${styles.product} ${styles.hideTablet}`}>{o.product}</td>
-                    <td className={styles.amount}>{o.amount}</td>
-                    <td>
-                      <span className={`${styles.statusBadge} ${styles[o.status.toLowerCase()]}`}>
-                        <span className={styles.statusDot}>{statusMeta[o.status]?.symbol}</span>
-                        {statusMeta[o.status]?.label}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {loading
+                  ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+                  : recentOrders.length === 0
+                    ? (
+                      <tr>
+                        <td colSpan={5} className={styles.emptyCell}>
+                          No orders yet — they will appear here once customers start ordering.
+                        </td>
+                      </tr>
+                    )
+                    : recentOrders.map((o, i) => {
+                        const st = STATUS_META[o.orderStatus] || { label: o.orderStatus, symbol: '·', cls: 'pending' };
+                        return (
+                          <tr
+                            key={o._id}
+                            className={styles.tableRow}
+                            style={{ animationDelay: `${0.5 + i * 0.07}s`, cursor: 'pointer' }}
+                            onClick={() => navigate('/orders')}
+                            title="View orders"
+                          >
+                            <td className={styles.orderId}>
+                              {o.orderNumber || `#${o._id?.toString().slice(-6).toUpperCase()}`}
+                            </td>
+                            <td className={styles.customer}>
+                              {o.userId?.name || 'Guest'}
+                            </td>
+                            <td className={`${styles.product} ${styles.hideTablet}`}>
+                              {o.items?.[0]?.productName || '—'}
+                              {o.items?.length > 1 ? ` +${o.items.length - 1} more` : ''}
+                            </td>
+                            <td className={styles.amount}>
+                              ₹{o.totalAmount?.toLocaleString('en-IN') || '0'}
+                            </td>
+                            <td>
+                              <span className={`${styles.statusBadge} ${styles[st.cls]}`}>
+                                <span className={styles.statusDot}>{st.symbol}</span>
+                                {st.label}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* Quick Stats Side Panel */}
+        {/* Side Panel */}
         <div className={styles.sidePanel}>
           <div className={styles.panelHeader}>
             <h2 className={styles.panelTitle}>Performance</h2>
           </div>
 
           <div className={styles.perfList}>
-            {[
-              { label: 'Conversion Rate', value: 68, display: '68%' },
-              { label: 'Avg Order Value', value: 82, display: '$312' },
-              { label: 'Return Rate',     value: 12, display: '12%' },
-              { label: 'Satisfaction',    value: 94, display: '94%' },
-            ].map((p, i) => (
+            {perfMetrics.map((p, i) => (
               <div key={i} className={styles.perfItem} style={{ animationDelay: `${0.6 + i * 0.08}s` }}>
                 <div className={styles.perfTop}>
                   <span className={styles.perfLabel}>{p.label}</span>
-                  <span className={styles.perfValue}>{p.display}</span>
+                  <span className={styles.perfValue}>{loading ? '—' : p.display}</span>
                 </div>
                 <div className={styles.perfTrack}>
                   <div
                     className={styles.perfFill}
-                    style={{ '--pct': `${p.value}%`, animationDelay: `${0.8 + i * 0.1}s` }}
+                    style={{
+                      '--pct': loading ? '0%' : `${Math.min(p.value, 100)}%`,
+                      animationDelay: `${0.8 + i * 0.1}s`,
+                    }}
                   />
                 </div>
               </div>
@@ -186,10 +324,43 @@ const Dashboard = ({ user }) => {
 
           <div className={styles.sidePanelDivider} />
 
+          {/* Order Status Breakdown — clicking navigates to /orders */}
+          {!loading && Object.keys(statusBreakdown).length > 0 && (
+            <div className={styles.statusBreakdown}>
+              <p className={styles.qaTitle}>Order Status</p>
+              {Object.entries(statusBreakdown).map(([status, count]) => {
+                const meta = STATUS_META[status];
+                if (!meta) return null;
+                return (
+                  <div
+                    key={status}
+                    className={styles.statusBreakdownRow}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => navigate('/orders')}
+                    title={`View ${meta.label} orders`}
+                  >
+                    <span className={`${styles.statusDot} ${styles[meta.cls]}`}>{meta.symbol}</span>
+                    <span className={styles.statusBreakdownLabel}>{meta.label}</span>
+                    <span className={styles.statusBreakdownCount}>{count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className={styles.sidePanelDivider} />
+
+          {/* Quick Actions — all wired to real routes */}
           <div className={styles.quickActions}>
             <p className={styles.qaTitle}>Quick Actions</p>
-            {['Add Product', 'View Reports', 'Manage Orders'].map((a, i) => (
-              <button key={i} className={styles.qaBtn}>{a} →</button>
+            {QUICK_ACTIONS.map((a, i) => (
+              <button
+                key={i}
+                className={styles.qaBtn}
+                onClick={() => navigate(a.route)}
+              >
+                {a.label} →
+              </button>
             ))}
           </div>
         </div>

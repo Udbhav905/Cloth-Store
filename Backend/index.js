@@ -18,6 +18,7 @@ import orderRoutes from "./Routes/orderRoutes.js";
 import cartRoutes from "./Routes/cartRoutes.js";
 import reviewRoutes from "./Routes/reviewRoutes.js";
 import couponRoutes from "./Routes/couponRoutes.js";
+import adminRoutes from "./Routes/Adminroutes.js";
 import paymentRoutes from "./Routes/paymentRoutes.js"; // ✅ Stripe payments
 
 // Middleware
@@ -96,6 +97,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/coupons", couponRoutes);
+app.use("/api/admin",adminRoutes );
 
 /* Stripe Payment Routes */
 app.use("/api/payments", paymentRoutes);
