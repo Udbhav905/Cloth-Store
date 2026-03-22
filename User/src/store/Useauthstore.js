@@ -1,8 +1,16 @@
+/* ═══════════════════════════════════════════════════════════
+   store/Useauthstore.js  — USER SIDE (Luxuria Customer App)
+   
+   Key fix: persist key = "luxuria_user_auth" (unique to user app)
+   Admin app uses "luxuria_admin_auth" (set in admin Login.jsx)
+   The two never collide.
+═══════════════════════════════════════════════════════════ */
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 const API = "http://localhost:3000/api";
 
+/* ── Extract user + token from any server response shape ── */
 function extractUserAndToken(data) {
   const payload = data?.data ?? data;
 
@@ -22,28 +30,29 @@ function extractUserAndToken(data) {
   return { user, token };
 }
 
-/* ─────────────────────────────────────────────────
-   Helper — returns true if user is admin/superadmin
-─────────────────────────────────────────────────── */
+/* ── Guard: is this user an admin role? ── */
 const isAdminRole = (user) =>
   user?.role === "admin" || user?.role === "superadmin";
 
+/* ════════════════════════════════════════════════════════ */
 const useAuthStore = create(
   persist(
     (set, get) => ({
-      user:       null,
-      token:      null,
-      isLoggedIn: false,
-      loading:    false,
-      error:      null,
-      authModal:  false,
-      authTab:    "login",
+      user:        null,
+      accessToken: null,   // keep "accessToken" for PaymentPage compatibility
+      isLoggedIn:  false,
+      loading:     false,
+      error:       null,
+      authModal:   false,
+      authTab:     "login",
 
+      /* ── Modal controls ── */
       openAuthModal:  (tab = "login") => set({ authModal: true,  authTab: tab, error: null }),
       closeAuthModal: ()               => set({ authModal: false, error: null }),
       setAuthTab:     (tab)            => set({ authTab: tab,     error: null }),
       clearError:     ()               => set({ error: null }),
 
+      /* ── Register ── */
       register: async ({ name, email, mobileNo, password }) => {
         set({ loading: true, error: null });
         try {
@@ -57,9 +66,21 @@ const useAuthStore = create(
           if (!res.ok) throw new Error(data.message || "Registration failed");
 
           const { user, token } = extractUserAndToken(data);
-          if (!user) throw new Error("No user returned from server");
+          if (!user)  throw new Error("No user returned from server");
 
-          set({ user, token, isLoggedIn: true, loading: false, authModal: false, error: null });
+          /* Block admins registering through the user app */
+          if (isAdminRole(user)) {
+            throw new Error("Admin accounts cannot register here.");
+          }
+
+          set({
+            user,
+            accessToken: token,
+            isLoggedIn:  true,
+            loading:     false,
+            authModal:   false,
+            error:       null,
+          });
           return { success: true };
         } catch (err) {
           set({ loading: false, error: err.message });
@@ -67,6 +88,7 @@ const useAuthStore = create(
         }
       },
 
+      /* ── Login ── */
       login: async ({ email, password }) => {
         set({ loading: true, error: null });
         try {
@@ -77,22 +99,28 @@ const useAuthStore = create(
             body:        JSON.stringify({ email, password }),
           });
           const data = await res.json();
-          console.log("[LUXURIA] Login raw response:", data);
 
           if (!res.ok) throw new Error(data.message || "Login failed");
 
           const { user, token } = extractUserAndToken(data);
-          console.log("[LUXURIA] Extracted → user:", user, "| token:", token);
-
           if (!user) throw new Error("Server returned success but no user object found");
 
-          // ── GUARD: admin accounts must use the Admin Panel ──
+          /* Hard block: admins must use the Admin Panel */
           if (isAdminRole(user)) {
             set({ loading: false, error: null });
-            throw new Error("Admin accounts cannot sign in here. Please use the Admin Panel.");
+            throw new Error(
+              "Admin accounts cannot sign in here. Please use the Admin Panel."
+            );
           }
 
-          set({ user, token, isLoggedIn: true, loading: false, authModal: false, error: null });
+          set({
+            user,
+            accessToken: token,
+            isLoggedIn:  true,
+            loading:     false,
+            authModal:   false,
+            error:       null,
+          });
           return { success: true };
         } catch (err) {
           set({ loading: false, error: err.message });
@@ -100,25 +128,33 @@ const useAuthStore = create(
         }
       },
 
+      /* ── Logout ── */
       logout: async () => {
         try {
-          await fetch(`${API}/auth/logout`, { method: "POST", credentials: "include" });
+          const { accessToken } = get();
+          await fetch(`${API}/auth/logout`, {
+            method:  "POST",
+            headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+            credentials: "include",
+          });
         } catch (_) {}
-        set({ user: null, token: null, isLoggedIn: false, error: null });
+        set({ user: null, accessToken: null, isLoggedIn: false, error: null });
       },
 
+      /* ── Refresh profile from server ── */
       fetchProfile: async () => {
-        const { token, isLoggedIn } = get();
-        if (!token || !isLoggedIn) return;
+        const { accessToken, isLoggedIn } = get();
+        if (!accessToken || !isLoggedIn) return;
 
         try {
           const res = await fetch(`${API}/auth/profile`, {
-            headers:     { Authorization: `Bearer ${token}` },
+            headers:     { Authorization: `Bearer ${accessToken}` },
             credentials: "include",
           });
 
           if (!res.ok) {
-            set({ user: null, token: null, isLoggedIn: false });
+            /* Token expired / invalid — clear everything */
+            set({ user: null, accessToken: null, isLoggedIn: false });
             return;
           }
 
@@ -126,37 +162,37 @@ const useAuthStore = create(
           const user = data?.data ?? data?.user ?? data;
 
           if (user?._id) {
-            // ── GUARD: if admin session leaked into luxuria-auth, clear it ──
+            /* If somehow an admin token ended up here, evict it */
             if (isAdminRole(user)) {
-              console.warn("[LUXURIA] Admin account detected in user store — clearing session.");
-              set({ user: null, token: null, isLoggedIn: false });
+              console.warn("[USER APP] Admin account found in user store — clearing.");
+              set({ user: null, accessToken: null, isLoggedIn: false });
               return;
             }
             set({ user, isLoggedIn: true });
           }
         } catch (_) {
-          // Network error — keep existing state
+          /* Network error — keep existing state */
         }
       },
     }),
 
     {
-      name: "luxuria-auth", // key unchanged — no other files need to change
+      /* ─── CRITICAL: unique key so admin app's storage never overwrites this ─── */
+      name: "luxuria_user_auth",
+
       partialize: (s) => ({
-        user:       s.user,
-        token:      s.token,
-        isLoggedIn: s.isLoggedIn,
+        user:        s.user,
+        accessToken: s.accessToken,
+        isLoggedIn:  s.isLoggedIn,
       }),
 
-      // ── GUARD: runs once when Zustand rehydrates from localStorage on page load ──
-      // If the stored user is an admin (e.g. admin logged in on same browser),
-      // wipe the state before it ever reaches the app.
+      /* ── Guard on rehydration: wipe admin data if it leaked in ── */
       onRehydrateStorage: () => (state) => {
         if (state && isAdminRole(state.user)) {
-          console.warn("[LUXURIA] Admin data found in luxuria-auth on load — clearing.");
-          state.user       = null;
-          state.token      = null;
-          state.isLoggedIn = false;
+          console.warn("[USER APP] Admin data in user store on load — clearing.");
+          state.user        = null;
+          state.accessToken = null;
+          state.isLoggedIn  = false;
         }
       },
     }

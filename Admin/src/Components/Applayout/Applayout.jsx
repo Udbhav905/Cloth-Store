@@ -1,46 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import Sidebar from '../Sidebar/Sidebar';
-import Navbar from '../Navbar/navbar';
-import styles from './AppLayout.module.css';
+/* Components/AppLayout/AppLayout.jsx */
+import React, { useState } from "react";
+import Sidebar from "../Sidebar/Sidebar";
+import styles from "./AppLayout.module.css";
 
-const AppLayout = ({ children, user, onLogout }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth <= 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-
-  // Close sidebar on route change (mobile)
-  const handleClose = () => setSidebarOpen(false);
-  const handleToggle = () => setSidebarOpen(prev => !prev);
+export default function AppLayout({ children, user, onLogout }) {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className={styles.appLayout}>
+    <div className={`${styles.layout} ${sidebarCollapsed ? styles.collapsed : ""}`}>
       <Sidebar
-        isOpen={sidebarOpen}
-        onClose={handleClose}
+        user={user}
+        onLogout={onLogout}
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed(p => !p)}
       />
-
-      {/* Main area — offset by sidebar on desktop */}
-      <div className={`${styles.mainArea} ${isMobile ? styles.mainAreaMobile : ''}`}>
-        <Navbar
-          user={user}
-          onLogout={onLogout}
-          onMenuToggle={handleToggle}
-          sidebarOpen={sidebarOpen}
-        />
-
-        {/* Page content below navbar */}
-        <main className={styles.pageContent}>
+      <main className={styles.main}>
+        <div className={styles.content}>
           {children}
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
-};
-
-export default AppLayout;
+}

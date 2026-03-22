@@ -1,44 +1,23 @@
-/* MAISON — AppLayout Shell */
-
-:root {
-  --sidebar-collapsed: 72px;
-  --navbar-height: 63px;
-  --noir: #0a0a0a;
-}
-
-.appLayout {
-  display: flex;
+/* AppLayout.module.css */
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
   min-height: 100vh;
-  background: var(--noir);
+  background: #0a0a0a;
+  transition: grid-template-columns 0.3s cubic-bezier(0.4,0,0.2,1);
 }
-
-.mainArea {
-  margin-left: var(--sidebar-collapsed);
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+.collapsed {
+  grid-template-columns: 72px 1fr;
+}
+.main {
+  overflow-y: auto;
   min-height: 100vh;
-  transition: margin-left 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #0a0a0a;
 }
-
-.mainAreaMobile {
-  margin-left: 0 !important;
-}
-
-.pageContent {
-  padding-top: var(--navbar-height);
+.content {
   min-height: 100vh;
-  background: var(--noir);
-  background-image:
-    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(201,168,76,0.05) 0%, transparent 55%),
-    repeating-linear-gradient(
-      90deg,
-      transparent, transparent 80px,
-      rgba(255,255,255,0.01) 80px,
-      rgba(255,255,255,0.01) 81px
-    );
 }
-
 @media (max-width: 768px) {
-  .mainArea { margin-left: 0; }
+  .layout { grid-template-columns: 1fr; }
+  .collapsed { grid-template-columns: 1fr; }
 }

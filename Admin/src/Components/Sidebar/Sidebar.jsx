@@ -1,108 +1,134 @@
-import React, { useState, useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
-import styles from './Sidebar.module.css';
+/* Components/Sidebar/Sidebar.jsx */
+import React from "react";
+import { NavLink, useLocation } from "react-router-dom";
+import styles from "./Sidebar.module.css";
 
-const menuItems = [
-  { path: '/dashboard',          icon: '◈', label: 'Dashboard',         sub: 'Overview' },
-  { path: '/categories',         icon: '⬡', label: 'Collections',       sub: 'Manage' },
-  { path: '/products',           icon: '◇', label: 'Products',           sub: 'Catalogue' },
-  { path: '/orders',             icon: '◻', label: 'Orders',             sub: 'Fulfil' },
-  { path: '/delivery-partners',  icon: '△', label: 'Couriers',           sub: 'Partners' },
-  { path: '/analytics',          icon: '◉', label: 'Analytics',          sub: 'Insights' },
+const NAV_ITEMS = [
+  {
+    path: "/dashboard",
+    label: "Dashboard",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+    ),
+  },
+  {
+    path: "/orders",
+    label: "Orders",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
+        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+        <rect x="9" y="3" width="6" height="4" rx="1"/>
+        <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
+      </svg>
+    ),
+  },
+  {
+    path: "/products",
+    label: "Products",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
+        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <path d="M16 10a4 4 0 01-8 0"/>
+      </svg>
+    ),
+  },
+  {
+    path: "/categories",
+    label: "Categories",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
+        <path d="M3 6h18M3 12h18M3 18h18"/>
+      </svg>
+    ),
+  },
+  {
+    path: "/delivery-partners",
+    label: "Delivery",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
+        <rect x="1" y="3" width="15" height="13" rx="1"/>
+        <path d="M16 8h4l3 3v5h-7V8z"/>
+        <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+      </svg>
+    ),
+  },
+  {
+    path: "/analytics",
+    label: "Analytics",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
+        <line x1="18" y1="20" x2="18" y2="10"/>
+        <line x1="12" y1="20" x2="12" y2="4"/>
+        <line x1="6"  y1="20" x2="6"  y2="14"/>
+      </svg>
+    ),
+  },
 ];
 
-const Sidebar = ({ isOpen, onClose }) => {
-  const [expanded, setExpanded] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-
-  const isVisible = isMobile ? isOpen : true;
-  const isExpanded = isMobile ? isOpen : expanded;
+export default function Sidebar({ user, onLogout, collapsed, onToggle }) {
+  const initials = user?.name
+    ? user.name.split(" ").slice(0,2).map(n => n[0]).join("").toUpperCase()
+    : "A";
 
   return (
-    <>
-    
-      {isMobile && isOpen && (
-        <div className={styles.overlay} onClick={onClose} />
-      )}
-
-      <aside
-        className={`
-          ${styles.sidebar}
-          ${isExpanded ? styles.sidebarExpanded : styles.sidebarCollapsed}
-          ${isMobile ? styles.sidebarMobile : ''}
-          ${isMobile && isOpen ? styles.sidebarMobileOpen : ''}
-        `}
-        onMouseEnter={() => !isMobile && setExpanded(true)}
-        onMouseLeave={() => !isMobile && setExpanded(false)}
-      >
-        
-        <div className={styles.topRule} />
-
-       
-        <div className={styles.sidebarHeader}>
-          <div className={styles.logoMark}>
-            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.logoSvg}>
-              <path d="M16 4C13 4 11 6.5 11 9C11 11.5 13 14 16 14C19 14 21 11.5 21 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-              <path d="M16 14V28" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-              <path d="M12 19L16 14L20 19" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M21 9H26" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-            </svg>
+    <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ""}`}>
+      {/* Logo */}
+      <div className={styles.logoArea}>
+        {!collapsed && (
+          <div className={styles.logoText}>
+            <span className={styles.logoDiamond}>◆</span>
+            <span className={styles.logoName}>LUXURIA</span>
+            <span className={styles.logoSub}>ADMIN</span>
           </div>
+        )}
+        {collapsed && <span className={styles.logoDiamond}>◆</span>}
+        <button className={styles.toggleBtn} onClick={onToggle} title={collapsed ? "Expand" : "Collapse"}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            {collapsed
+              ? <polyline points="9 18 15 12 9 6"/>
+              : <polyline points="15 18 9 12 15 6"/>}
+          </svg>
+        </button>
+      </div>
 
-          <div className={`${styles.logoText} ${isExpanded ? styles.logoTextVisible : ''}`}>
-            <span className={styles.brandName}>Luxuria</span>
-            <span className={styles.brandSub}>Atelier</span>
+      {/* Nav */}
+      <nav className={styles.nav}>
+        {NAV_ITEMS.map(item => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+              `${styles.navItem} ${isActive ? styles.navItemActive : ""}`
+            }
+            title={collapsed ? item.label : undefined}
+          >
+            <span className={styles.navIcon}>{item.icon}</span>
+            {!collapsed && <span className={styles.navLabel}>{item.label}</span>}
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* User area */}
+      <div className={styles.userArea}>
+        <div className={styles.avatar}>{initials}</div>
+        {!collapsed && (
+          <div className={styles.userInfo}>
+            <span className={styles.userName}>{user?.name || "Admin"}</span>
+            <span className={styles.userRole}>{user?.role || "admin"}</span>
           </div>
-
-          {isMobile && (
-            <button className={styles.mobileClose} onClick={onClose}>×</button>
-          )}
-        </div>
-
-        <div className={styles.headerDivider} />
-
-        <nav className={styles.sidebarNav}>
-          {menuItems.map((item, i) => (
-            <NavLink
-              key={i}
-              to={item.path}
-              onClick={isMobile ? onClose : undefined}
-              className={({ isActive }) =>
-                `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
-              }
-              style={{ animationDelay: `${i * 0.06}s` }}
-            >
-              <span className={styles.navIcon}>{item.icon}</span>
-              <div className={`${styles.navTextBlock} ${isExpanded ? styles.navTextVisible : ''}`}>
-                <span className={styles.navLabel}>{item.label}</span>
-                <span className={styles.navSub}>{item.sub}</span>
-              </div>
-              <span className={`${styles.activeBar} `} />
-            </NavLink>
-          ))}
-        </nav>
-
-        
-        <div className={styles.sidebarFooter}>
-          <div className={styles.footerDivider} />
-          <div className={styles.storageRow}>
-           
-          </div>
-          <div className={`${styles.versionTag} ${isExpanded ? styles.versionTagVisible : ''}`}>
-            v1.0.0 — LUXURIA Suite
-          </div>
-        </div>
-      </aside>
-    </>
+        )}
+        <button className={styles.logoutBtn} onClick={onLogout} title="Sign out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
+      </div>
+    </aside>
   );
-};
-
-export default Sidebar;
+}

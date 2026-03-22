@@ -1307,7 +1307,7 @@
   .relName { font-size: 1rem; }
 
   .ctaRow { gap: 8px; }
-  .addBtn { min-width: 0; font-size: 10px; letter-spacing: .14em; }
+  .addBtn { min-width: 0; font-size: 10px; letter-spacing: .14em; min-height: 50px; }
 
   .trustRow { flex-direction: column; }
   .trust {

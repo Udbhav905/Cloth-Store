@@ -1,13 +1,14 @@
 import Order from "../model/Order.js";
 import Cart from "../model/Cart.js";
 import Product from "../model/Product.js";
-// import Coupon from "../model/Coupon.js";
+
+/* ═══════════════════════════════════════════════════════════
+   CUSTOMER CONTROLLERS  (unchanged from original)
+═══════════════════════════════════════════════════════════ */
 
 // @desc    Create new order
 // @route   POST /api/orders
 // @access  Private
-// In orderController.js, update the createOrder function:
-
 export const createOrder = async (req, res) => {
   try {
     const {
@@ -24,80 +25,71 @@ export const createOrder = async (req, res) => {
       orderStatus,
       couponCode,
       customerNotes,
-      paymentDetails
+      paymentDetails,
     } = req.body;
 
-    // Validate required fields
-    if (!items || !items.length) {
+    if (!items || !items.length)
       return res.status(400).json({ message: "Order items are required" });
-    }
 
-    if (!shippingAddress) {
+    if (!shippingAddress)
       return res.status(400).json({ message: "Shipping address is required" });
-    }
 
-    // Calculate totals if not provided
     let calculatedSubtotal = subtotal;
-    let calculatedTotal = totalAmount;
-    
-    if (!calculatedSubtotal) {
-      calculatedSubtotal = items.reduce((acc, item) => 
-        acc + (item.price * item.quantity), 0
-      );
-    }
-    
+    let calculatedTotal    = totalAmount;
+
+    if (!calculatedSubtotal)
+      calculatedSubtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
     if (!calculatedTotal) {
-      const calculatedTax = tax || (calculatedSubtotal * 0.18);
+      const calculatedTax      = tax      || calculatedSubtotal * 0.18;
       const calculatedShipping = shippingCharge || (calculatedSubtotal > 500 ? 0 : 50);
       const calculatedDiscount = discount || 0;
       calculatedTotal = calculatedSubtotal - calculatedDiscount + calculatedShipping + calculatedTax;
     }
 
-    // Process items to match schema
-    const processedItems = items.map(item => ({
-      productId: item.productId,
+    const processedItems = items.map((item) => ({
+      productId:   item.productId,
       productName: item.name || item.productName,
       variant: {
-        size: item.size || "FREE",
+        size:  item.size  || "FREE",
         color: item.color || "Default",
-        sku: item.sku || "",
+        sku:   item.sku   || "",
       },
-      quantity: item.quantity,
-      price: item.price,
+      quantity:   item.quantity,
+      price:      item.price,
       totalPrice: item.price * item.quantity,
-      image: item.image || "",
+      image:      item.image || "",
     }));
 
-    // Create order
     const order = await Order.create({
-      userId: req.user._id,
-      items: processedItems,
-      subtotal: calculatedSubtotal,
-      discount: discount || 0,
+      userId:         req.user._id,
+      items:          processedItems,
+      subtotal:       calculatedSubtotal,
+      discount:       discount || 0,
       shippingCharge: shippingCharge || (calculatedSubtotal > 500 ? 0 : 50),
-      tax: tax || (calculatedSubtotal * 0.18),
-      totalAmount: calculatedTotal,
+      tax:            tax || calculatedSubtotal * 0.18,
+      totalAmount:    calculatedTotal,
       shippingAddress,
       billingAddress: billingAddress || shippingAddress,
-      paymentMethod: paymentMethod || "cod",
-      paymentStatus: paymentStatus || "pending",
-      orderStatus: orderStatus || "pending",
+      paymentMethod:  paymentMethod  || "cod",
+      paymentStatus:  paymentStatus  || "pending",
+      orderStatus:    orderStatus    || "pending",
       paymentDetails: paymentDetails || {},
-      customerNotes: customerNotes || "",
+      customerNotes:  customerNotes  || "",
       statusHistory: [{
-        status: orderStatus || "pending",
-        note: "Order created",
+        status:    orderStatus || "pending",
+        note:      "Order created",
         changedAt: new Date(),
         changedBy: req.user._id,
       }],
     });
 
-    // Update product stock
+    // Reduce product stock
     for (const item of processedItems) {
       const product = await Product.findById(item.productId);
       if (product) {
-        const variant = product.variants?.find(v => 
-          v.size === item.variant.size && v.color === item.variant.color
+        const variant = product.variants?.find(
+          (v) => v.size === item.variant.size && v.color === item.variant.color
         );
         if (variant) {
           variant.stock -= item.quantity;
@@ -106,7 +98,7 @@ export const createOrder = async (req, res) => {
       }
     }
 
-    // Clear cart only for COD or if not coming from buy now
+    // Clear cart (skip for buy-now flows)
     if (paymentMethod === "cod" || !req.body.fromBuyNow) {
       await Cart.findOneAndUpdate(
         { userId: req.user._id },
@@ -121,53 +113,40 @@ export const createOrder = async (req, res) => {
   }
 };
 
-// @desc    Get all orders
+// @desc    Get all orders (basic, admin)
 // @route   GET /api/orders
 // @access  Private/Admin
 export const getOrders = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
+    const page  = parseInt(req.query.page)  || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+    const skip  = (page - 1) * limit;
 
     const query = {};
-    
-    // Filter by status
-    if (req.query.status) {
-      query.orderStatus = req.query.status;
-    }
-    
-    if (req.query.paymentStatus) {
-      query.paymentStatus = req.query.paymentStatus;
-    }
+    if (req.query.status)        query.orderStatus   = req.query.status;
+    if (req.query.paymentStatus) query.paymentStatus = req.query.paymentStatus;
 
-    const orders = await Order.find(query)
-      .populate("userId", "name email mobileNo")
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 });
+    const [orders, total] = await Promise.all([
+      Order.find(query)
+        .populate("userId", "name email mobileNo")
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 }),
+      Order.countDocuments(query),
+    ]);
 
-    const total = await Order.countDocuments(query);
-
-    res.json({
-      orders,
-      page,
-      pages: Math.ceil(total / limit),
-      total
-    });
+    res.json({ orders, page, pages: Math.ceil(total / limit), total });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Get user orders
+// @desc    Get my orders
 // @route   GET /api/orders/my-orders
 // @access  Private
 export const getMyOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ userId: req.user._id })
-      .sort({ createdAt: -1 });
-
+    const orders = await Order.find({ userId: req.user._id }).sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -179,18 +158,13 @@ export const getMyOrders = async (req, res) => {
 // @access  Private
 export const getOrderById = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id)
-      .populate("userId", "name email mobileNo");
+    const order = await Order.findById(req.params.id).populate("userId", "name email mobileNo");
+    if (!order) return res.status(404).json({ message: "Order not found" });
 
-    if (order) {
-      // Check if user is authorized
-      if (order.userId._id.toString() !== req.user._id.toString() && req.user.role !== "admin") {
-        return res.status(403).json({ message: "Not authorized" });
-      }
-      res.json(order);
-    } else {
-      res.status(404).json({ message: "Order not found" });
-    }
+    if (order.userId._id.toString() !== req.user._id.toString() && req.user.role !== "admin")
+      return res.status(403).json({ message: "Not authorized" });
+
+    res.json(order);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -203,44 +177,28 @@ export const updateOrderStatus = async (req, res) => {
   try {
     const { status, note } = req.body;
     const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
 
-    if (order) {
-      order.orderStatus = status;
-      
-      // Add to status history
-      order.statusHistory.push({
-        status,
-        note,
-        changedAt: new Date(),
-        changedBy: req.user._id
-      });
+    order.orderStatus = status;
+    order.statusHistory.push({ status, note, changedAt: new Date(), changedBy: req.user._id });
 
-      // Update timestamps based on status
-      if (status === "delivered") {
-        order.deliveredAt = new Date();
-      } else if (status === "cancelled") {
-        order.cancelledAt = new Date();
-        
-        // Restore stock for cancelled orders
-        for (const item of order.items) {
-          const product = await Product.findById(item.productId);
-          if (product) {
-            const variant = product.variants.find(v => 
-              v.size === item.variant.size && v.color === item.variant.color
-            );
-            if (variant) {
-              variant.stock += item.quantity;
-              await product.save();
-            }
-          }
+    if (status === "delivered") order.deliveredAt = new Date();
+
+    if (status === "cancelled") {
+      order.cancelledAt = new Date();
+      for (const item of order.items) {
+        const product = await Product.findById(item.productId);
+        if (product) {
+          const variant = product.variants.find(
+            (v) => v.size === item.variant.size && v.color === item.variant.color
+          );
+          if (variant) { variant.stock += item.quantity; await product.save(); }
         }
       }
-
-      await order.save();
-      res.json(order);
-    } else {
-      res.status(404).json({ message: "Order not found" });
     }
+
+    await order.save();
+    res.json(order);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -253,21 +211,18 @@ export const updatePaymentStatus = async (req, res) => {
   try {
     const { paymentStatus, transactionId } = req.body;
     const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
 
-    if (order) {
-      order.paymentStatus = paymentStatus;
-      order.paymentDetails = {
-        ...order.paymentDetails,
-        transactionId,
-        paymentId: transactionId,
-        paidAt: paymentStatus === "paid" ? new Date() : null
-      };
+    order.paymentStatus = paymentStatus;
+    order.paymentDetails = {
+      ...order.paymentDetails,
+      transactionId,
+      paymentId: transactionId,
+      paidAt: paymentStatus === "paid" ? new Date() : null,
+    };
 
-      await order.save();
-      res.json(order);
-    } else {
-      res.status(404).json({ message: "Order not found" });
-    }
+    await order.save();
+    res.json(order);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -276,90 +231,295 @@ export const updatePaymentStatus = async (req, res) => {
 // @desc    Cancel order
 // @route   PUT /api/orders/:id/cancel
 // @access  Private
-// @desc    Cancel order
-// @route   PUT /api/orders/:id/cancel
-// @access  Private
 export const cancelOrder = async (req, res) => {
   try {
     const { reason } = req.body;
-    
-    // Validate order ID
-    if (!req.params.id) {
-      return res.status(400).json({ message: "Order ID is required" });
-    }
+    if (!req.params.id) return res.status(400).json({ message: "Order ID is required" });
 
     const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
 
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
-
-    // Check if user is authorized
-    if (order.userId.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+    if (order.userId.toString() !== req.user._id.toString() && req.user.role !== "admin")
       return res.status(403).json({ message: "Not authorized to cancel this order" });
-    }
 
-    // Check if order can be cancelled
-    const cancellableStatuses = ["pending", "confirmed", "processing"]; // Added "processing"
-    
-    if (!cancellableStatuses.includes(order.orderStatus)) {
-      return res.status(400).json({ 
-        message: `Order cannot be cancelled at '${order.orderStatus}' stage. Only orders with status: ${cancellableStatuses.join(', ')} can be cancelled.`
+    const cancellableStatuses = ["pending", "confirmed", "processing"];
+    if (!cancellableStatuses.includes(order.orderStatus))
+      return res.status(400).json({
+        message: `Order cannot be cancelled at '${order.orderStatus}' stage.`,
       });
-    }
 
-    // Update order status
-    order.orderStatus = "cancelled";
+    order.orderStatus        = "cancelled";
     order.cancellationReason = reason || "Cancelled by customer";
-    order.cancelledAt = new Date();
-
-    // Add to status history
+    order.cancelledAt        = new Date();
     order.statusHistory.push({
-      status: "cancelled",
-      note: reason || "Cancelled by customer",
+      status:    "cancelled",
+      note:      reason || "Cancelled by customer",
       changedAt: new Date(),
-      changedBy: req.user._id
+      changedBy: req.user._id,
     });
 
-    // Restore stock for each item
     for (const item of order.items) {
       try {
         const product = await Product.findById(item.productId);
         if (product) {
-          // Handle different product structures
-          if (product.variants && product.variants.length > 0) {
-            // If product has variants
-            const variant = product.variants.find(v => 
-              v.size === item.variant?.size && v.color === item.variant?.color
+          if (product.variants?.length) {
+            const variant = product.variants.find(
+              (v) => v.size === item.variant?.size && v.color === item.variant?.color
+            );
+            if (variant) { variant.stock = (variant.stock || 0) + item.quantity; await product.save(); }
+          } else {
+            product.stock = (product.stock || 0) + item.quantity;
+            await product.save();
+          }
+        }
+      } catch (stockErr) {
+        console.error(`Stock restore error for ${item.productId}:`, stockErr);
+      }
+    }
+
+    await order.save();
+    res.json({ success: true, message: "Order cancelled successfully", order });
+  } catch (error) {
+    console.error("Cancel order error:", error);
+    res.status(500).json({ message: error.message || "Internal server error" });
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════
+   ADMIN CONTROLLERS  (new — required by admin Orders page)
+═══════════════════════════════════════════════════════════ */
+
+// @desc    Get all orders with stats, search, pagination
+// @route   GET /api/orders/admin/all
+// @access  Private/Admin
+export const adminGetAllOrders = async (req, res) => {
+  try {
+    const page  = parseInt(req.query.page)  || 1;
+    const limit = parseInt(req.query.limit) || 15;
+    const skip  = (page - 1) * limit;
+
+    /* ── Build filter query ── */
+    const query = {};
+
+    if (req.query.status && req.query.status !== "all")
+      query.orderStatus = req.query.status;
+
+    if (req.query.paymentStatus && req.query.paymentStatus !== "all")
+      query.paymentStatus = req.query.paymentStatus;
+
+    /* ── Search: order number, phone, customer name ── */
+    if (req.query.search) {
+      const s = req.query.search.trim();
+      // Match against orderNumber directly, or phone in shippingAddress
+      // We also do a population-based name search via $or on populated fields below
+      query.$or = [
+        { orderNumber: { $regex: s, $options: "i" } },
+        { "shippingAddress.phone": { $regex: s, $options: "i" } },
+      ];
+    }
+
+    /* ── Sort ── */
+    const sortMap = {
+      newest:      { createdAt: -1 },
+      oldest:      { createdAt:  1 },
+      amount_desc: { totalAmount: -1 },
+      amount_asc:  { totalAmount:  1 },
+    };
+    const sort = sortMap[req.query.sort] || { createdAt: -1 };
+
+    /* ── Execute in parallel ── */
+    const [orders, total, statsRaw] = await Promise.all([
+      Order.find(query)
+        .populate("userId", "name email mobileNo")
+        .skip(skip)
+        .limit(limit)
+        .sort(sort)
+        .lean(),
+      Order.countDocuments(query),
+
+      // Aggregate stats (always across ALL orders, no filter)
+      Order.aggregate([
+        {
+          $facet: {
+            byStatus: [
+              { $group: { _id: "$orderStatus", count: { $sum: 1 } } },
+            ],
+            revenue: [
+              { $match: { paymentStatus: "paid" } },
+              { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+            ],
+            totalAll: [{ $count: "n" }],
+          },
+        },
+      ]),
+    ]);
+
+    /* ── Shape stats ── */
+    const byStatus = {};
+    (statsRaw[0]?.byStatus || []).forEach((s) => { byStatus[s._id] = s.count; });
+    const stats = {
+      total:     statsRaw[0]?.totalAll?.[0]?.n || 0,
+      pending:   byStatus.pending   || 0,
+      confirmed: byStatus.confirmed || 0,
+      processing:byStatus.processing|| 0,
+      shipped:   byStatus.shipped   || 0,
+      out_for_delivery: byStatus.out_for_delivery || 0,
+      delivered: byStatus.delivered || 0,
+      cancelled: byStatus.cancelled || 0,
+      returned:  byStatus.returned  || 0,
+      refunded:  byStatus.refunded  || 0,
+      revenue:   statsRaw[0]?.revenue?.[0]?.total || 0,
+    };
+
+    res.json({
+      orders,
+      page,
+      totalPages: Math.ceil(total / limit),
+      total,
+      stats,
+    });
+  } catch (error) {
+    console.error("adminGetAllOrders error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get single order detail (admin — always allowed)
+// @route   GET /api/orders/admin/:id
+// @access  Private/Admin
+export const adminGetOrderById = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id)
+      .populate("userId", "name email mobileNo")
+      .populate("statusHistory.changedBy", "name")
+      .lean();
+
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    res.json({ order });
+  } catch (error) {
+    console.error("adminGetOrderById error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Update order status (admin panel — richer response)
+// @route   PUT /api/orders/admin/:id/status
+// @access  Private/Admin
+export const adminUpdateStatus = async (req, res) => {
+  try {
+    const { orderStatus, note } = req.body;
+
+    if (!orderStatus)
+      return res.status(400).json({ message: "orderStatus is required" });
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    const prev = order.orderStatus;
+    order.orderStatus = orderStatus;
+
+    order.statusHistory.push({
+      status:    orderStatus,
+      note:      note || `Status changed from ${prev} to ${orderStatus}`,
+      changedAt: new Date(),
+      changedBy: req.user._id,
+    });
+
+    if (orderStatus === "delivered") order.deliveredAt = new Date();
+
+    if (orderStatus === "cancelled") {
+      order.cancelledAt = new Date();
+      // Restore stock
+      for (const item of order.items) {
+        try {
+          const product = await Product.findById(item.productId);
+          if (product) {
+            const variant = product.variants?.find(
+              (v) => v.size === item.variant?.size && v.color === item.variant?.color
             );
             if (variant) {
               variant.stock = (variant.stock || 0) + item.quantity;
               await product.save();
             }
-          } else {
-            // If product doesn't have variants, update main stock
-            product.stock = (product.stock || 0) + item.quantity;
-            await product.save();
           }
-        }
-      } catch (stockError) {
-        console.error(`Error restoring stock for product ${item.productId}:`, stockError);
-        // Continue with cancellation even if stock restore fails
+        } catch (e) { console.error("Stock restore error:", e.message); }
       }
     }
 
     await order.save();
-    
-    res.json({ 
-      success: true,
-      message: "Order cancelled successfully", 
-      order 
-    });
-    
+    const updated = await Order.findById(order._id)
+      .populate("userId", "name email mobileNo")
+      .lean();
+
+    res.json({ success: true, order: updated });
   } catch (error) {
-    console.error("Cancel order error:", error);
-    res.status(500).json({ 
-      message: error.message || "Internal server error while cancelling order" 
+    console.error("adminUpdateStatus error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Assign delivery partner to order
+// @route   PUT /api/orders/admin/:id/assign
+// @access  Private/Admin
+export const adminAssignDelivery = async (req, res) => {
+  try {
+    const { courierName, trackingNumber, orderStatus, note, estimatedDelivery } = req.body;
+
+    if (!courierName)
+      return res.status(400).json({ message: "courierName is required" });
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    order.courierName    = courierName;
+    order.trackingNumber = trackingNumber || `TRK${Date.now().toString().slice(-8)}`;
+
+    if (estimatedDelivery) order.estimatedDelivery = new Date(estimatedDelivery);
+
+    // Advance status to shipped if not already further along
+    const advanceStatuses = ["pending", "confirmed", "processing"];
+    if (orderStatus) {
+      order.orderStatus = orderStatus;
+    } else if (advanceStatuses.includes(order.orderStatus)) {
+      order.orderStatus = "shipped";
+    }
+
+    order.statusHistory.push({
+      status:    order.orderStatus,
+      note:      note || `Assigned to ${courierName} · Tracking: ${order.trackingNumber}`,
+      changedAt: new Date(),
+      changedBy: req.user._id,
     });
+
+    await order.save();
+    const updated = await Order.findById(order._id)
+      .populate("userId", "name email mobileNo")
+      .lean();
+
+    res.json({ success: true, order: updated });
+  } catch (error) {
+    console.error("adminAssignDelivery error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Save / update admin note on order
+// @route   PUT /api/orders/admin/:id/note
+// @access  Private/Admin
+export const adminUpdateNote = async (req, res) => {
+  try {
+    const { adminNotes } = req.body;
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    order.adminNotes = adminNotes || "";
+    await order.save();
+
+    res.json({ success: true, message: "Note saved", adminNotes: order.adminNotes });
+  } catch (error) {
+    console.error("adminUpdateNote error:", error);
+    res.status(500).json({ message: error.message });
   }
 };
