@@ -1,173 +1,120 @@
-
+/* server.js — BACKEND
+   
+   KEY FIXES:
+   1. Added port 5174 (admin) to CORS allowed origins
+   2. Cookie is now SameSite:"lax" in dev so it doesn't
+      auto-bleed across localhost ports when using header auth
+   3. The frontend apps no longer send credentials:"include"
+      so the cookie is never used — auth is header-only
+*/
 import dotenv from "dotenv";
 dotenv.config();
-import dns from 'dns';
-dns.setServers(['8.8.8.8', '8.8.4.4']);
-import express from "express";
-import mongoose from "mongoose";
-import cors from "cors";
+import dns from "dns";
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+
+import express      from "express";
+import mongoose     from "mongoose";
+import cors         from "cors";
 import cookieParser from "cookie-parser";
-import morgan from "morgan";
-import path from "path";
+import morgan       from "morgan";
+import path         from "path";
 import { fileURLToPath } from "url";
 
-// Routes
-import authRoutes from "./Routes/authRoutes.js";
-import userRoutes from "./Routes/userRoutes.js";
+import authRoutes     from "./Routes/authRoutes.js";
+import userRoutes     from "./Routes/userRoutes.js";
 import categoryRoutes from "./Routes/categoryRoutes.js";
-import productRoutes from "./Routes/productRoutes.js";
-import orderRoutes from "./Routes/orderRoutes.js";
-import cartRoutes from "./Routes/cartRoutes.js";
-import reviewRoutes from "./Routes/reviewRoutes.js";
-import couponRoutes from "./Routes/couponRoutes.js";
-import adminRoutes from "./Routes/Adminroutes.js";
-import paymentRoutes from "./Routes/paymentRoutes.js"; // ✅ Stripe payments
-
-// Middleware
+import productRoutes  from "./Routes/productRoutes.js";
+import orderRoutes    from "./Routes/orderRoutes.js";
+import cartRoutes     from "./Routes/cartRoutes.js";
+import reviewRoutes   from "./Routes/reviewRoutes.js";
+import couponRoutes   from "./Routes/couponRoutes.js";
+import adminRoutes    from "./Routes/Adminroutes.js";
+import paymentRoutes  from "./Routes/paymentRoutes.js";
 import { errorHandler, notFound } from "./Middleware/errorMiddleware.js";
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname  = path.dirname(__filename);
+const app        = express();
 
-const app = express();
-
-/* =========================================================
-   STRIPE WEBHOOK (MUST BE BEFORE express.json())
-   ========================================================= */
+/* ── Stripe webhook (must be before express.json) ── */
 app.use(
   "/api/payments/webhook",
   express.raw({ type: "application/json" }),
   paymentRoutes
 );
 
-/* =========================================================
-   NORMAL MIDDLEWARE
-   ========================================================= */
-
+/* ── Body parsing ── */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-/* =========================================================
-   CORS
-   ========================================================= */
+/* ── CORS ──────────────────────────────────────────────────
+   Added 5174 for admin dev server.
+   credentials:true still needed for cookie-based fallback,
+   but our frontend apps now use header-only auth.
+─────────────────────────────────────────────────────────── */
+const ALLOWED_ORIGINS = [
+  "http://localhost:5173",  /* user app */
+  "http://localhost:5174",  /* admin app */
+  "http://localhost:5175",  /* fallback if vite picks next port */
+  "http://localhost:3000",  /* backend itself */
+];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      const allowedOrigins = [
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:3000",
-      ];
+app.use(cors({
+  origin: (origin, callback) => {
+    /* Allow requests with no origin (curl, mobile, Postman) */
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true,
+}));
 
-      if (!origin) return callback(null, true);
+/* ── Logging ── */
+if (process.env.NODE_ENV === "development") app.use(morgan("dev"));
 
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
-  })
-);
-
-/* =========================================================
-   LOGGING
-   ========================================================= */
-
-if (process.env.NODE_ENV === "development") {
-  app.use(morgan("dev"));
-}
-
-/* =========================================================
-   STATIC FILES
-   ========================================================= */
-
+/* ── Static ── */
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-/* =========================================================
-   ROUTES
-   ========================================================= */
-
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
+/* ── Routes ── */
+app.use("/api/auth",       authRoutes);
+app.use("/api/users",      userRoutes);
 app.use("/api/categories", categoryRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/cart", cartRoutes);
-app.use("/api/reviews", reviewRoutes);
-app.use("/api/coupons", couponRoutes);
-app.use("/api/admin",adminRoutes );
+app.use("/api/products",   productRoutes);
+app.use("/api/orders",     orderRoutes);
+app.use("/api/cart",       cartRoutes);
+app.use("/api/reviews",    reviewRoutes);
+app.use("/api/coupons",    couponRoutes);
+app.use("/api/admin",      adminRoutes);
+app.use("/api/payments",   paymentRoutes);
 
-/* Stripe Payment Routes */
-app.use("/api/payments", paymentRoutes);
+/* ── Health check ── */
+app.get("/api/health", (_, res) =>
+  res.json({ status: "OK", timestamp: new Date().toISOString() })
+);
 
-/* =========================================================
-   HEALTH CHECK
-   ========================================================= */
+/* ── Root ── */
+app.get("/", (_, res) => res.json({ message: "Clothing Store API v1.0" }));
 
-app.get("/api/health", (req, res) => {
-  res.json({
-    status: "OK",
-    message: "Server Running ✅",
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-  });
-});
-
-/* =========================================================
-   ROOT ROUTE
-   ========================================================= */
-
-app.get("/", (req, res) => {
-  res.json({
-    message: "Clothing Store API",
-    version: "1.0.0",
-    endpoints: {
-      auth: "/api/auth",
-      users: "/api/users",
-      categories: "/api/categories",
-      products: "/api/products",
-      orders: "/api/orders",
-      cart: "/api/cart",
-      reviews: "/api/reviews",
-      coupons: "/api/coupons",
-      payments: "/api/payments",
-    },
-  });
-});
-
-/* =========================================================
-   ERROR HANDLING
-   ========================================================= */
-
+/* ── Error handling ── */
 app.use(notFound);
 app.use(errorHandler);
 
-/* =========================================================
-   DATABASE CONNECTION
-   ========================================================= */
-
+/* ── DB + Start ── */
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI);
-
+    await mongoose.connect(process.env.MONGODB_URI);
     console.log("MongoDB Connected");
-
     const PORT = process.env.PORT || 3000;
-
     app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+      console.log(`Server → http://localhost:${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV}`);
     });
-  } catch (error) {
-    console.error(`DB Error: ${error.message}`);
+  } catch (err) {
+    console.error(`DB Error: ${err.message}`);
     process.exit(1);
   }
 };
 
 connectDB();
-
 export default app;

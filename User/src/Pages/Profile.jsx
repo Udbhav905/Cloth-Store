@@ -10,18 +10,19 @@ const getInitials = (name = "") =>
   name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
 
 function authHeader() {
-  // Pull token from your auth store / localStorage — adjust key if needed
-  const token =
-    useAuthStore.getState()?.accessToken ||
-    localStorage.getItem("accessToken") ||
-    "";
+  /* Read directly from Zustand store state — never localStorage */
+  const token = useAuthStore.getState()?.accessToken || "";
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
-
+ 
 async function apiFetch(path, options = {}) {
   const res = await fetch(`${API}${path}`, {
-    headers: { "Content-Type": "application/json", ...authHeader(), ...(options.headers || {}) },
-    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeader(),
+      ...(options.headers || {}),
+    },
+    /* NO credentials:"include" — never send the shared cookie */
     ...options,
   });
   const data = await res.json().catch(() => ({}));

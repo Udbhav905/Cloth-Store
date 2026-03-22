@@ -1,7 +1,7 @@
 /* Components/Order/Order.jsx */
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiFetch, clearAdminSession } from "../../utils/adminApi";
+import { apiFetch, clearAdminSession } from "../../utils/AdminApi";
 import styles from "./Order.module.css";
 
 const DELIVERY_PARTNERS = [
