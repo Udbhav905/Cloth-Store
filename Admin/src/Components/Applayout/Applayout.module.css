@@ -1,4 +1,6 @@
 /* AppLayout.module.css */
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400&family=Montserrat:wght@300;400;500&display=swap");
+
 .layout {
   display: grid;
   grid-template-columns: 260px 1fr;
@@ -13,11 +15,100 @@
   overflow-y: auto;
   min-height: 100vh;
   background: #0a0a0a;
+  display: flex;
+  flex-direction: column;
 }
 .content {
-  min-height: 100vh;
+  flex: 1;
 }
+
+/* ── Mobile backdrop ── */
+.mobileBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.72);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+.mobileBackdropOpen {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Mobile top bar ── */
+.mobileTopBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 16px;
+  background: #0d0d0e;
+  border-bottom: 1px solid rgba(201,168,76,0.15);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+/* Hamburger button */
+.mobileMenuBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px;
+  width: 40px;
+  height: 40px;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+.mobileMenuBtn:hover { background: rgba(201,168,76,0.08); }
+.mobileMenuBtn span {
+  display: block;
+  width: 20px;
+  height: 1.5px;
+  background: rgba(255,255,255,0.7);
+  border-radius: 1px;
+  transition: background 0.2s;
+}
+.mobileMenuBtn:hover span { background: #c9a84c; }
+
+.mobileTopLogo {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1rem;
+  font-weight: 300;
+  letter-spacing: 0.28em;
+  color: #c9a84c;
+  text-transform: uppercase;
+}
+
+.mobileTopUser {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(201,168,76,0.15);
+  border: 1px solid rgba(201,168,76,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 0.75rem;
+  color: #c9a84c;
+}
+
+/* ── Responsive ── */
 @media (max-width: 768px) {
-  .layout { grid-template-columns: 1fr; }
-  .collapsed { grid-template-columns: 1fr; }
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .collapsed {
+    grid-template-columns: 1fr;
+  }
 }

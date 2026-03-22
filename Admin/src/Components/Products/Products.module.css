@@ -1,91 +1,106 @@
-/* ============================================
-   MAISON — Luxury Products Management
-   Dark editorial luxury, gold accents
-============================================ */
-
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Montserrat:wght@300;400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Montserrat:wght@300;400;500;600&display=swap");
 
 :root {
-  --noir:        #0a0a0a;
-  --charcoal:    #111111;
-  --graphite:    #1a1a1a;
-  --smoke:       #242424;
-  --ash:         #333333;
-  --mist:        #666666;
-  --silver:      #999999;
-  --cream:       #f5f0e8;
-  --ivory:       #faf8f4;
-  --gold:        #c9a84c;
-  --gold-light:  #e8c876;
-  --gold-dim:    #7a6228;
-  --gold-glow:   rgba(201,168,76,0.12);
-  --gold-border: rgba(201,168,76,0.25);
-  --ease-silk:   cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-slow:   cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --noir: #0a0a0a;
+  --charcoal: #111111;
+  --graphite: #1a1a1a;
+  --smoke: #242424;
+  --ash: #333333;
+  --mist: #666666;
+  --silver: #999999;
+  --cream: #f5f0e8;
+  --ivory: #faf8f4;
+  --gold: #c9a84c;
+  --gold-light: #e8c876;
+  --gold-dim: #7a6228;
+  --gold-glow: rgba(201, 168, 76, 0.12);
+  --gold-border: rgba(201, 168, 76, 0.25);
+  --ease-silk: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-slow: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --shadow-card: 0 8px 40px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4);
-  --shadow-gold: 0 0 32px rgba(201,168,76,0.16), 0 0 64px rgba(201,168,76,0.06);
+  --shadow-card: 0 8px 40px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-gold:
+    0 0 32px rgba(201, 168, 76, 0.16), 0 0 64px rgba(201, 168, 76, 0.06);
 }
 
-*, *::before, *::after { box-sizing: border-box; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
-/* ── Container ── */
 .productsContainer {
   min-height: 100vh;
   background: var(--noir);
   background-image:
-    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(201,168,76,0.06) 0%, transparent 60%),
-    repeating-linear-gradient(90deg, transparent, transparent 80px,
-      rgba(255,255,255,0.012) 80px, rgba(255,255,255,0.012) 81px);
+    radial-gradient(
+      ellipse 80% 40% at 50% 0%,
+      rgba(201, 168, 76, 0.06) 0%,
+      transparent 60%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 80px,
+      rgba(255, 255, 255, 0.012) 80px,
+      rgba(255, 255, 255, 0.012) 81px
+    );
   padding-bottom: 80px;
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   color: var(--cream);
 }
 
-/* ══════════════════════════════════════
-   HEADER
-══════════════════════════════════════ */
+/* ── Header ── */
 .header {
   position: relative;
   padding: 72px 60px 52px;
-  border-bottom: 1px solid rgba(201,168,76,0.12);
+  border-bottom: 1px solid rgba(201, 168, 76, 0.12);
   overflow: hidden;
   animation: fadeDown 0.8s var(--ease-slow) both;
 }
-
 @keyframes fadeDown {
-  from { opacity: 0; transform: translateY(-24px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-
 .header::before {
-  content: 'LUXURIA';
+  content: "LUXURIA";
   position: absolute;
-  top: 50%; left: 50%;
+  top: 50%;
+  left: 50%;
   transform: translate(-50%, -50%);
-  font-family: 'Playfair Display', serif;
+  font-family: "Playfair Display", serif;
   font-size: clamp(70px, 16vw, 180px);
   font-weight: 700;
   letter-spacing: 0.3em;
-  color: rgba(201,168,76,0.035);
+  color: rgba(201, 168, 76, 0.035);
   white-space: nowrap;
   pointer-events: none;
   user-select: none;
 }
-
 .header::after {
-  content: '';
+  content: "";
   position: absolute;
-  bottom: 0; left: 60px;
-  width: 72px; height: 1px;
+  bottom: 0;
+  left: 60px;
+  width: 72px;
+  height: 1px;
   background: var(--gold);
-  box-shadow: 0 0 12px rgba(201,168,76,0.5);
+  box-shadow: 0 0 12px rgba(201, 168, 76, 0.5);
 }
-
-.headerContent { position: relative; z-index: 1; max-width: 1440px; margin: 0 auto; }
-
+.headerContent {
+  position: relative;
+  z-index: 1;
+  max-width: 1440px;
+  margin: 0 auto;
+}
 .title {
-  font-family: 'Playfair Display', serif;
+  font-family: "Playfair Display", serif;
   font-size: clamp(2rem, 4.5vw, 3.2rem);
   font-weight: 400;
   color: var(--ivory);
@@ -96,20 +111,22 @@
   margin-bottom: 10px;
   line-height: 1.1;
 }
-
 .titleIcon {
   font-size: 0.75em;
-  filter: drop-shadow(0 0 8px rgba(201,168,76,0.5));
+  filter: drop-shadow(0 0 8px rgba(201, 168, 76, 0.5));
   animation: iconPulse 3s ease-in-out infinite;
 }
-
 @keyframes iconPulse {
-  0%,100% { filter: drop-shadow(0 0 8px rgba(201,168,76,0.5)); }
-  50%      { filter: drop-shadow(0 0 18px rgba(201,168,76,0.9)); }
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(201, 168, 76, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 18px rgba(201, 168, 76, 0.9));
+  }
 }
-
 .subtitle {
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.7rem;
   font-weight: 300;
   letter-spacing: 0.28em;
@@ -117,9 +134,7 @@
   color: var(--gold);
 }
 
-/* ══════════════════════════════════════
-   CONTROL BAR
-══════════════════════════════════════ */
+/* ── Control Bar ── */
 .controlBar {
   display: flex;
   align-items: center;
@@ -130,58 +145,71 @@
   flex-wrap: wrap;
   animation: fadeUp 0.7s 0.2s var(--ease-slow) both;
 }
-
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(18px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-
 .searchWrapper {
   flex: 1;
   min-width: 240px;
   max-width: 360px;
   position: relative;
 }
-
 .searchIcon {
   position: absolute;
-  left: 18px; top: 50%;
+  left: 18px;
+  top: 50%;
   transform: translateY(-50%);
   font-size: 0.85rem;
   opacity: 0.45;
   pointer-events: none;
   transition: opacity 0.3s;
 }
-
-.searchWrapper:focus-within .searchIcon { opacity: 1; }
-
+.searchWrapper:focus-within .searchIcon {
+  opacity: 1;
+}
 .searchInput {
   width: 100%;
   background: var(--graphite);
   border: 1px solid var(--ash);
   padding: 13px 18px 13px 48px;
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.75rem;
   letter-spacing: 0.1em;
   color: var(--cream);
   outline: none;
-  transition: border-color 0.3s, box-shadow 0.3s;
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s;
 }
-
-.searchInput::placeholder { color: var(--mist); font-style: italic; font-family: 'Cormorant Garamond', serif; font-size: 0.85rem; }
-.searchInput:focus { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold-border), var(--shadow-gold); }
-
+.searchInput::placeholder {
+  color: var(--mist);
+  font-style: italic;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 0.85rem;
+}
+.searchInput:focus {
+  border-color: var(--gold);
+  box-shadow:
+    0 0 0 1px var(--gold-border),
+    var(--shadow-gold);
+}
 .filterWrapper {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
-
 .filterSelect {
   background: var(--graphite);
   border: 1px solid var(--ash);
   padding: 13px 38px 13px 16px;
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   color: var(--silver);
@@ -191,13 +219,29 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath fill='%23c9a84c' d='M5 7L0 0h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 14px center;
-  transition: border-color 0.3s, color 0.3s;
+  transition:
+    border-color 0.3s,
+    color 0.3s;
+}
+.filterSelect:focus,
+.filterSelect:hover {
+  border-color: var(--gold-border);
+  color: var(--cream);
+}
+.filterSelect option {
+  background: var(--charcoal);
 }
 
-.filterSelect:focus,
-.filterSelect:hover { border-color: var(--gold-border); color: var(--cream); }
-.filterSelect option { background: var(--charcoal); }
-
+/* ════════════════════════════════════════════════════════
+   ADD BUTTON — FIX
+   Root cause: ::before pseudo fills the button but text
+   has no z-index, so gold fill paints over the text.
+   
+   Fix A (used here): mix-blend-mode:multiply makes the fill
+   only darken, text stays readable regardless.
+   Fix B (backup): isolation:isolate + z-index on text.
+   We use both for maximum safety.
+════════════════════════════════════════════════════════ */
 .addButton {
   display: flex;
   align-items: center;
@@ -206,49 +250,68 @@
   border: 1px solid var(--gold);
   color: var(--gold);
   padding: 13px 28px;
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.72rem;
   font-weight: 500;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   cursor: pointer;
-  position: relative;
   overflow: hidden;
-  transition: color 0.4s, box-shadow 0.4s;
   white-space: nowrap;
   margin-left: auto;
+  /* Use isolation so children stack correctly */
+  isolation: isolate;
+  /* Transition only color/shadow — NOT position */
+  transition:
+    color 0.35s var(--ease-silk),
+    box-shadow 0.35s;
 }
-
 .addButton::before {
-  content: '';
-  position: absolute; inset: 0;
+  content: "";
+  position: absolute;
+  inset: 0;
   background: var(--gold);
   transform: scaleX(0);
   transform-origin: left;
-  transition: transform 0.4s var(--ease-silk);
+  transition: transform 0.35s var(--ease-silk);
+  /* z-index BELOW text */
+  z-index: -1;
+}
+/* Make the button a positioning context so z-index:-1 works */
+.addButton {
+  position: relative;
+}
+.addButton:hover {
+  color: var(--noir);
+  box-shadow: var(--shadow-gold);
+}
+.addButton:hover::before {
+  transform: scaleX(1);
+}
+/* Force all direct children above the fill */
+.addButton > * {
+  position: relative;
+  z-index: 1;
+}
+.addIcon {
+  font-size: 1.1em;
+  font-weight: 300;
 }
 
-.addButton:hover { color: var(--noir); box-shadow: var(--shadow-gold); }
-.addButton:hover::before { transform: scaleX(1); }
-.addIcon, .addButton span { position: relative; z-index: 1; }
-.addIcon { font-size: 1.1em; font-weight: 300; }
-
-/* ══════════════════════════════════════
-   FORM CONTAINER
-══════════════════════════════════════ */
+/* ── Form Container ── */
 .formContainer {
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  transition: max-height 0.9s var(--ease-silk), opacity 0.5s;
+  transition:
+    max-height 0.9s var(--ease-silk),
+    opacity 0.5s;
   padding: 0 60px;
 }
-
 .formVisible {
   max-height: 6000px;
   opacity: 1;
 }
-
 .productForm {
   background: var(--graphite);
   border: 1px solid var(--gold-border);
@@ -261,42 +324,41 @@
   margin-right: auto;
   box-shadow: var(--shadow-card), var(--shadow-gold);
 }
-
 .productForm::before {
-  content: '';
+  content: "";
   position: absolute;
-  top: 0; left: 0; right: 0; height: 1px;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
   background: linear-gradient(90deg, transparent, var(--gold), transparent);
 }
-
 .formTitle {
-  font-family: 'Playfair Display', serif;
+  font-family: "Playfair Display", serif;
   font-size: 1.5rem;
   font-weight: 400;
   color: var(--ivory);
   margin-bottom: 32px;
   padding-bottom: 18px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   letter-spacing: 0.05em;
 }
-
-/* ── Form Sections ── */
 .formSection {
   margin-bottom: 36px;
   padding: 28px;
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
   border-left: 2px solid transparent;
-  transition: border-left-color 0.35s, background 0.35s;
+  transition:
+    border-left-color 0.35s,
+    background 0.35s;
 }
-
 .formSection:hover {
   border-left-color: var(--gold-dim);
-  background: rgba(201,168,76,0.025);
+  background: rgba(201, 168, 76, 0.025);
 }
-
 .sectionTitle {
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.65rem;
   font-weight: 600;
   letter-spacing: 0.28em;
@@ -304,52 +366,60 @@
   color: var(--gold);
   margin-bottom: 22px;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(201,168,76,0.12);
+  border-bottom: 1px solid rgba(201, 168, 76, 0.12);
 }
-
 .formGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 20px;
 }
-
-.formGroup, .formGroupFull { display: flex; flex-direction: column; gap: 8px; }
-.formGroupFull { grid-column: 1 / -1; }
-
+.formGroup,
+.formGroupFull {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.formGroupFull {
+  grid-column: 1 / -1;
+}
 .formLabel {
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.65rem;
   font-weight: 500;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--gold);
 }
-
 .formInput,
 .formSelect,
 .formTextarea {
   background: var(--smoke);
   border: 1px solid var(--ash);
   padding: 13px 16px;
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   font-size: 1rem;
   color: var(--cream);
   outline: none;
-  transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
   appearance: none;
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s,
+    background 0.3s;
 }
-
 .formInput::placeholder,
-.formTextarea::placeholder { color: var(--mist); font-style: italic; }
-
+.formTextarea::placeholder {
+  color: var(--mist);
+  font-style: italic;
+}
 .formInput:focus,
 .formSelect:focus,
 .formTextarea:focus {
   border-color: var(--gold);
   background: var(--charcoal);
-  box-shadow: 0 0 0 1px var(--gold-border), inset 0 1px 0 rgba(201,168,76,0.08);
+  box-shadow:
+    0 0 0 1px var(--gold-border),
+    inset 0 1px 0 rgba(201, 168, 76, 0.08);
 }
-
 .formSelect {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath fill='%23c9a84c' d='M5 7L0 0h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -358,10 +428,14 @@
   padding-right: 40px;
   cursor: pointer;
 }
-
-.formSelect option { background: var(--charcoal); }
-.formTextarea { resize: vertical; min-height: 90px; line-height: 1.6; }
-
+.formSelect option {
+  background: var(--charcoal);
+}
+.formTextarea {
+  resize: vertical;
+  min-height: 90px;
+  line-height: 1.6;
+}
 .colorInput {
   width: 100%;
   height: 46px;
@@ -371,26 +445,34 @@
   padding: 4px;
   transition: border-color 0.3s;
 }
-
 .colorInput:hover,
-.colorInput:focus { border-color: var(--gold); outline: none; }
-
-/* ── Checkbox ── */
+.colorInput:focus {
+  border-color: var(--gold);
+  outline: none;
+}
+.fieldHint {
+  display: block;
+  margin-top: 6px;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--mist);
+}
 .checkboxLabel {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.75rem;
   letter-spacing: 0.1em;
   color: var(--silver);
   cursor: pointer;
   padding: 13px 0;
 }
-
 .checkboxLabel input[type="checkbox"] {
   appearance: none;
-  width: 16px; height: 16px;
+  width: 16px;
+  height: 16px;
   border: 1px solid var(--gold);
   background: var(--smoke);
   cursor: pointer;
@@ -398,36 +480,34 @@
   flex-shrink: 0;
   transition: background 0.2s;
 }
-
-.checkboxLabel input[type="checkbox"]:checked { background: var(--gold); }
+.checkboxLabel input[type="checkbox"]:checked {
+  background: var(--gold);
+}
 .checkboxLabel input[type="checkbox"]:checked::after {
-  content: '✓';
+  content: "✓";
   position: absolute;
-  top: 50%; left: 50%;
+  top: 50%;
+  left: 50%;
   transform: translate(-50%, -50%);
   color: var(--noir);
   font-size: 10px;
   font-weight: 700;
 }
-
-/* ── Status Checkbox Cards ── */
 .statusGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
 }
-
 .checkboxCard {
   cursor: pointer;
   display: block;
 }
-
 .checkboxCard input[type="checkbox"] {
   position: absolute;
   opacity: 0;
-  width: 0; height: 0;
+  width: 0;
+  height: 0;
 }
-
 .checkboxCardContent {
   display: flex;
   flex-direction: column;
@@ -438,40 +518,37 @@
   border: 1px solid var(--ash);
   border-top: 2px solid transparent;
   transition: all 0.35s var(--ease-silk);
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.65rem;
   font-weight: 500;
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--mist);
 }
-
 .checkboxCard input[type="checkbox"]:checked + .checkboxCardContent {
   border-top-color: var(--gold);
-  background: rgba(201,168,76,0.06);
+  background: rgba(201, 168, 76, 0.06);
   color: var(--gold);
   box-shadow: var(--shadow-gold);
 }
-
 .checkboxCard:hover .checkboxCardContent {
   border-color: var(--gold-border);
   color: var(--silver);
 }
-
-.checkboxIcon { font-size: 1.3rem; }
-
-/* ── Image Upload ── */
+.checkboxIcon {
+  font-size: 1.3rem;
+}
 .imageUploadArea {
   border: 1px dashed var(--ash);
-  transition: border-color 0.3s;
   min-height: 140px;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: border-color 0.3s;
 }
-
-.imageUploadArea:hover { border-color: var(--gold-dim); }
-
+.imageUploadArea:hover {
+  border-color: var(--gold-dim);
+}
 .uploadLabel {
   display: flex;
   flex-direction: column;
@@ -479,28 +556,32 @@
   gap: 10px;
   padding: 36px 24px;
   cursor: pointer;
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.68rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--mist);
   transition: color 0.3s;
 }
-
-.uploadLabel:hover { color: var(--gold); }
-
+.uploadLabel:hover {
+  color: var(--gold);
+}
 .uploadIcon {
   font-size: 1.8rem;
   animation: floatIcon 3s ease-in-out infinite;
 }
-
 @keyframes floatIcon {
-  0%,100% { transform: translateY(0); }
-  50%      { transform: translateY(-6px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }
-
-.fileInput { display: none; }
-
+.fileInput {
+  display: none;
+}
 .imagePreview {
   position: relative;
   display: inline-block;
@@ -508,7 +589,6 @@
   width: 100%;
   max-width: 260px;
 }
-
 .previewImage {
   display: block;
   width: 100%;
@@ -517,33 +597,37 @@
   filter: brightness(0.88);
   transition: filter 0.3s;
 }
-
-.previewImage:hover { filter: brightness(1); }
-
+.previewImage:hover {
+  filter: brightness(1);
+}
 .removeImage {
   position: absolute;
-  top: 0; right: 0;
+  top: 0;
+  right: 0;
   background: var(--gold);
   color: var(--noir);
   border: none;
-  width: 22px; height: 22px;
+  width: 22px;
+  height: 22px;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: background 0.2s;
 }
-
-.removeImage:hover { background: var(--gold-light); }
-
+.removeImage:hover {
+  background: var(--gold-light);
+}
 .galleryUploadArea {
   border: 1px dashed var(--ash);
   padding: 12px;
   transition: border-color 0.3s;
 }
-
-.galleryUploadArea:hover { border-color: var(--gold-dim); }
-
+.galleryUploadArea:hover {
+  border-color: var(--gold-dim);
+}
 .galleryUploadLabel {
   display: flex;
   flex-direction: column;
@@ -551,252 +635,397 @@
   gap: 8px;
   padding: 20px;
   cursor: pointer;
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.68rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--mist);
   transition: color 0.3s;
 }
-
-.galleryUploadLabel:hover { color: var(--gold); }
-
+.galleryUploadLabel:hover {
+  color: var(--gold);
+}
 .galleryPreviews {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
   gap: 8px;
   margin-top: 12px;
 }
-
 .galleryPreviewItem {
   position: relative;
   aspect-ratio: 1;
   overflow: hidden;
   border: 1px solid var(--ash);
 }
-
 .galleryPreviewItem img {
-  width: 100%; height: 100%;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   display: block;
   transition: transform 0.35s;
 }
-
-.galleryPreviewItem:hover img { transform: scale(1.06); }
-
-/* ══════════════════════════════════════
-   VARIANTS
-══════════════════════════════════════ */
-.variantForm {
-  background: rgba(255,255,255,0.02);
-  border: 1px solid var(--ash);
-  padding: 24px;
-  margin-bottom: 24px;
-  transition: border-color 0.3s;
+.galleryPreviewItem:hover img {
+  transform: scale(1.06);
 }
 
-.variantForm:hover { border-color: var(--gold-border); }
-
+/* ── Variants ── */
+.variantForm {
+  background: rgba(255, 255, 255, 0.018);
+  border: 1px solid rgba(201, 168, 76, 0.15);
+  border-left: 2px solid transparent;
+  padding: 28px 24px 22px;
+  margin-bottom: 24px;
+  position: relative;
+  transition:
+    border-left-color 0.35s,
+    background 0.35s;
+}
+.variantForm::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(201, 168, 76, 0.2),
+    transparent
+  );
+  opacity: 0;
+  transition: opacity 0.35s;
+}
+.variantForm:hover {
+  border-left-color: var(--gold);
+  background: rgba(201, 168, 76, 0.025);
+}
+.variantForm:hover::before {
+  opacity: 1;
+}
 .variantGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 14px;
-  margin-bottom: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(min(148px, 100%), 1fr));
+  gap: 16px;
+  margin-bottom: 22px;
 }
-
 .variantActions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   justify-content: flex-end;
+  margin-top: 8px;
 }
 
+/* ════════════════════════════════════════════════════════
+   ADD VARIANT BUTTON — FIX
+   
+   THE BUG: .addVariantButton had overflow:hidden + ::before
+   pseudo that slides in as a gold fill. But the button's
+   text content is a plain text node (not wrapped in a span
+   with z-index), so the pseudo-element painted over it.
+   
+   THE FIX: z-index:-1 on the ::before keeps it behind ALL
+   content without needing to wrap every text node in a span.
+   The button itself needs position:relative + isolation:isolate
+   so z-index:-1 is scoped to inside the button.
+════════════════════════════════════════════════════════ */
 .addVariantButton {
   background: transparent;
   border: 1px solid var(--gold);
   color: var(--gold);
-  padding: 11px 24px;
-  font-family: 'Montserrat', sans-serif;
+  padding: 11px 26px;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.68rem;
   font-weight: 500;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   cursor: pointer;
+  /* positioning context for ::before */
   position: relative;
+  /* creates stacking context — z-index:-1 on ::before
+     will go behind button content but NOT behind the button itself */
+  isolation: isolate;
   overflow: hidden;
-  transition: color 0.35s;
+  transition:
+    color 0.38s var(--ease-silk),
+    box-shadow 0.38s;
 }
-
 .addVariantButton::before {
-  content: '';
-  position: absolute; inset: 0;
+  content: "";
+  position: absolute;
+  inset: 0;
   background: var(--gold);
   transform: scaleX(0);
   transform-origin: left;
-  transition: transform 0.35s var(--ease-silk);
+  transition: transform 0.38s var(--ease-silk);
+  /* KEY: negative z-index keeps fill BEHIND text */
+  z-index: -1;
 }
-
-.addVariantButton:hover { color: var(--noir); }
-.addVariantButton:hover::before { transform: scaleX(1); }
-.addVariantButton span { position: relative; z-index: 1; }
+.addVariantButton:hover {
+  color: var(--noir);
+  box-shadow: var(--shadow-gold);
+}
+.addVariantButton:hover::before {
+  transform: scaleX(1);
+}
 
 .cancelVariantButton {
   background: transparent;
   border: 1px solid var(--ash);
   color: var(--mist);
-  padding: 11px 24px;
-  font-family: 'Montserrat', sans-serif;
+  padding: 11px 26px;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.68rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: border-color 0.3s, color 0.3s;
-}
-
-.cancelVariantButton:hover { border-color: var(--silver); color: var(--silver); }
-
-/* Variants table */
-.variantsList { margin-top: 20px; }
-
-.variantsListTitle {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.62rem;
-  font-weight: 500;
   letter-spacing: 0.22em;
   text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    border-color 0.3s,
+    color 0.3s;
+}
+.cancelVariantButton:hover {
+  border-color: var(--silver);
+  color: var(--silver);
+}
+
+/* Variants table */
+.variantsList {
+  margin-top: 20px;
+}
+.variantsListTitle {
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
   color: var(--gold);
-  margin-bottom: 14px;
+  margin: 20px 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(201, 168, 76, 0.12);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.variantsListTitle::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(201, 168, 76, 0.2), transparent);
+}
+
+/* Scroll wrapper — lets table scroll on tablet without breaking layout */
+.variantsTableScroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Subtle fade on the right to hint scrollability */
+  mask-image: linear-gradient(
+    to right,
+    black calc(100% - 24px),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    black calc(100% - 24px),
+    transparent 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+/* Remove the fade when table fits comfortably */
+@media (min-width: 641px) {
+  .variantsTableScroll {
+    mask-image: none;
+    -webkit-mask-image: none;
+    border: none;
+  }
 }
 
 .variantsTable {
   width: 100%;
   border-collapse: collapse;
+  min-width: 520px;
 }
-
 .variantsTable thead tr {
-  border-bottom: 1px solid rgba(201,168,76,0.15);
+  border-bottom: 1px solid rgba(201, 168, 76, 0.2);
 }
-
 .variantsTable th {
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.58rem;
   font-weight: 500;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--gold);
-  padding: 0 14px 12px;
+  padding: 0 14px 13px;
   text-align: left;
+  white-space: nowrap;
 }
-
 .variantsTable td {
-  padding: 12px 14px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  font-family: 'Cormorant Garamond', serif;
+  padding: 13px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-family: "Cormorant Garamond", serif;
   font-size: 0.95rem;
   color: var(--silver);
-  transition: color 0.25s;
+  vertical-align: middle;
+  transition:
+    color 0.25s,
+    background 0.25s;
+  white-space: nowrap;
+}
+.variantsTable tr:hover td {
+  color: var(--cream);
+  background: rgba(201, 168, 76, 0.03);
+}
+.variantsTable tbody tr:last-child td {
+  border-bottom: none;
 }
 
-.variantsTable tr:hover td { color: var(--cream); background: rgba(201,168,76,0.03); }
-
+/* ── Mobile variant cards (≤480px) ──────────────────────────────
+   Below 480px the table becomes individual cards — one per variant.
+   Each card shows all fields as label/value rows instead of columns.
+   The table thead is hidden; each td gets a data-label attribute
+   (set in JSX) that acts as the column label.
+──────────────────────────────────────────────────────────────── */
+.variantCard {
+  display: none; /* shown only in mobile media query below */
+}
 .colorDot {
   display: inline-block;
-  width: 14px; height: 14px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  margin-right: 8px;
+  margin-right: 9px;
   vertical-align: middle;
-  border: 1px solid rgba(255,255,255,0.2);
-  box-shadow: 0 0 4px rgba(0,0,0,0.4);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 0 6px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
 }
-
-/* Variant status badges */
 .statusBadge {
-  font-family: 'Montserrat', sans-serif;
+  display: inline-flex;
+  align-items: center;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.58rem;
   font-weight: 500;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  padding: 4px 10px;
+  padding: 4px 11px;
   border: 1px solid;
+  white-space: nowrap;
+}
+.statusBadge.active {
+  color: #7ecfa4;
+  border-color: rgba(126, 207, 164, 0.35);
+  background: rgba(126, 207, 164, 0.07);
+}
+.statusBadge.inactive {
+  color: var(--mist);
+  border-color: var(--ash);
+  background: transparent;
 }
 
-.statusBadge.active  { color: #7ecfa4; border-color: rgba(126,207,164,0.35); background: rgba(126,207,164,0.06); }
-.statusBadge.inactive { color: var(--mist); border-color: var(--ash); background: transparent; }
-
+/* ── Variant row action buttons ──
+   These use direct background/color transitions — NO pseudo overlay.
+   Simple and always readable. */
 .editVariantButton,
 .deleteVariantButton {
   background: transparent;
   border: 1px solid var(--ash);
   color: var(--mist);
-  width: 30px; height: 30px;
+  width: 30px;
+  height: 30px;
   font-size: 0.75rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.25s;
-  margin-right: 4px;
+  margin-right: 5px;
+  transition:
+    background 0.25s,
+    border-color 0.25s,
+    color 0.25s,
+    transform 0.2s;
+}
+.editVariantButton:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--noir);
+  transform: scale(1.08);
+  box-shadow: 0 0 12px rgba(201, 168, 76, 0.3);
+}
+.deleteVariantButton:hover {
+  background: rgba(220, 80, 80, 0.12);
+  border-color: rgba(220, 80, 80, 0.5);
+  color: #ff8888;
+  transform: scale(1.08);
 }
 
-.editVariantButton:hover { background: var(--gold); border-color: var(--gold); color: var(--noir); }
-.deleteVariantButton:hover { background: rgba(220,80,80,0.12); border-color: rgba(220,80,80,0.4); color: #ff6b6b; }
-
-/* ── Form Actions ── */
+/* ── Form actions ── */
 .formActions {
   display: flex;
   justify-content: flex-end;
   gap: 14px;
   margin-top: 32px;
   padding-top: 24px;
-  border-top: 1px solid rgba(255,255,255,0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
-
 .cancelButton {
   background: transparent;
   border: 1px solid var(--ash);
   color: var(--mist);
   padding: 13px 28px;
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.72rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.3s;
+  transition:
+    border-color 0.3s,
+    color 0.3s;
+}
+.cancelButton:hover {
+  border-color: var(--silver);
+  color: var(--silver);
 }
 
-.cancelButton:hover { border-color: var(--silver); color: var(--silver); }
-
+/* ── Submit button — no pseudo overlay, direct transition ── */
 .submitButton {
   background: var(--gold);
   border: 1px solid var(--gold);
   color: var(--noir);
   padding: 13px 36px;
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: box-shadow 0.3s, transform 0.2s;
+  transition:
+    box-shadow 0.3s,
+    transform 0.2s,
+    background 0.3s;
 }
-
-.submitButton::before {
-  content: '';
-  position: absolute; inset: 0;
+.submitButton:hover {
   background: var(--gold-light);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.4s var(--ease-silk);
+  box-shadow: var(--shadow-gold);
+  transform: translateY(-1px);
+}
+.submitButton:active {
+  transform: translateY(0);
 }
 
-.submitButton:hover { box-shadow: var(--shadow-gold); transform: translateY(-1px); }
-.submitButton:hover::before { transform: scaleX(1); }
-.submitButton:active { transform: translateY(0); }
+.formError {
+  background: rgba(220, 80, 80, 0.08);
+  border: 1px solid rgba(220, 80, 80, 0.3);
+  color: #ff9999;
+  padding: 12px 16px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  margin-bottom: 16px;
+}
 
-/* ══════════════════════════════════════
-   PRODUCTS GRID
-══════════════════════════════════════ */
+/* ── Products Grid ── */
 .productsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
@@ -806,30 +1035,33 @@
   margin: 0 auto;
   animation: fadeUp 0.7s 0.35s var(--ease-slow) both;
 }
-
-/* ── Product Card ── */
 .productCard {
   background: var(--graphite);
-  border: 1px solid rgba(255,255,255,0.04);
+  border: 1px solid rgba(255, 255, 255, 0.04);
   border-top: 2px solid transparent;
   overflow: hidden;
   position: relative;
   animation: cardReveal 0.55s var(--ease-slow) both;
-  transition: border-top-color 0.35s, box-shadow 0.35s, transform 0.35s var(--ease-slow);
+  transition:
+    border-top-color 0.35s,
+    box-shadow 0.35s,
+    transform 0.35s var(--ease-slow);
 }
-
 @keyframes cardReveal {
-  from { opacity: 0; transform: translateY(22px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-
 .productCard:hover {
   border-top-color: var(--gold);
   box-shadow: var(--shadow-card), var(--shadow-gold);
   transform: translateY(-6px);
 }
-
-/* Image area */
 .productImageContainer {
   position: relative;
   height: 260px;
@@ -837,26 +1069,25 @@
   background: var(--smoke);
   cursor: pointer;
 }
-
 .productImage {
-  width: 100%; height: 100%;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   display: block;
   filter: brightness(0.85) contrast(1.05);
-  transition: transform 0.6s var(--ease-slow), filter 0.4s;
+  transition:
+    transform 0.6s var(--ease-slow),
+    filter 0.4s;
 }
-
 .productCard:hover .productImage {
   transform: scale(1.07);
   filter: brightness(0.95) contrast(1.08);
 }
-
-/* Badges */
 .featuredBadge,
 .newBadge,
 .bestsellerBadge {
   position: absolute;
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.55rem;
   font-weight: 600;
   letter-spacing: 0.2em;
@@ -864,52 +1095,55 @@
   padding: 4px 10px;
   animation: badgeIn 0.5s var(--ease-spring) both;
 }
-
 @keyframes badgeIn {
-  from { opacity: 0; transform: translateX(12px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
-
 .featuredBadge {
-  top: 12px; left: 0;
+  top: 12px;
+  left: 0;
   background: var(--gold);
   color: var(--noir);
-  border-right: none;
 }
-
 .newBadge {
-  top: 12px; right: 0;
-  background: rgba(126,207,164,0.9);
+  top: 12px;
+  right: 0;
+  background: rgba(126, 207, 164, 0.9);
   color: var(--noir);
 }
-
 .bestsellerBadge {
-  top: 40px; left: 0;
-  background: rgba(201,168,76,0.75);
+  top: 40px;
+  left: 0;
+  background: rgba(201, 168, 76, 0.75);
   color: var(--noir);
   backdrop-filter: blur(4px);
 }
-
 .inactiveOverlay {
-  position: absolute; inset: 0;
-  background: rgba(0,0,0,0.65);
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(3px);
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Montserrat', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.7rem;
   font-weight: 500;
   letter-spacing: 0.35em;
   text-transform: uppercase;
   color: var(--mist);
 }
-
-/* Product Info */
 .productInfo {
   padding: 20px 22px 18px;
 }
-
 .productName {
-  font-family: 'Playfair Display', serif;
+  font-family: "Playfair Display", serif;
   font-size: 1.05rem;
   font-weight: 400;
   color: var(--ivory);
@@ -917,9 +1151,8 @@
   margin-bottom: 4px;
   line-height: 1.25;
 }
-
 .productBrand {
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.6rem;
   font-weight: 400;
   letter-spacing: 0.22em;
@@ -927,382 +1160,109 @@
   color: var(--gold);
   margin-bottom: 14px;
 }
-
 .productPrice {
   display: flex;
   align-items: baseline;
   gap: 10px;
   margin-bottom: 12px;
 }
-
 .currentPrice {
-  font-family: 'Playfair Display', serif;
+  font-family: "Playfair Display", serif;
   font-size: 1.2rem;
   font-weight: 600;
   color: var(--ivory);
 }
-
 .discountedPrice {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   font-size: 0.9rem;
   color: var(--mist);
   text-decoration: line-through;
 }
-
 .productStats {
   display: flex;
   gap: 16px;
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.62rem;
   letter-spacing: 0.08em;
   color: var(--mist);
   margin-bottom: 14px;
   padding-bottom: 14px;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
-
+/* ── Edit/Delete card buttons ──
+   Direct transition. No pseudo fill. Always readable. */
 .productActions {
   display: flex;
   gap: 8px;
   opacity: 0;
   transform: translateY(6px);
-  transition: opacity 0.3s, transform 0.3s;
+  transition:
+    opacity 0.3s,
+    transform 0.3s;
 }
-
 .productCard:hover .productActions {
   opacity: 1;
   transform: translateY(0);
 }
-
 .editButton,
 .deleteButton {
   flex: 1;
   padding: 10px 8px;
   border: 1px solid;
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.62rem;
   font-weight: 500;
   letter-spacing: 0.15em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.3s;
   background: transparent;
+  transition:
+    background 0.25s,
+    color 0.25s,
+    border-color 0.25s,
+    box-shadow 0.25s;
 }
-
 .editButton {
   border-color: var(--gold-border);
   color: var(--gold);
 }
-
 .editButton:hover {
   background: var(--gold);
   color: var(--noir);
+  border-color: var(--gold);
   box-shadow: var(--shadow-gold);
 }
-
 .deleteButton {
-  border-color: rgba(220,80,80,0.25);
+  border-color: rgba(220, 80, 80, 0.25);
   color: #cc6666;
 }
-
 .deleteButton:hover {
-  background: rgba(220,80,80,0.12);
-  border-color: rgba(220,80,80,0.5);
-  color: #ff8888;
-}
-/* ============================================
-   MAISON — Variant Form Premium CSS
-   Dark editorial luxury, gold accents
-   Drop-in replacement for variant styles
-============================================ */
-
-/* ── Field Hint ── */
-.fieldHint {
-  display: block;
-  margin-top: 6px;
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 0.82rem;
-  font-style: italic;
-  letter-spacing: 0.04em;
-  color: #666666;
+  background: rgba(220, 80, 80, 0.14);
+  border-color: rgba(220, 80, 80, 0.55);
+  color: #ff9999;
 }
 
-/* ── Variant Form Panel ── */
-.variantForm {
-  background: rgba(255, 255, 255, 0.018);
-  border: 1px solid rgba(201, 168, 76, 0.15);
-  border-left: 2px solid transparent;
-  padding: 28px 24px 22px;
-  margin-bottom: 24px;
-  position: relative;
-  transition:
-    border-left-color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-    background 0.35s,
-    box-shadow 0.35s;
-}
-
-.variantForm::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.2), transparent);
-  opacity: 0;
-  transition: opacity 0.35s;
-}
-
-.variantForm:hover {
-  border-left-color: #c9a84c;
-  background: rgba(201, 168, 76, 0.025);
-  box-shadow:
-    0 8px 40px rgba(0, 0, 0, 0.45),
-    0 0 0 0 rgba(201, 168, 76, 0);
-}
-
-.variantForm:hover::before {
-  opacity: 1;
-}
-
-/* ── Variant Grid ── */
-.variantGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
-  gap: 16px;
-  margin-bottom: 22px;
-}
-
-/* ── Variant Action Buttons ── */
-.variantActions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 8px;
-}
-
-.addVariantButton {
-  background: transparent;
-  border: 1px solid #c9a84c;
-  color: #c9a84c;
-  padding: 11px 26px;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.68rem;
-  font-weight: 500;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: color 0.38s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.38s;
-}
-
-.addVariantButton::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: #c9a84c;
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.addVariantButton > * {
-  position: relative;
-  z-index: 1;
-}
-
-.addVariantButton:hover {
-  color: #0a0a0a;
-  box-shadow:
-    0 0 32px rgba(201, 168, 76, 0.2),
-    0 0 8px rgba(201, 168, 76, 0.1);
-}
-
-.addVariantButton:hover::before {
-  transform: scaleX(1);
-}
-
-.addVariantButton:active {
-  transform: translateY(1px);
-}
-
-.cancelVariantButton {
-  background: transparent;
-  border: 1px solid #333333;
-  color: #666666;
-  padding: 11px 26px;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.68rem;
-  font-weight: 400;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: border-color 0.3s, color 0.3s;
-}
-
-.cancelVariantButton:hover {
-  border-color: #999999;
-  color: #aaaaaa;
-}
-
-/* ── Variants Table ── */
-.variantsTable {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 16px;
-}
-
-.variantsTable thead tr {
-  border-bottom: 1px solid rgba(201, 168, 76, 0.2);
-}
-
-.variantsTable th {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.58rem;
-  font-weight: 500;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: #c9a84c;
-  padding: 0 14px 13px;
-  text-align: left;
-  white-space: nowrap;
-}
-
-.variantsTable td {
-  padding: 13px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 0.95rem;
-  color: #999999;
-  vertical-align: middle;
-  transition: color 0.25s, background 0.25s;
-}
-
-.variantsTable tr:hover td {
-  color: #f5f0e8;
-  background: rgba(201, 168, 76, 0.03);
-}
-
-.variantsTable tbody tr:last-child td {
-  border-bottom: none;
-}
-
-/* ── Colour Swatch Dot ── */
-.colorDot {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  margin-right: 9px;
-  vertical-align: middle;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 0 6px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  flex-shrink: 0;
-}
-
-/* ── Status Badge ── */
-.statusBadge {
-  display: inline-flex;
-  align-items: center;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.58rem;
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  padding: 4px 11px;
-  border: 1px solid;
-  white-space: nowrap;
-}
-
-.statusBadge.active {
-  color: #7ecfa4;
-  border-color: rgba(126, 207, 164, 0.35);
-  background: rgba(126, 207, 164, 0.07);
-}
-
-.statusBadge.inactive {
-  color: #666666;
-  border-color: #333333;
-  background: transparent;
-}
-
-/* ── Row Action Buttons ── */
-.editVariantButton,
-.deleteVariantButton {
-  background: transparent;
-  border: 1px solid #2a2a2a;
-  color: #555555;
-  width: 30px;
-  height: 30px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 5px;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.editVariantButton:hover {
-  background: #c9a84c;
-  border-color: #c9a84c;
-  color: #0a0a0a;
-  transform: scale(1.08);
-  box-shadow: 0 0 12px rgba(201, 168, 76, 0.25);
-}
-
-.deleteVariantButton:hover {
-  background: rgba(220, 80, 80, 0.1);
-  border-color: rgba(220, 80, 80, 0.45);
-  color: #ff8888;
-  transform: scale(1.08);
-}
-
-/* ── Variants List Title ── */
-.variantsListTitle {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.62rem;
-  font-weight: 500;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  color: #c9a84c;
-  margin: 20px 0 14px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(201, 168, 76, 0.12);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.variantsListTitle::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(201, 168, 76, 0.2), transparent);
-}
-
-
-/* ══════════════════════════════════════
-   LOADER & EMPTY
-══════════════════════════════════════ */
+/* ── Loader & Empty ── */
 .loaderContainer {
   grid-column: 1 / -1;
   display: flex;
   justify-content: center;
   padding: 80px;
 }
-
 .loader {
-  width: 38px; height: 38px;
+  width: 38px;
+  height: 38px;
   border: 1px solid var(--ash);
   border-top-color: var(--gold);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
-  box-shadow: 0 0 16px rgba(201,168,76,0.12);
+  box-shadow: 0 0 16px rgba(201, 168, 76, 0.12);
 }
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .emptyState {
   grid-column: 1 / -1;
   display: flex;
@@ -1310,10 +1270,9 @@
   align-items: center;
   justify-content: center;
   padding: 100px 40px;
-  border: 1px dashed rgba(201,168,76,0.18);
+  border: 1px dashed rgba(201, 168, 76, 0.18);
   text-align: center;
 }
-
 .emptyIcon {
   font-size: 3rem;
   opacity: 0.3;
@@ -1321,30 +1280,27 @@
   display: block;
   animation: floatIcon 3s ease-in-out infinite;
 }
-
 .emptyState h3 {
-  font-family: 'Playfair Display', serif;
+  font-family: "Playfair Display", serif;
   font-size: 1.5rem;
   font-weight: 400;
   color: var(--silver);
   margin-bottom: 10px;
   letter-spacing: 0.05em;
 }
-
 .emptyState p {
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.68rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--mist);
 }
 
-/* ══════════════════════════════════════
-   MODAL
-══════════════════════════════════════ */
+/* ── Modal ── */
 .modalOverlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.87);
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.87);
   backdrop-filter: blur(10px);
   z-index: 2000;
   display: flex;
@@ -1353,9 +1309,14 @@
   padding: 20px;
   animation: overlayIn 0.3s ease both;
 }
-
-@keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
-
+@keyframes overlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 .modalContent {
   background: var(--charcoal);
   border: 1px solid var(--gold-border);
@@ -1368,57 +1329,80 @@
   animation: modalIn 0.45s var(--ease-spring) both;
   box-shadow: var(--shadow-card), var(--shadow-gold);
 }
-
 @keyframes modalIn {
-  from { opacity: 0; transform: scale(0.88) translateY(24px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.88) translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
-
 .modalContent::before {
-  content: '';
+  content: "";
   position: absolute;
-  top: 0; left: 0; right: 0; height: 1px;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
   background: linear-gradient(90deg, transparent, var(--gold), transparent);
 }
+.modalContent::-webkit-scrollbar {
+  width: 3px;
+}
+.modalContent::-webkit-scrollbar-thumb {
+  background: var(--gold-dim);
+}
+.modalContent::-webkit-scrollbar-thumb:hover {
+  background: var(--gold);
+}
 
-.modalContent::-webkit-scrollbar { width: 3px; }
-.modalContent::-webkit-scrollbar-thumb { background: var(--gold-dim); }
-.modalContent::-webkit-scrollbar-thumb:hover { background: var(--gold); }
-
+/* ── Modal close — direct transition, no pseudo ── */
 .modalClose {
   position: absolute;
-  top: 18px; right: 18px;
+  top: 18px;
+  right: 18px;
   background: transparent;
   border: 1px solid var(--ash);
   color: var(--mist);
-  width: 34px; height: 34px;
+  width: 34px;
+  height: 34px;
   font-size: 1.2rem;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: all 0.25s;
   z-index: 1;
+  transition:
+    background 0.25s,
+    border-color 0.25s,
+    color 0.25s;
 }
-
-.modalClose:hover { background: var(--gold); border-color: var(--gold); color: var(--noir); }
+.modalClose:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--noir);
+}
 
 .modalHeader {
   display: flex;
   align-items: flex-start;
   gap: 24px;
   padding: 36px 36px 24px;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   position: relative;
   overflow: hidden;
 }
-
 .modalHeader::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(90deg, rgba(201,168,76,0.04), transparent);
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(201, 168, 76, 0.04), transparent);
 }
-
 .modalImage {
-  width: 110px; height: 130px;
+  width: 110px;
+  height: 130px;
   object-fit: cover;
   border: 1px solid var(--gold-border);
   flex-shrink: 0;
@@ -1426,15 +1410,13 @@
   position: relative;
   z-index: 1;
 }
-
 .modalHeaderInfo {
   flex: 1;
   position: relative;
   z-index: 1;
 }
-
 .modalTitle {
-  font-family: 'Playfair Display', serif;
+  font-family: "Playfair Display", serif;
   font-size: 1.7rem;
   font-weight: 400;
   font-style: italic;
@@ -1443,9 +1425,8 @@
   line-height: 1.2;
   margin-bottom: 6px;
 }
-
 .modalBrand {
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.62rem;
   font-weight: 400;
   letter-spacing: 0.28em;
@@ -1453,11 +1434,13 @@
   color: var(--gold);
   margin-bottom: 14px;
 }
-
-.modalBadges { display: flex; gap: 8px; flex-wrap: wrap; }
-
+.modalBadges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .modalBadge {
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.55rem;
   font-weight: 500;
   letter-spacing: 0.2em;
@@ -1465,15 +1448,16 @@
   padding: 4px 12px;
   border: 1px solid var(--gold-border);
   color: var(--gold);
-  background: rgba(201,168,76,0.06);
+  background: rgba(201, 168, 76, 0.06);
 }
-
-.modalBody { padding: 28px 36px; }
-
-.modalSection { margin-bottom: 24px; }
-
+.modalBody {
+  padding: 28px 36px;
+}
+.modalSection {
+  margin-bottom: 24px;
+}
 .modalSection h3 {
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.6rem;
   font-weight: 500;
   letter-spacing: 0.25em;
@@ -1481,120 +1465,398 @@
   color: var(--gold);
   margin-bottom: 14px;
   padding-bottom: 8px;
-  border-bottom: 1px solid rgba(201,168,76,0.12);
+  border-bottom: 1px solid rgba(201, 168, 76, 0.12);
 }
-
 .modalSection p {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: "Cormorant Garamond", serif;
   font-size: 0.95rem;
   color: var(--silver);
   line-height: 1.7;
   margin-bottom: 5px;
 }
-
-.modalSection strong { color: var(--cream); font-weight: 500; }
-
+.modalSection strong {
+  color: var(--cream);
+  font-weight: 500;
+}
 .modalGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 24px;
 }
-
 .modalGallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 8px;
 }
-
 .modalGalleryImage {
-  width: 100%; height: 130px;
+  width: 100%;
+  height: 130px;
   object-fit: cover;
   border: 1px solid var(--ash);
   display: block;
-  transition: transform 0.35s, border-color 0.3s;
+  transition:
+    transform 0.35s,
+    border-color 0.3s;
   cursor: pointer;
 }
-
-.modalGalleryImage:hover { transform: scale(1.04); border-color: var(--gold-border); }
-
+.modalGalleryImage:hover {
+  transform: scale(1.04);
+  border-color: var(--gold-border);
+}
 .modalFooter {
   padding: 20px 36px 32px;
-  border-top: 1px solid rgba(255,255,255,0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   justify-content: flex-end;
 }
 
+/* ════════════════════════════════════════════════════════
+   MODAL EDIT BUTTON — FIX (same isolation trick)
+════════════════════════════════════════════════════════ */
 .modalEditButton {
   background: transparent;
   border: 1px solid var(--gold);
   color: var(--gold);
   padding: 13px 32px;
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
   font-size: 0.72rem;
   font-weight: 500;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   cursor: pointer;
   position: relative;
+  isolation: isolate; /* scopes z-index stacking context */
   overflow: hidden;
-  transition: color 0.4s;
+  transition:
+    color 0.35s var(--ease-silk),
+    box-shadow 0.35s;
 }
-
 .modalEditButton::before {
-  content: '';
-  position: absolute; inset: 0;
+  content: "";
+  position: absolute;
+  inset: 0;
   background: var(--gold);
   transform: scaleX(0);
   transform-origin: left;
-  transition: transform 0.4s var(--ease-silk);
+  transition: transform 0.35s var(--ease-silk);
+  z-index: -1; /* fill behind text — the key fix */
+}
+.modalEditButton:hover {
+  color: var(--noir);
+  box-shadow: var(--shadow-gold);
+}
+.modalEditButton:hover::before {
+  transform: scaleX(1);
 }
 
-.modalEditButton:hover { color: var(--noir); box-shadow: var(--shadow-gold); }
-.modalEditButton:hover::before { transform: scaleX(1); }
-
-/* ══════════════════════════════════════
-   RESPONSIVE
-══════════════════════════════════════ */
+/* ── Responsive ── */
 @media (max-width: 1200px) {
-  .header, .controlBar, .productsGrid, .formContainer { padding-left: 36px; padding-right: 36px; }
-  .statusGrid { grid-template-columns: repeat(2, 1fr); }
+  .header,
+  .controlBar,
+  .productsGrid,
+  .formContainer {
+    padding-left: 36px;
+    padding-right: 36px;
+  }
+  .statusGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
-
 @media (max-width: 900px) {
-  .header, .controlBar, .productsGrid { padding-left: 24px; padding-right: 24px; }
-  .formContainer { padding: 0 24px; }
-  .productForm { padding: 28px 24px; }
-  .formGrid { grid-template-columns: 1fr; }
-  .formGroupFull { grid-column: span 1; }
-  .modalGrid { grid-template-columns: 1fr; }
-  .modalHeader { flex-direction: column; }
-  .modalImage { width: 100%; height: 200px; }
-  .filterWrapper { flex-wrap: wrap; }
-  .header::before { display: none; }
+  .header,
+  .controlBar,
+  .productsGrid {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  .formContainer {
+    padding: 0 24px;
+  }
+  .productForm {
+    padding: 28px 24px;
+  }
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+  .formGroupFull {
+    grid-column: span 1;
+  }
+  .modalGrid {
+    grid-template-columns: 1fr;
+  }
+  .modalHeader {
+    flex-direction: column;
+  }
+  .modalImage {
+    width: 100%;
+    height: 200px;
+  }
+  .filterWrapper {
+    flex-wrap: wrap;
+  }
+  .header::before {
+    display: none;
+  }
 }
-
 @media (max-width: 640px) {
-  .header { padding: 48px 20px 40px; }
-  .controlBar { padding: 18px 20px; flex-direction: column; align-items: stretch; }
-  .searchWrapper { max-width: 100%; }
-  .filterWrapper { flex-direction: column; }
-  .addButton { justify-content: center; margin-left: 0; }
-  .productsGrid { padding: 0 20px; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .formContainer { padding: 0 20px; }
-  .productForm { padding: 20px 16px; }
-  .statusGrid { grid-template-columns: repeat(2, 1fr); }
-  .variantGrid { grid-template-columns: repeat(2, 1fr); }
-  .modalBody, .modalHeader, .modalFooter { padding-left: 20px; padding-right: 20px; }
-  .formActions { flex-direction: column; }
-  .cancelButton, .submitButton { width: 100%; text-align: center; }
-  .productActions { opacity: 1; transform: none; }
+  .header {
+    padding: 48px 20px 40px;
+  }
+  .controlBar {
+    padding: 18px 20px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .searchWrapper {
+    max-width: 100%;
+  }
+  .filterWrapper {
+    flex-direction: column;
+  }
+  .addButton {
+    justify-content: center;
+    margin-left: 0;
+  }
+  .productsGrid {
+    padding: 0 20px;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .formContainer {
+    padding: 0 20px;
+  }
+  .productForm {
+    padding: 20px 16px;
+  }
+  .formSection {
+    padding: 18px 14px;
+  }
+  .statusGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .modalBody,
+  .modalHeader,
+  .modalFooter {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .formActions {
+    flex-direction: column;
+  }
+  .cancelButton,
+  .submitButton {
+    width: 100%;
+    text-align: center;
+  }
+  .productActions {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Variant input form: 2-col grid on small screens */
+  .variantForm {
+    padding: 16px 12px 14px;
+  }
+  .variantGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .variantActions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .addVariantButton,
+  .cancelVariantButton {
+    width: 100%;
+    text-align: center;
+    padding: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Variant table scroll */
+  .variantsTableScroll {
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+  }
 }
 
+/* ── Variant card layout ≤480px ──────────────────────────────────
+   Table becomes stacked cards. Each <tr> is a card; each <td>
+   uses data-label (set in JSX) to show a left-column label.
+   The <thead> is visually hidden — screen readers still read it.
+──────────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  /* Hide the scroll wrapper border — cards don't need it */
+  .variantsTableScroll {
+    overflow-x: visible;
+    mask-image: none;
+    -webkit-mask-image: none;
+    border: none;
+  }
+
+  /* Reset table to block so rows stack */
+  .variantsTable,
+  .variantsTable thead,
+  .variantsTable tbody,
+  .variantsTable tr,
+  .variantsTable th,
+  .variantsTable td {
+    display: block;
+  }
+
+  /* Hide header row visually but keep for accessibility */
+  .variantsTable thead tr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Each row becomes a card */
+  .variantsTable tbody tr {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(201, 168, 76, 0.14);
+    border-left: 2px solid var(--gold-dim);
+    margin-bottom: 12px;
+    padding: 14px 16px;
+    position: relative;
+    transition:
+      border-left-color 0.25s,
+      background 0.25s;
+  }
+  .variantsTable tbody tr:hover {
+    border-left-color: var(--gold);
+    background: rgba(201, 168, 76, 0.04);
+  }
+  .variantsTable tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Each cell: label on left, value on right */
+  .variantsTable td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    font-size: 0.9rem;
+    white-space: normal;
+  }
+  .variantsTable td:last-child {
+    border-bottom: none;
+  }
+
+  /* The data-label pseudo acts as the column header */
+  .variantsTable td::before {
+    content: attr(data-label);
+    font-family: "Montserrat", sans-serif;
+    font-size: 0.56rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+    flex-shrink: 0;
+    min-width: 70px;
+  }
+
+  /* Action cell: buttons on the right, no label needed */
+  .variantsTable td:last-child::before {
+    content: "";
+    min-width: 0;
+  }
+  .variantsTable td:last-child {
+    justify-content: flex-end;
+    padding-top: 10px;
+  }
+
+  /* Bigger touch targets for edit/delete */
+  .editVariantButton,
+  .deleteVariantButton {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+  }
+
+  /* Variant INPUT form: full single-column on tiny screens */
+  .variantForm {
+    padding: 14px 10px 12px;
+  }
+  .variantGrid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .variantActions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .addVariantButton,
+  .cancelVariantButton {
+    width: 100%;
+    text-align: center;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Color swatch: full-width, taller touch target */
+  .colorInput {
+    height: 52px;
+  }
+  /* formSection less padding on tiny screens */
+  .formSection {
+    padding: 14px 10px;
+  }
+}
+
+/* ── 360px — very small phones ── */
+@media (max-width: 360px) {
+  .productForm {
+    padding: 16px 12px;
+  }
+  .formSection {
+    padding: 12px 8px;
+  }
+  .variantGrid {
+    gap: 8px;
+  }
+  .formInput,
+  .formSelect,
+  .formTextarea {
+    padding: 11px 12px;
+    font-size: 0.95rem;
+  }
+  .sectionTitle {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+  }
+  .formLabel {
+    font-size: 0.6rem;
+  }
+  .productsGrid {
+    grid-template-columns: 1fr;
+  }
+}
 @media (max-width: 420px) {
-  .productsGrid { grid-template-columns: 1fr; }
-  .productImageContainer { height: 220px; }
+  .productsGrid {
+    grid-template-columns: 1fr;
+  }
+  .productImageContainer {
+    height: 220px;
+  }
 }
-
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }
