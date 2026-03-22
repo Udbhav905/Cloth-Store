@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import img1 from '../../assets/men.png'
-import img2 from '../../assets/women.jpg'
-import img3 from '../../assets/medium-shot-man-posing-outdoors.jpg'
+// import img1 from '../../assets/men.png'
+// import img2 from '../../assets/women.jpg'
+// import img3 from '../../assets/medium-shot-man-posing-outdoors.jpg'
 import styles from "./HeroSection.module.css";
 
 /* ─────────────────────────────────────────────
@@ -15,7 +15,7 @@ const SLIDES = [
     italic: 1,
     sub: "Handcrafted in Milan. Worn by the discerning few.",
     cta: "Explore Collection",
-    img: img3,
+    // img: img3,
     pos: "60% center",
   },
   {
@@ -25,7 +25,7 @@ const SLIDES = [
     italic: 2,
     sub: "Where restraint becomes the most seductive statement.",
     cta: "View Couture",
-    img: img2,
+   // img: img2,
     pos: "50% 30%",
   },
   {
@@ -35,7 +35,7 @@ const SLIDES = [
     italic: 1,
     sub: "Every thread tells the story of generations of mastery.",
     cta: "Our Heritage",
-    img: img1,
+    //img: img1,
     pos: "40% center",
   },
 ];

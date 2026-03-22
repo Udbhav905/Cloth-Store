@@ -178,7 +178,7 @@ productSchema.pre("save", function (next) {
       .filter((v) => v.isActive)
       .reduce((sum, v) => sum + (v.stock || 0), 0);
   }
-  next();
+  // next();
 });
 
 /* ─────────────────────────────────────────────
