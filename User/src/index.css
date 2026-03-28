@@ -14,3 +14,6 @@ iframe[src*="stripe"] {
   pointer-events: auto !important;
   width: 100% !important;
 }
+/* *{
+  background-color: aliceblue !important;
+} */

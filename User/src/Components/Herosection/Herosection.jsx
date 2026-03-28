@@ -1,321 +1,221 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-// import img1 from '../../assets/men.png'
-// import img2 from '../../assets/women.jpg'
-// import img3 from '../../assets/medium-shot-man-posing-outdoors.jpg'
+import img1 from '../../assets/men.png'
+import img2 from '../../assets/women.jpg'
+import img3 from '../../assets/medium-shot-man-posing-outdoors.jpg'
 import styles from "./HeroSection.module.css";
 
-/* ─────────────────────────────────────────────
-   SLIDE DATA
-───────────────────────────────────────────── */
 const SLIDES = [
   {
     id: 0,
-    tag: "New Arrival · SS 2025",
-    lines: ["The Art of", "Effortless", "Elegance"],
-    italic: 1,
-    sub: "Handcrafted in Milan. Worn by the discerning few.",
-    cta: "Explore Collection",
-    // img: img3,
-    pos: "60% center",
+    eyebrow: "New Arrival · SS 2025",
+    bigWord: "ELEGANCE",
+    sub: "EFFORTLESS",
+    desc: "The boldest edition we ever made. Wide collar, clean stitching, shipping globally. Bold layers, straight stacks.",
+    cta: "Shop Now",
+    img: img3,
+    cards: [img1, img2, img3],
+    labels: ["Navy Trek", "Daily Hak", "Navy Trek"],
+    tag: "Earn 3.1",
   },
   {
     id: 1,
-    tag: "Couture · Limited Edition",
-    lines: ["Dressed in", "Silence &", "Power"],
-    italic: 2,
-    sub: "Where restraint becomes the most seductive statement.",
+    eyebrow: "Couture · Limited Edition",
+    bigWord: "SILENCE",
+    sub: "DRESSED IN",
+    desc: "Where restraint becomes the most seductive statement. Limited drops, global reach.",
     cta: "View Couture",
-   // img: img2,
-    pos: "50% 30%",
+    img: img2,
+    cards: [img2, img3, img1],
+    labels: ["Noir Cut", "Archive 1", "Silhouette"],
+    tag: "Earn 2.4",
   },
   {
     id: 2,
-    tag: "Heritage · Archive",
-    lines: ["Woven From", "A Century", "Of Craft"],
-    italic: 1,
-    sub: "Every thread tells the story of generations of mastery.",
+    eyebrow: "Heritage · Archive",
+    bigWord: "CENTURY",
+    sub: "WOVEN FROM A",
+    desc: "Every thread tells the story of generations of mastery. Archive pieces, timeless craft.",
     cta: "Our Heritage",
-    //img: img1,
-    pos: "40% center",
+    img: img1,
+    cards: [img3, img1, img2],
+    labels: ["Heritage", "Craft Co.", "Archive"],
+    tag: "Earn 1.9",
   },
 ];
 
-const DURATION = 5000; // ms per slide
+const DURATION = 6000;
 
-/* ─────────────────────────────────────────────
-   PARTICLES  (memoised — never re-creates)
-───────────────────────────────────────────── */
-const PARTICLE_DATA = Array.from({ length: 18 }, (_, i) => ({
-  id: i,
-  x: Math.random() * 100,
-  y: 20 + Math.random() * 70,
-  size: Math.random() * 2.2 + 0.6,
-  dur: Math.random() * 12 + 9,
-  delay: Math.random() * 8,
-  drift: (Math.random() - 0.5) * 50,
-}));
-
-function Particles() {
-  return (
-    <div className={styles.particles} aria-hidden="true">
-      {PARTICLE_DATA.map((p) => (
-        <span
-          key={p.id}
-          className={styles.particle}
-          style={{
-            left: `${p.x}%`,
-            top: `${p.y}%`,
-            width: `${p.size}px`,
-            height: `${p.size}px`,
-            animationDuration: `${p.dur}s`,
-            animationDelay: `${p.delay}s`,
-            "--drift": `${p.drift}px`,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────
-   HERO
-───────────────────────────────────────────── */
 export default function HeroSection() {
-  const [current, setCurrent]   = useState(0);
-  const [animKey, setAnimKey]   = useState(0);   // forces re-mount of text on slide change
-  const [exiting, setExiting]   = useState(-1);  // index of slide currently fading out
+  const [current, setCurrent] = useState(0);
+  const [animKey, setAnimKey] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [loaded, setLoaded]     = useState(false);
-  const [mouse, setMouse]       = useState({ x: 0.5, y: 0.5 });
+  const [loaded, setLoaded] = useState(false);
 
-  const currentRef   = useRef(0);
-  const timerRef     = useRef(null);
-  const progressRef  = useRef(null);
-  const heroRef      = useRef(null);
-  const tickCountRef = useRef(0);
+  const currentRef  = useRef(0);
+  const timerRef    = useRef(null);
+  const progressRef = useRef(null);
+  const tickRef     = useRef(0);
 
-  /* Entrance fade */
   useEffect(() => {
-    const t = setTimeout(() => setLoaded(true), 80);
+    const t = setTimeout(() => setLoaded(true), 60);
     return () => clearTimeout(t);
   }, []);
 
-  /* Mouse parallax — only on non-touch */
-  useEffect(() => {
-    const onMove = (e) => {
-      if (!heroRef.current) return;
-      const { left, top, width, height } = heroRef.current.getBoundingClientRect();
-      setMouse({
-        x: Math.max(0, Math.min(1, (e.clientX - left) / width)),
-        y: Math.max(0, Math.min(1, (e.clientY - top) / height)),
-      });
-    };
-    window.addEventListener("mousemove", onMove, { passive: true });
-    return () => window.removeEventListener("mousemove", onMove);
-  }, []);
-
-  /* ── Auto-advance (fixed: uses ref, not stale closure) ── */
   const advance = useCallback(() => {
     const next = (currentRef.current + 1) % SLIDES.length;
-    setExiting(currentRef.current);
     currentRef.current = next;
     setCurrent(next);
-    setAnimKey((k) => k + 1);
-    setTimeout(() => setExiting(-1), 900);
+    setAnimKey(k => k + 1);
   }, []);
 
   const resetProgress = useCallback(() => {
     clearInterval(progressRef.current);
     clearTimeout(timerRef.current);
     setProgress(0);
-    tickCountRef.current = 0;
-
-    const TICKS  = DURATION / 50;           // tick every 50ms
+    tickRef.current = 0;
+    const TICKS = DURATION / 50;
     progressRef.current = setInterval(() => {
-      tickCountRef.current += 1;
-      setProgress((tickCountRef.current / TICKS) * 100);
+      tickRef.current += 1;
+      setProgress((tickRef.current / TICKS) * 100);
     }, 50);
-
     timerRef.current = setTimeout(() => {
       clearInterval(progressRef.current);
       advance();
     }, DURATION);
   }, [advance]);
 
-  /* Start timer on mount and whenever slide changes */
   useEffect(() => {
     resetProgress();
-    return () => {
-      clearInterval(progressRef.current);
-      clearTimeout(timerRef.current);
-    };
+    return () => { clearInterval(progressRef.current); clearTimeout(timerRef.current); };
   }, [current]); // eslint-disable-line
 
-  /* Manual navigation */
   const goTo = useCallback((idx) => {
     if (idx === currentRef.current) return;
-    setExiting(currentRef.current);
     currentRef.current = idx;
     setCurrent(idx);
-    setAnimKey((k) => k + 1);
-    setTimeout(() => setExiting(-1), 900);
+    setAnimKey(k => k + 1);
   }, []);
 
   const slide = SLIDES[current];
-  const px    = (mouse.x - 0.5) * 22;
-  const py    = (mouse.y - 0.5) * 14;
 
   return (
-    <section
-      className={`${styles.hero} ${loaded ? styles.heroLoaded : ""}`}
-      ref={heroRef}
-    >
-      {/* ══ BACKGROUNDS ══ */}
-      <div className={styles.bgStack}>
-        {SLIDES.map((s, i) => (
-          <div
-            key={s.id}
-            className={`${styles.bgLayer}
-              ${i === current  ? styles.bgActive  : ""}
-              ${i === exiting  ? styles.bgExiting : ""}
-              ${i !== current && i !== exiting ? styles.bgHidden : ""}
-            `}
-          >
-            <img
-              src={s.img}
-              alt=""
-              loading={i === 0 ? "eager" : "lazy"}
-              style={{
-                objectPosition: s.pos,
-                transform:
-                  i === current
-                    ? `translate(${px * 0.35}px, ${py * 0.35}px) scale(1.07)`
-                    : "scale(1.07)",
-                transition: "transform 0.12s linear",
-              }}
-            />
-            <div className={styles.imgOverlay} />
-          </div>
-        ))}
-        {/* Deep vignette always on top */}
-        <div className={styles.vignette} />
+    <section className={`${styles.hero} ${loaded ? styles.loaded : ""}`}>
+
+      {/* TOP UTILITY STRIP */}
+      <div className={styles.topStrip}>
+        <div className={styles.topLinks}>
+          <span>Lumine</span><span className={styles.dot}>·</span>
+          <span>Tisre</span><span className={styles.dot}>·</span>
+          <span>Drafts</span><span className={styles.dot}>·</span>
+          <span>Flayp</span>
+        </div>
+        <div className={styles.topCenter}>For Disturbing Pushing carefully</div>
+        <div className={styles.topRight}>DrtY &nbsp; ✦ &nbsp; ⊕</div>
       </div>
 
-      {/* ══ GRAIN ══ */}
-      <div className={styles.grain} aria-hidden="true" />
-
-      {/* ══ PARTICLES ══ */}
-      <Particles />
-
-      {/* ══ DECO FRAME ══ */}
-      <div className={styles.decoFrame} aria-hidden="true">
-        <div className={styles.decoTL} />
-        <div className={styles.decoTR} />
-        <div className={styles.decoBL} />
-        <div className={styles.decoBR} />
-        <div className={styles.decoLineLeft} />
-      </div>
-
-      {/* ══ MAIN CONTENT ══ */}
-      <div className={styles.content}>
-        {/* Tag */}
-        <p className={styles.tag} key={`tag-${animKey}`}>
-          <span className={styles.tagPulse} />
-          {slide.tag}
-        </p>
-
-        {/* Headline */}
-        <h1 className={styles.headline} key={`h-${animKey}`}>
-          {slide.lines.map((line, i) => (
-            <span
-              key={i}
-              className={styles.hLine}
-              style={{ "--d": `${0.1 + i * 0.14}s` }}
-            >
-              {i === slide.italic ? <em>{line}</em> : line}
-            </span>
+      {/* NAVBAR */}
+      <nav className={styles.navbar}>
+        <div className={styles.logo}>STRETKAT</div>
+        <div className={styles.navLinks}>
+          {["Home", "Store", "Storylets", "Money", "Apd", "Est", "Blog"].map(l => (
+            <a key={l} href="#">{l}</a>
           ))}
-        </h1>
-
-        {/* Subtext */}
-        <p className={styles.sub} key={`sub-${animKey}`}>{slide.sub}</p>
-
-        {/* CTAs */}
-        <div className={styles.ctaRow} key={`cta-${animKey}`}>
-          <a href="#" className={styles.btnPrimary}>
-            <span>{slide.cta}</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
+        </div>
+        <div className={styles.navIcons}>
+          <button aria-label="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/>
             </svg>
-          </a>
-          <a href="#" className={styles.btnGhost}>
-            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="1.2">
-              <circle cx="20" cy="20" r="18" />
-              <polygon points="16,13 30,20 16,27" fill="currentColor" stroke="none" />
+          </button>
+          <button aria-label="menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
-            Watch Film
-          </a>
+          </button>
+        </div>
+      </nav>
+
+      {/* MAIN HERO CONTENT */}
+      <div className={styles.mainPanel} key={`panel-${animKey}`}>
+
+        {/* GIANT BACKGROUND TEXT */}
+        <div className={styles.bgTextBlock} aria-hidden="true">
+          <span className={styles.bgSub}>{slide.sub}</span>
+          <span className={styles.bgBig}>{slide.bigWord}</span>
         </div>
 
-        {/* Scroll indicator */}
-        <div className={styles.scrollCue}>
-          <span className={styles.scrollBar} />
-          <span className={styles.scrollText}>Scroll</span>
+        {/* HERO MODEL */}
+        <div className={styles.modelWrap}>
+          <img src={slide.img} alt="model" className={styles.modelImg} />
         </div>
+
+        {/* CTA PILL */}
+        <div className={styles.ctaWrap}>
+          <button className={styles.ctaBtn}>
+            <span className={styles.ctaBtnDot} />
+            {slide.cta}
+          </button>
+        </div>
+
+        {/* PRODUCT CARDS */}
+        <div className={styles.cardStrip}>
+          {slide.cards.map((src, i) => (
+            <div key={i} className={styles.productCard}>
+              <div className={styles.productImgWrap}>
+                <img src={src} alt={slide.labels[i]} />
+              </div>
+              <div className={styles.productInfo}>
+                <span className={styles.productName}>{slide.labels[i]}</span>
+                <span className={styles.productTag}>{slide.tag.replace(/\d+\.\d+/, (n) => (parseFloat(n) + i * 0.1).toFixed(1))}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* DESCRIPTION */}
+        <p className={styles.desc}>{slide.desc}</p>
+
       </div>
 
-      {/* ══ SIDE STATS (desktop only) ══ */}
-      <aside className={styles.sideStats}>
-        {[
-          { num: "XII", label: "Collections" },
-          { num: "48", label: "Countries" },
-          { num: "∞", label: "Craftsmanship" },
-        ].map((s, i) => (
-          <div key={i} className={styles.statBlock}>
-            <span className={styles.statNum}>{s.num}</span>
-            <span className={styles.statLabel}>{s.label}</span>
-          </div>
-        ))}
-      </aside>
-
-      {/* ══ SLIDE CONTROLS ══ */}
-      <nav className={styles.controls} aria-label="Slide navigation">
+      {/* SLIDE DOTS + COUNTER */}
+      <div className={styles.sliderControls}>
         <button
-          className={styles.arrow}
+          className={styles.arrowBtn}
           onClick={() => goTo((current - 1 + SLIDES.length) % SLIDES.length)}
-          aria-label="Previous slide"
+          aria-label="Prev"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <line x1="19" y1="12" x2="5" y2="12" />
-            <polyline points="12 19 5 12 12 5" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
           </svg>
         </button>
 
-        <div className={styles.indicators}>
+        <div className={styles.pips}>
           {SLIDES.map((_, i) => (
             <button
               key={i}
-              className={`${styles.indicator} ${i === current ? styles.indicatorActive : ""}`}
+              className={`${styles.pip} ${i === current ? styles.pipActive : ""}`}
               onClick={() => goTo(i)}
-              aria-label={`Go to slide ${i + 1}`}
+              aria-label={`Slide ${i + 1}`}
             >
               <span
-                className={styles.indicatorFill}
-                style={i === current ? { width: `${progress}%` } : { width: i < current ? "100%" : "0%" }}
+                className={styles.pipFill}
+                style={{ width: i === current ? `${progress}%` : i < current ? "100%" : "0%" }}
               />
             </button>
           ))}
         </div>
 
         <button
-          className={styles.arrow}
+          className={styles.arrowBtn}
           onClick={() => goTo((current + 1) % SLIDES.length)}
-          aria-label="Next slide"
+          aria-label="Next"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <line x1="5" y1="12" x2="19" y2="12" />
-            <polyline points="12 5 19 12 12 19" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="12 5 19 12 12 19"/>
           </svg>
         </button>
 
@@ -323,17 +223,8 @@ export default function HeroSection() {
           <b>{String(current + 1).padStart(2, "0")}</b>
           <span> / {String(SLIDES.length).padStart(2, "0")}</span>
         </span>
-      </nav>
-
-      {/* ══ BOTTOM PERKS STRIP ══ */}
-      <div className={styles.perksStrip}>
-        {["Free Global Shipping", "Handcrafted in India", "Carbon Neutral 2026", "Made By U & M"].map((t, i) => (
-          <div key={i} className={styles.perk}>
-            <span className={styles.perkDot}>◆</span>
-            {t}
-          </div>
-        ))}
       </div>
+
     </section>
   );
 }
