@@ -43,7 +43,7 @@ export default function OrderSuccess() {
   return (
     <div className={styles.page}>
 
-      {/* Confetti */}
+     
       <div className={styles.confetti} aria-hidden>
         {particles.map((p, i) => (
           <div

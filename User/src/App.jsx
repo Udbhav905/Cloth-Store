@@ -1,5 +1,9 @@
-import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import React, { lazy, Suspense, useEffect } from "react";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import Lenis from "@studio-freight/lenis";
+
+// Styles
+import styles from "./App.module.css";
 
 // ── Always eager — needed on every page ──────────────────────────────────────
 import Navbar from "./Components/Navbar/Navbar";
@@ -60,59 +64,226 @@ function PageSkeleton() {
   );
 }
 
+// ── Smooth Scroll Wrapper with Enhanced Features ──────────────────────────
+function ScrollProvider({ children }) {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    // Initialize Lenis with enhanced settings
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Luxury "easing out" effect
+      direction: "vertical",
+      gestureDirection: "vertical",
+      smooth: true,
+      smoothTouch: false,
+      touchMultiplier: 2,
+      wheelMultiplier: 1,
+      infinite: false,
+      orientation: "vertical",
+    });
+
+    // RAF loop for smooth scroll
+    function raf(time) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+
+    requestAnimationFrame(raf);
+
+    // Scroll to top on route change with smooth animation
+    setTimeout(() => {
+      lenis.scrollTo(0, { 
+        immediate: false,
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t))
+      });
+    }, 100);
+
+    // Stop scrolling when cursor is over certain elements (optional)
+    const stopScrollOnElements = (e) => {
+      const target = e.target;
+      if (target.closest('[data-no-scroll]')) {
+        lenis.stop();
+      } else {
+        lenis.start();
+      }
+    };
+
+    document.addEventListener('mouseenter', stopScrollOnElements, true);
+    
+    return () => {
+      lenis.destroy();
+      document.removeEventListener('mouseenter', stopScrollOnElements, true);
+    };
+  }, [pathname]);
+
+  return <div className={styles.appContainer}>{children}</div>;
+}
+
+// ── Error Boundary for better UX ───────────────────────────────────────────
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("App Error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className={styles.errorBoundary}>
+          <div className={styles.errorContent}>
+            <span className={styles.errorIcon}>◆</span>
+            <h2>Something went wrong</h2>
+            <p>Please refresh the page or try again later</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className={styles.errorButton}
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ── Analytics Wrapper (optional - add your analytics) ─────────────────────
+function AnalyticsProvider({ children }) {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Track page views
+    console.log(`Page viewed: ${location.pathname}`);
+    // You can add Google Analytics, Mixpanel, etc. here
+    // Example: gtag('config', 'GA_MEASUREMENT_ID', { page_path: location.pathname });
+  }, [location]);
+
+  return <>{children}</>;
+}
+
+// ── Preload Links for Better Performance ───────────────────────────────────
+function PreloadLinks() {
+  useEffect(() => {
+    // Preload critical resources
+    const preloadImages = () => {
+      const images = [
+        '/assets/hero-bg.jpg',
+        '/assets/logo.svg'
+      ];
+      
+      images.forEach(img => {
+        const link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'image';
+        link.href = img;
+        document.head.appendChild(link);
+      });
+    };
+
+    preloadImages();
+  }, []);
+
+  return null;
+}
+
+// ── 404 Not Found Component ────────────────────────────────────────────────
+function NotFound() {
+  const navigate = useNavigate();
+  
+  return (
+    <div className={styles.notFound}>
+      <div className={styles.notFoundContent}>
+        <h1>404</h1>
+        <h2>Page Not Found</h2>
+        <p>The page you're looking for doesn't exist or has been moved.</p>
+        <button onClick={() => navigate('/')} className={styles.notFoundButton}>
+          Return to Home
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── App Component ───────────────────────────────────────────────────────────
 const App = () => {
   return (
-    <BrowserRouter>
-      {/* Global UI */}
-      <Navbar />
-      <AuthModal />
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AnalyticsProvider>
+          <ScrollProvider>
+            <PreloadLinks />
+            
+            {/* Global UI */}
+            <Navbar />
+            <AuthModal />
 
-      <Suspense fallback={<PageSkeleton />}>
-        <Routes>
-          {/* Core Pages */}
-          <Route path="/" element={<Home />} />
-          <Route path="/collections" element={<Collections />} />
-          <Route path="/collections/:slug" element={<CategoryPage />} />
-          <Route path="/products/:id" element={<ProductDetail />} />
-          <Route
-            path="/cart"
-            element={
-              <ProtectedRoute>
-                <Cart />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/wishlist"
-            element={
-              <ProtectedRoute>
-                <Wishlist />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/my-orders" element={<MyOrders />} />
+            {/* Main Content */}
+            <Suspense fallback={<PageSkeleton />}>
+              <Routes>
+                {/* Core Pages */}
+                <Route path="/" element={<Home />} />
+                <Route path="/collections" element={<Collections />} />
+                <Route path="/collections/:slug" element={<CategoryPage />} />
+                <Route path="/products/:id" element={<ProductDetail />} />
+                
+                {/* Protected Routes */}
+                <Route
+                  path="/cart"
+                  element={
+                    <ProtectedRoute>
+                      <Cart />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/wishlist"
+                  element={
+                    <ProtectedRoute>
+                      <Wishlist />
+                    </ProtectedRoute>
+                  }
+                />
+                
+                {/* User Pages */}
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/search" element={<SearchPage />} />
+                <Route path="/my-orders" element={<MyOrders />} />
 
-          {/* Checkout */}
-          <Route path="/checkout" element={<Checkout />} />
+                {/* Checkout Flow */}
+                <Route path="/checkout" element={<Checkout />} />
+                
+                {/* Stripe Payment */}
+                <Route
+                  path="/checkout/payment"
+                  element={
+                    <Elements stripe={stripePromise}>
+                      <PaymentPage />
+                    </Elements>
+                  }
+                />
 
-          {/* Stripe Payment */}
-          <Route
-            path="/checkout/payment"
-            element={
-              <Elements stripe={stripePromise}>
-                <PaymentPage />
-              </Elements>
-            }
-          />
-
-          {/* Success */}
-          <Route path="/order-success" element={<OrderSuccess />} />
-        </Routes>
-      </Suspense>
-    </BrowserRouter>
+                {/* Success */}
+                <Route path="/order-success" element={<OrderSuccess />} />
+                
+                {/* 404 Fallback Route */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </ScrollProvider>
+        </AnalyticsProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 };
 

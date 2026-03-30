@@ -2,45 +2,166 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import useAuthStore from "../../store/Useauthstore";
 import useCartStore from "../../store/Usecartstore";
+import axios from "axios";
 import styles from "./Navbar.module.css";
 
-/* ── Category Data ─────────────────────────── */
-const categories = [
-  {
-    label: "Collections",
-    subcategories: [
-      { title: "Women",   items: ["Evening Gowns", "Resort Wear", "Silk Blouses", "Tailored Suits", "Cashmere Knits"] },
-      { title: "Men",     items: ["Bespoke Suits", "Dress Shirts", "Overcoats", "Trousers", "Accessories"] },
-      { title: "Couture", items: ["Bridal", "Red Carpet", "Haute Couture", "Made-to-Measure", "Archive Pieces"] },
-      { title: "Season",  items: ["Spring / Summer", "Autumn / Winter", "Pre-Fall", "Capsule", "Limited Edition"] },
-    ],
-  },
-];
+const API_URL = "http://localhost:3000/api";
 
 const getInitials = (name = "") =>
   name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
 
 export default function Navbar() {
-  const navigate = useNavigate(); // ← added
+  const navigate = useNavigate();
 
   const { user, isLoggedIn, logout, openAuthModal, fetchProfile } = useAuthStore();
   const { items, wishlist } = useCartStore();
   const cartCount = items.reduce((s, i) => s + i.quantity, 0);
   const wishCount = wishlist.length;
 
-  const [scrolled,       setScrolled]       = useState(false);
-  const [drawerOpen,     setDrawerOpen]     = useState(false);
-  const [menuOpen,       setMenuOpen]       = useState(false);
-  const [searchOpen,     setSearchOpen]     = useState(false);
-  const [searchQuery,    setSearchQuery]    = useState("");
-  const [profileOpen,    setProfileOpen]    = useState(false);
-  const [activeCategory, setActiveCategory] = useState(null);
+  const [scrolled, setScrolled] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
   const drawerTimerRef = useRef(null);
-  const searchRef  = useRef(null);
+  const searchRef = useRef(null);
   const profileRef = useRef(null);
-  const cursorRef  = useRef(null);
+  const cursorRef = useRef(null);
 
-  useEffect(() => { fetchProfile(); }, []);
+  // Fetch categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        console.log("Fetching categories from:", `${API_URL}/categories`);
+        
+        const response = await axios.get(`${API_URL}/categories`);
+        console.log("Raw categories response:", response.data);
+        
+        let categoriesData = [];
+        
+        if (response.data.success) {
+          categoriesData = response.data.data;
+        } else if (Array.isArray(response.data)) {
+          categoriesData = response.data;
+        } else if (response.data.categories) {
+          categoriesData = response.data.categories;
+        } else {
+          categoriesData = response.data;
+        }
+        
+        console.log("Categories data:", categoriesData);
+        
+        // Create a structured menu with proper subcategories
+        const menSubcategories = categoriesData.filter(cat => 
+          cat.parentCategory === "699d7d23a7f166db0aabd088" || 
+          cat.name === "Shirt" || 
+          cat.name === "T-shirts" || 
+          cat.name === "Jacket" || 
+          cat.name === "Pants"
+        ).map(cat => ({
+          _id: cat._id,
+          name: cat.name,
+          slug: cat.slug,
+          subcategories: []
+        }));
+        
+        console.log("Men subcategories:", menSubcategories);
+        
+        const structuredCategories = [
+          {
+            _id: "men",
+            name: "Men",
+            slug: "men",
+            subcategories: menSubcategories.length > 0 ? menSubcategories : [
+              { _id: "shirt", name: "Shirt", slug: "shirt" },
+              { _id: "tshirts", name: "T-shirts", slug: "t-shirts" },
+              { _id: "jacket", name: "Jacket", slug: "jacket" },
+              { _id: "pants", name: "Pants", slug: "pants" }
+            ]
+          },
+          {
+            _id: "women",
+            name: "Women",
+            slug: "women",
+            subcategories: []
+          },
+          {
+            _id: "couture",
+            name: "Couture",
+            slug: "couture",
+            subcategories: []
+          },
+          {
+            _id: "season",
+            name: "Season",
+            slug: "season",
+            subcategories: []
+          }
+        ];
+        
+        setCategories([{
+          _id: "collections",
+          name: "Collections",
+          slug: "collections",
+          subcategories: structuredCategories
+        }]);
+        
+        console.log("Final categories structure:", structuredCategories);
+        
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        // Fallback data
+        setCategories([{
+          _id: "1",
+          name: "Collections",
+          slug: "collections",
+          subcategories: [
+            { 
+              _id: "men",
+              name: "Men", 
+              slug: "men",
+              subcategories: [
+                { _id: "shirt", name: "Shirt", slug: "shirt" },
+                { _id: "tshirts", name: "T-shirts", slug: "t-shirts" },
+                { _id: "jacket", name: "Jacket", slug: "jacket" },
+                { _id: "pants", name: "Pants", slug: "pants" }
+              ]
+            },
+            { 
+              _id: "women",
+              name: "Women", 
+              slug: "women",
+              subcategories: []
+            },
+            { 
+              _id: "couture",
+              name: "Couture", 
+              slug: "couture",
+              subcategories: []
+            },
+            { 
+              _id: "season",
+              name: "Season", 
+              slug: "season",
+              subcategories: []
+            }
+          ]
+        }]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  useEffect(() => { 
+    fetchProfile(); 
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -52,7 +173,7 @@ export default function Navbar() {
     const move = (e) => {
       if (cursorRef.current) {
         cursorRef.current.style.left = `${e.clientX}px`;
-        cursorRef.current.style.top  = `${e.clientY}px`;
+        cursorRef.current.style.top = `${e.clientY}px`;
       }
     };
     window.addEventListener("mousemove", move, { passive: true });
@@ -74,11 +195,12 @@ export default function Navbar() {
   const handleCollectionsEnter = () => {
     clearTimeout(drawerTimerRef.current);
     setDrawerOpen(true);
-    setActiveCategory(categories[0]);
   };
+  
   const handleDrawerLeave = () => {
     drawerTimerRef.current = setTimeout(() => setDrawerOpen(false), 120);
   };
+  
   const handleDrawerEnter = () => clearTimeout(drawerTimerRef.current);
 
   const handleLogout = async () => {
@@ -86,7 +208,6 @@ export default function Navbar() {
     await logout();
   };
 
-  /* ── Search Handlers ───────────────────────── */
   const handleSearchSubmit = () => {
     const q = searchQuery.trim();
     if (!q) return;
@@ -102,18 +223,22 @@ export default function Navbar() {
 
   const handleSearchIconClick = () => {
     if (searchOpen && searchQuery.trim()) {
-      // If search is open and has a query → submit
       handleSearchSubmit();
     } else if (searchOpen) {
-      // If search is open but empty → close
       setSearchOpen(false);
       setSearchQuery("");
     } else {
-      // Open search
       setSearchOpen(true);
     }
   };
-  /* ─────────────────────────────────────────── */
+
+  const handleCategoryClick = (slug, name) => {
+    console.log(`Navigating to: /collections/${slug}`);
+    navigate(`/collections/${slug}`);
+    setDrawerOpen(false);
+  };
+
+  const activeCategory = categories[0] || null;
 
   return (
     <>
@@ -175,7 +300,6 @@ export default function Navbar() {
                 onClick={handleSearchIconClick}
                 aria-label={searchOpen && searchQuery.trim() ? "Submit search" : searchOpen ? "Close search" : "Open search"}
               >
-                {/* Show X only when open AND query is empty, else always show search icon */}
                 {searchOpen && !searchQuery.trim()
                   ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -199,10 +323,8 @@ export default function Navbar() {
                 {profileOpen && (
                   <div className={styles.profileDropdown}>
                     <div className={styles.profileHeader}>
-                      {/* <div className={styles.profileAvatar}>{getInitials(user.name)}</div> */}
                       <div className={styles.profileHeaderInfo}>
                         <span className={styles.profileName}>{user.name}</span>
-                        {/* <span className={styles.profileEmail}>{user.email}</span> */}
                         <span className={styles.profileMeta}>
                           {user.role === "admin" ? "◆ Admin" : "◆ Member"}
                         </span>
@@ -211,9 +333,8 @@ export default function Navbar() {
                     <div className={styles.profileDivider} />
                     {[
                       { label: "Profile", to: "/profile" },
-                      { label: "My Orders",    to: "/my-orders" },
-                      { label: "Wishlist",      to: "/wishlist" },
-                      // { label: "Settings",      to: "/settings" },
+                      { label: "My Orders", to: "/my-orders" },
+                      { label: "Wishlist", to: "/wishlist" },
                     ].map((item) => (
                       <Link key={item.label} to={item.to} className={styles.profileItem} onClick={() => setProfileOpen(false)}>
                         {item.label}
@@ -252,7 +373,7 @@ export default function Navbar() {
             </Link>
 
             {/* Wishlist */}
-            <Link to="/wishlist" className={styles.iconBtn} aria-label="wishlits">
+            <Link to="/wishlist" className={styles.iconBtn} aria-label="wishlist">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
                 <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
               </svg>
@@ -270,7 +391,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* MEGA DRAWER */}
+        {/* MEGA DRAWER - Fixed to show category names */}
         <div
           className={`${styles.drawer} ${drawerOpen ? styles.drawerOpen : ""}`}
           onMouseEnter={handleDrawerEnter}
@@ -283,34 +404,51 @@ export default function Navbar() {
                 <span className={styles.drawerTag}>New Arrival</span>
                 <h2 className={styles.drawerHeadline}>Spring<br /><em>Séduction</em></h2>
                 <p className={styles.drawerSub}>2025 Resort Collection</p>
-                <Link to="/collections/" className={styles.drawerCta}>
+                <button
+                  onClick={() => {
+                    console.log("New arrivals clicked");
+                    navigate("/collections/new-arrivals");
+                    setDrawerOpen(false);
+                  }}
+                  className={styles.drawerCta}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '10px' }}
+                >
                   Explore Now
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                   </svg>
-                </Link>
+                </button>
               </div>
             </div>
             <div className={styles.drawerCategories}>
-              {activeCategory?.subcategories.map((sub, si) => (
-                <div key={sub.title} className={styles.drawerCol} style={{ "--col-delay": `${si * 0.06}s` }}>
-                  <h3 className={styles.drawerColTitle}>{sub.title}</h3>
-                  <ul className={styles.drawerList}>
-                    {sub.items.map((item, ii) => (
-                      <li key={item} style={{ "--item-delay": `${si * 0.06 + ii * 0.04}s` }}>
-                        <Link
-                          to={`/collections/${item.toLowerCase().replace(/\s+/g, "-")}`}
-                          className={styles.drawerLink}
-                          onClick={() => setDrawerOpen(false)}
-                        >
+              {!loading && activeCategory?.subcategories?.map((sub, si) => {
+                console.log("Rendering category:", sub.name, "with subcategories:", sub.subcategories);
+                return (
+                  <div key={sub._id} className={styles.drawerCol} style={{ "--col-delay": `${si * 0.06}s` }}>
+                    <h3 className={styles.drawerColTitle}>{sub.name}</h3>
+                    <ul className={styles.drawerList}>
+                      {sub.subcategories && sub.subcategories.length > 0 ? (
+                        sub.subcategories.map((item, ii) => (
+                          <li key={item._id} style={{ "--item-delay": `${si * 0.06 + ii * 0.04}s` }}>
+                            <button
+                              onClick={() => handleCategoryClick(item.slug, item.name)}
+                              className={styles.drawerLink}
+                            >
+                              <span className={styles.drawerLinkDot}>·</span>
+                              <span className={styles.drawerLinkText}>{item.name}</span>
+                            </button>
+                          </li>
+                        ))
+                      ) : (
+                        <li className={styles.drawerEmpty}>
                           <span className={styles.drawerLinkDot}>·</span>
-                          {item}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+                          <span className={styles.drawerLinkText}>Coming Soon</span>
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                );
+              })}
             </div>
           </div>
           <div className={styles.drawerBottomAccent} />
@@ -319,7 +457,7 @@ export default function Navbar() {
         {drawerOpen && <div className={styles.backdrop} onMouseEnter={handleDrawerLeave} />}
       </nav>
 
-      {/* MOBILE MENU */}
+      {/* MOBILE MENU - Fixed to show category names */}
       <div className={`${styles.mobileMenu} ${menuOpen ? styles.mobileMenuOpen : ""}`}>
         <button className={styles.mobileCloseBtn} onClick={() => setMenuOpen(false)} aria-label="Close menu">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
@@ -348,23 +486,31 @@ export default function Navbar() {
             </svg>
           </div>
 
-          {categories[0].subcategories.map((sub, si) => (
-            <div key={sub.title} className={styles.mobileSection} style={{ "--delay": `${si * 0.08}s` }}>
-              <h4 className={styles.mobileSectionTitle}>{sub.title}</h4>
+          {!loading && categories[0]?.subcategories?.map((sub, si) => (
+            <div key={sub._id} className={styles.mobileSection} style={{ "--delay": `${si * 0.08}s` }}>
+              <h4 className={styles.mobileSectionTitle}>{sub.name}</h4>
               <div className={styles.mobileSectionItems}>
-                {sub.items.map((item) => (
-                  <Link
-                    key={item}
-                    to={`/collections/${item.toLowerCase().replace(/\s+/g, "-")}`}
-                    className={styles.mobileSectionLink}
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    {item}
-                  </Link>
-                ))}
+                {sub.subcategories && sub.subcategories.length > 0 ? (
+                  sub.subcategories.map((item) => (
+                    <button
+                      key={item._id}
+                      onClick={() => {
+                        console.log(`Mobile: Navigating to /collections/${item.slug}`);
+                        navigate(`/collections/${item.slug}`);
+                        setMenuOpen(false);
+                      }}
+                      className={styles.mobileSectionLink}
+                    >
+                      {item.name}
+                    </button>
+                  ))
+                ) : (
+                  <p className={styles.mobileEmpty}>Coming Soon</p>
+                )}
               </div>
             </div>
           ))}
+          
           <div className={styles.mobileMenuFooter}>
             {isLoggedIn && user ? (
               <div className={styles.mobileUserInfo}>
