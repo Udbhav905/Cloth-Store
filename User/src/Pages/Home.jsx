@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 
 // ── HeroSection loads eagerly — it's above the fold, user sees it first ──
 import HeroSection from "../Components/Herosection/Herosection";
+import CategoryShowcase from "../Components/CategoryShowcase/CategoryShowcase";
 
 // ── Everything below the fold loads lazily ──
 // User scrolls to them — by then they're already loaded
@@ -37,6 +38,9 @@ const Home = () => {
       <HeroSection />
 
       {/* Below-fold sections — each gets its own Suspense so they load */}
+      <Suspense fallback={<SectionSkeleton height="480px" />}>
+        <CategoryShowcase />
+      </Suspense>
       {/* independently and don't block each other                       */}
       <Suspense fallback={<SectionSkeleton height="500px" />}>
         <Trending />
