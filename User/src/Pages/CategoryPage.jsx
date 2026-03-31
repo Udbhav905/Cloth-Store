@@ -58,7 +58,7 @@ function Card({ product: p, index, view }) {
     }, { threshold: 0.05, rootMargin: "0px 0px -30px 0px" });
     obs.observe(el);
     return () => obs.disconnect();
-  }, []); // eslint-disable-line
+  }, []);
 
   const isList = view === "list";
   const imgs   = [p.mainImage, ...(p.galleryImages || [])].filter(Boolean).slice(0, 3);
@@ -363,33 +363,37 @@ export default function CategoryPage() {
   const [catInfo,      setCatInfo]      = useState(null);
 
   useEffect(() => {
-    if (!slug) return;
-    // Always fetch the category info for the hero
-    fetch(`http://localhost:3000/api/categories/slug/${slug}`)
-      .then(r => r.json())
-      .then(d => setCatInfo(d))
-      .catch(() => {});
+  if (!slug) return;
 
-    // Only hit the API if store doesn't have products for this category
-    if (categoryProducts.length > 0) return;
+  // Always fetch category info
+  fetch(`http://localhost:3000/api/categories/slug/${slug}`)
+    .then(r => r.json())
+    .then(d => setCatInfo(d))
+    .catch(() => {});
 
-    setApiLoading(true);
-    fetch(`http://localhost:3000/api/categories/slug/${slug}`)
-      .then(r => r.json())
-      .then(catData => {
-        if (!catData?._id) throw new Error("Category not found");
-        return fetch(`http://localhost:3000/api/products?category=${catData._id}&limit=50`);
-      })
-      .then(r => r.json())
-      .then(d => {
-        setApiProducts(d.products || []);
-        setApiLoading(false);
-      })
-      .catch(e => { setApiError(e.message); setApiLoading(false); });
-  }, [slug]);
+  // ✅ REMOVE the early return — always fetch products
+  // ❌ DELETE: if (categoryProducts.length > 0) return;
+
+  setApiLoading(true);
+  fetch(`http://localhost:3000/api/categories/slug/${slug}`)
+    .then(r => r.json())
+    .then(catData => {
+      if (!catData?._id) throw new Error("Category not found");
+      return fetch(`http://localhost:3000/api/products?category=${catData._id}&limit=50`);
+    })
+    .then(r => r.json())
+    .then(d => {
+      setApiProducts(d.products || []);
+      setApiLoading(false);
+    })
+    .catch(e => { setApiError(e.message); setApiLoading(false); });
+
+}, [slug]); // re-runs whenever slug changes
+
+
 
   /* Use store products if available, otherwise use API products */
-  const baseProducts = categoryProducts.length > 0 ? categoryProducts : apiProducts;
+const baseProducts = apiProducts.length > 0 ? apiProducts : categoryProducts;
   const isLoading    = apiLoading && baseProducts.length === 0;
 
   /* ── Local filter + sort state ── */

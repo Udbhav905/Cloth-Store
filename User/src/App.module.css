@@ -233,3 +233,19 @@
     font-size: 10px;
   }
 }
+/* Add to your global CSS file */
+button, a, [role="button"], input, select, textarea {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Disable smooth scroll on interactive elements during click */
+button:active, a:active {
+  transition: none;
+}
+
+/* For elements that need instant response */
+.instant-click {
+  transition: none !important;
+  transform: none !important;
+}

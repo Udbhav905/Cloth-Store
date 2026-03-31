@@ -64,23 +64,26 @@ function PageSkeleton() {
   );
 }
 
-// ── Smooth Scroll Wrapper with Enhanced Features ──────────────────────────
+// ── Smooth Scroll Wrapper with Optimized Settings for Quick Clicks ──────────
 function ScrollProvider({ children }) {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    // Initialize Lenis with enhanced settings
+    // Initialize Lenis with OPTIMIZED settings for better click responsiveness
     const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Luxury "easing out" effect
+      duration: 0.8, // Reduced from 1.2 to 0.8 for faster response
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -8 * t)), // Faster easing
       direction: "vertical",
       gestureDirection: "vertical",
       smooth: true,
       smoothTouch: false,
-      touchMultiplier: 2,
-      wheelMultiplier: 1,
+      touchMultiplier: 1.5, // Reduced for better touch response
+      wheelMultiplier: 0.8, // Reduced for better wheel response
       infinite: false,
       orientation: "vertical",
+      // IMPORTANT: These settings prevent scroll from blocking clicks
+      syncTouch: true,
+      touchMultiplier: 1,
     });
 
     // RAF loop for smooth scroll
@@ -91,30 +94,20 @@ function ScrollProvider({ children }) {
 
     requestAnimationFrame(raf);
 
-    // Scroll to top on route change with smooth animation
+    // Scroll to top on route change with faster animation
     setTimeout(() => {
       lenis.scrollTo(0, { 
         immediate: false,
-        duration: 1.2,
-        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t))
+        duration: 0.6, // Faster scroll to top
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -8 * t))
       });
-    }, 100);
+    }, 50); // Reduced delay from 100 to 50
 
-    // Stop scrolling when cursor is over certain elements (optional)
-    const stopScrollOnElements = (e) => {
-      const target = e.target;
-      if (target.closest('[data-no-scroll]')) {
-        lenis.stop();
-      } else {
-        lenis.start();
-      }
-    };
-
-    document.addEventListener('mouseenter', stopScrollOnElements, true);
+    // Don't stop scroll on any elements - let clicks work normally
+    // This ensures all click interactions are responsive
     
     return () => {
       lenis.destroy();
-      document.removeEventListener('mouseenter', stopScrollOnElements, true);
     };
   }, [pathname]);
 
