@@ -6,7 +6,6 @@ const cartItemSchema = new mongoose.Schema({
     ref: "Product",
     required: true
   },
-  variantId: mongoose.Schema.Types.ObjectId,
   name: String,
   size: String,
   color: String,
@@ -19,7 +18,8 @@ const cartItemSchema = new mongoose.Schema({
     type: Number,
     required: true,
     min: 1,
-    max: 10
+    max: 10,
+    default: 1
   },
   image: String,
   addedAt: {
@@ -66,13 +66,14 @@ const cartSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// Pre-save middleware to calculate totals
 cartSchema.pre('save', function(next) {
   this.totalItems = this.items.reduce((sum, item) => sum + item.quantity, 0);
   this.subtotal = this.items.reduce((sum, item) => 
-    sum + (item.discountedPrice || item.price) * item.quantity, 0
+    sum + ((item.discountedPrice || item.price) * item.quantity), 0
   );
-  this.total = this.subtotal - this.couponDiscount;
-  next();
+  this.total = this.subtotal - (this.couponDiscount || 0);
+  // next();
 });
 
 cartSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

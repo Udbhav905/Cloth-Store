@@ -71,14 +71,14 @@ function ScrollProvider({ children }) {
   useEffect(() => {
     // Initialize Lenis with OPTIMIZED settings for better click responsiveness
     const lenis = new Lenis({
-      duration: 0.8, // Reduced from 1.2 to 0.8 for faster response
+      duration: 0.4, // Reduced from 1.2 to 0.8 for faster response
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -8 * t)), // Faster easing
       direction: "vertical",
       gestureDirection: "vertical",
       smooth: true,
       smoothTouch: false,
-      touchMultiplier: 1.5, // Reduced for better touch response
-      wheelMultiplier: 0.8, // Reduced for better wheel response
+      touchMultiplier: 0.9, // Reduced for better touch response
+      wheelMultiplier: 0.5, // Reduced for better wheel response
       infinite: false,
       orientation: "vertical",
       // IMPORTANT: These settings prevent scroll from blocking clicks

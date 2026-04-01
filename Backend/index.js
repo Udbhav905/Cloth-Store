@@ -30,7 +30,10 @@ import reviewRoutes   from "./Routes/reviewRoutes.js";
 import couponRoutes   from "./Routes/couponRoutes.js";
 import adminRoutes    from "./Routes/Adminroutes.js";
 import paymentRoutes  from "./Routes/paymentRoutes.js";
+import wishlistRoutes  from "./Routes/wishlistRoutes.js";
 import { errorHandler, notFound } from "./Middleware/errorMiddleware.js";
+
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -82,11 +85,16 @@ app.use("/api/users",      userRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/products",   productRoutes);
 app.use("/api/orders",     orderRoutes);
-app.use("/api/cart",       cartRoutes);
+// Add these after other route declarations
+app.use("/api/cart", cartRoutes);
+app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/reviews",    reviewRoutes);
 app.use("/api/coupons",    couponRoutes);
 app.use("/api/admin",      adminRoutes);
 app.use("/api/payments",   paymentRoutes);
+
+
+
 
 /* ── Health check ── */
 app.get("/api/health", (_, res) =>

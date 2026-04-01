@@ -16,6 +16,7 @@ const router = express.Router();
 router.get("/tree", getCategoryTree);
 router.get("/slug/:slug", getCategoryBySlug);
 
+
 router.route("/")
   .get(getCategories)
    .post(protect, admin, upload.single("image"), createCategory);

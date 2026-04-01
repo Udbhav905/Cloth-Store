@@ -4,6 +4,8 @@ import {
   getProducts,
   getProductById,
   getProductBySlug,
+  getProductsByCategory ,
+  getProductsBySubCategory,
   updateProduct,
   deleteProduct,
   getFeaturedProducts,
@@ -21,6 +23,8 @@ router.get("/featured", getFeaturedProducts);
 router.get("/new-arrivals", getNewArrivals);
 router.get("/best-sellers", getBestSellers);
 router.get("/slug/:slug", getProductBySlug);
+router.get("/category/:slug", getProductsByCategory);
+router.get("/subcategory/:slug", getProductsBySubCategory);
 router.get("/search",       searchProducts); 
 
 router.route("/")

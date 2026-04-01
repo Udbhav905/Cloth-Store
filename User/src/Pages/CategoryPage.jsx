@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { useParams, Link, useSearchParams } from "react-router-dom";
-import useProductStore from "../store/useProductStore";
+import { useParams, Link } from "react-router-dom";
 import styles from "../Pages/styles/CategoryPage.module.css";
+
+const API = "http://localhost:3000/api";
 
 /* ── Price helpers ── */
 function calcPrice(p) {
@@ -39,11 +40,11 @@ const FALLBACK = "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w
    PRODUCT CARD
 ═══════════════════════════════ */
 function Card({ product: p, index, view }) {
-  const ref             = useRef(null);
-  const [vis, setVis]   = useState(false);
-  const [hov, setHov]   = useState(false);
-  const [ok,  setOk]    = useState(false);
-  const [img, setImg]   = useState(0);
+  const ref = useRef(null);
+  const [vis, setVis] = useState(false);
+  const [hov, setHov] = useState(false);
+  const [ok, setOk] = useState(false);
+  const [img, setImg] = useState(0);
 
   useEffect(() => {
     const el = ref.current; if (!el) return;
@@ -61,9 +62,9 @@ function Card({ product: p, index, view }) {
   }, []);
 
   const isList = view === "list";
-  const imgs   = [p.mainImage, ...(p.galleryImages || [])].filter(Boolean).slice(0, 3);
+  const imgs = [p.mainImage, ...(p.galleryImages || [])].filter(Boolean).slice(0, 3);
   const hasDis = p.discountType !== "none" && p.discountValue > 0;
-  const disc   = discPct(p);
+  const disc = discPct(p);
   const colors = [...new Map(
     (p.variants || [])
       .filter(v => v.colorCode && v.isActive !== false)
@@ -77,7 +78,6 @@ function Card({ product: p, index, view }) {
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => { setHov(false); setImg(0); }}
     >
-      {/* Image */}
       <Link to={`/products/${p._id}`} className={styles.imgWrap}>
         {!ok && <div className={styles.shimmer} />}
         <img
@@ -89,8 +89,6 @@ function Card({ product: p, index, view }) {
           onError={e => { e.currentTarget.src = FALLBACK; }}
           loading="lazy"
         />
-
-        {/* Hover image dots */}
         {hov && imgs.length > 1 && (
           <div className={styles.dots}>
             {imgs.map((_, i) => (
@@ -101,15 +99,12 @@ function Card({ product: p, index, view }) {
             ))}
           </div>
         )}
-
-        {/* Badges */}
         <div className={styles.badges}>
-          {disc            && <span className={`${styles.bdg} ${styles.bdgSale}`}>-{disc}%</span>}
-          {p.isNewArrival  && <span className={`${styles.bdg} ${styles.bdgNew}`}>New</span>}
-          {p.isBestSeller  && <span className={`${styles.bdg} ${styles.bdgBest}`}>Best Seller</span>}
+          {disc && <span className={`${styles.bdg} ${styles.bdgSale}`}>-{disc}%</span>}
+          {p.isNewArrival && <span className={`${styles.bdg} ${styles.bdgNew}`}>New</span>}
+          {p.isBestSeller && <span className={`${styles.bdg} ${styles.bdgBest}`}>Best Seller</span>}
           {p.totalStock === 0 && <span className={`${styles.bdg} ${styles.bdgSold}`}>Sold Out</span>}
         </div>
-
         <div className={`${styles.cta} ${hov ? styles.ctaIn : ""}`}>
           View Piece
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -118,8 +113,6 @@ function Card({ product: p, index, view }) {
           </svg>
         </div>
       </Link>
-
-      {/* Info */}
       <div className={styles.info}>
         <div className={styles.infoTop}>
           <span className={styles.catTag}>{p.category?.name ?? "Collection"}</span>
@@ -130,13 +123,10 @@ function Card({ product: p, index, view }) {
             </span>
           )}
         </div>
-
         <Link to={`/products/${p._id}`} className={styles.pname}>{p.name}</Link>
-
         {isList && p.shortDescription && (
           <p className={styles.shortDesc}>{p.shortDescription}</p>
         )}
-
         {colors.length > 0 && (
           <div className={styles.swatches}>
             {colors.map(v => (
@@ -145,12 +135,10 @@ function Card({ product: p, index, view }) {
             ))}
           </div>
         )}
-
         <div className={styles.priceRow}>
           <span className={styles.price}>{fmt(calcPrice(p))}</span>
           {hasDis && <span className={styles.was}>{fmt(p.basePrice)}</span>}
         </div>
-
         {p.totalStock === 0 && <p className={styles.soldOut}>Out of Stock</p>}
       </div>
     </article>
@@ -174,7 +162,7 @@ function Skeleton({ view }) {
 }
 
 /* ═══════════════════════════════
-   FILTER SIDEBAR (inline, no extra file)
+   FILTER SIDEBAR
 ═══════════════════════════════ */
 function FilterSidebar({ open, onClose, filters, setFilter, clearAll, allColors }) {
   const [minIn, setMinIn] = useState(filters.minPrice);
@@ -216,8 +204,6 @@ function FilterSidebar({ open, onClose, filters, setFilter, clearAll, allColors 
     <>
       {open && <div className={styles.backdrop} onClick={onClose} />}
       <aside className={`${styles.sidebar} ${open ? styles.sidebarOpen : ""}`}>
-
-        {/* Header */}
         <div className={styles.sbHead}>
           <span className={styles.sbTitle}>Filters</span>
           <button className={styles.sbClose} onClick={onClose}>
@@ -229,8 +215,6 @@ function FilterSidebar({ open, onClose, filters, setFilter, clearAll, allColors 
         </div>
 
         <div className={styles.sbBody}>
-
-          {/* Quick flags */}
           <Accordion title="Quick Filters">
             {[
               { key: "inStock",    label: "In Stock Only" },
@@ -246,7 +230,6 @@ function FilterSidebar({ open, onClose, filters, setFilter, clearAll, allColors 
             ))}
           </Accordion>
 
-          {/* Price */}
           <Accordion title="Price Range">
             <div className={styles.presets}>
               {PRICE_PRESETS.map(pr => {
@@ -281,7 +264,6 @@ function FilterSidebar({ open, onClose, filters, setFilter, clearAll, allColors 
             </div>
           </Accordion>
 
-          {/* Sizes */}
           <Accordion title="Size">
             <div className={styles.sizeGrid}>
               {SIZES.map(s => (
@@ -298,7 +280,6 @@ function FilterSidebar({ open, onClose, filters, setFilter, clearAll, allColors 
             </div>
           </Accordion>
 
-          {/* Colors */}
           {allColors.length > 0 && (
             <Accordion title="Colour">
               <div className={styles.colorList}>
@@ -324,7 +305,6 @@ function FilterSidebar({ open, onClose, filters, setFilter, clearAll, allColors 
           )}
         </div>
 
-        {/* Footer */}
         <div className={styles.sbFoot}>
           <button className={styles.sbClear} onClick={clearAll}>Clear All</button>
           <button className={styles.sbApply} onClick={onClose}>Show Results →</button>
@@ -335,77 +315,99 @@ function FilterSidebar({ open, onClose, filters, setFilter, clearAll, allColors 
 }
 
 /* ═══════════════════════════════
-   MAIN PAGE
+   MAIN PAGE - USING BACKEND API
 ═══════════════════════════════ */
 export default function CategoryPage() {
   const { slug } = useParams();
 
-  /* ── Read ALL products already in the store ── */
-  const { trending, newArrivals, featured } = useProductStore();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [categoryInfo, setCategoryInfo] = useState(null);
+  const [subCategories, setSubCategories] = useState([]);
+  const [parentCategory, setParentCategory] = useState(null);
 
-  /* Combine all products from store, deduplicate by _id */
-  const allStoreProducts = [
-    ...trending,
-    ...newArrivals,
-    ...featured,
-  ].reduce((map, p) => { map.set(p._id, p); return map; }, new Map());
-
-  /* ── Filter by category slug ── */
-  const categoryProducts = [...allStoreProducts.values()].filter(p => {
-    const catSlug = p.category?.slug ?? "";
-    return catSlug.toLowerCase() === slug?.toLowerCase();
-  });
-
-  /* ── If store is empty or category not in store, fetch from API ── */
-  const [apiProducts,  setApiProducts]  = useState([]);
-  const [apiLoading,   setApiLoading]   = useState(false);
-  const [apiError,     setApiError]     = useState(null);
-  const [catInfo,      setCatInfo]      = useState(null);
-
+  // Fetch products from backend API
   useEffect(() => {
-  if (!slug) return;
+    if (!slug) return;
 
-  // Always fetch category info
-  fetch(`http://localhost:3000/api/categories/slug/${slug}`)
-    .then(r => r.json())
-    .then(d => setCatInfo(d))
-    .catch(() => {});
+    const fetchProducts = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const timestamp = Date.now();
+        
+        // First, try to fetch as category (includes subcategories)
+        console.log(`🔍 Fetching products for category: ${slug}`);
+        const response = await fetch(`${API}/products/category/${slug}?_t=${timestamp}`, {
+          headers: { "Cache-Control": "no-cache" }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log("✅ Category data received:", data);
+          setProducts(data.products || []);
+          setCategoryInfo(data.category);
+          setSubCategories(data.subCategories || []);
+          setParentCategory(null);
+          setLoading(false);
+          return;
+        }
+        
+        // If not found as category, try as subcategory
+        console.log(`🔍 Trying as subcategory: ${slug}`);
+        const subResponse = await fetch(`${API}/products/subcategory/${slug}?_t=${timestamp}`, {
+          headers: { "Cache-Control": "no-cache" }
+        });
+        
+        if (subResponse.ok) {
+          const data = await subResponse.json();
+          console.log("✅ Subcategory data received:", data);
+          setProducts(data.products || []);
+          setCategoryInfo(data.subCategory);
+          setSubCategories([]);
+          setParentCategory(data.subCategory?.parentCategory);
+          setLoading(false);
+          return;
+        }
+        
+        // If still not found, try regular products endpoint with search
+        console.log(`🔍 Searching products by name: ${slug}`);
+        const searchResponse = await fetch(`${API}/products?search=${slug}&_t=${timestamp}`, {
+          headers: { "Cache-Control": "no-cache" }
+        });
+        
+        if (searchResponse.ok) {
+          const data = await searchResponse.json();
+          setProducts(data.products || []);
+          setCategoryInfo({ name: slug, description: `Products matching "${slug}"` });
+          setLoading(false);
+          return;
+        }
+        
+        throw new Error(`No products found for "${slug}"`);
+        
+      } catch (err) {
+        console.error("❌ Error fetching products:", err);
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+    
+    fetchProducts();
+  }, [slug]);
 
-  // ✅ REMOVE the early return — always fetch products
-  // ❌ DELETE: if (categoryProducts.length > 0) return;
-
-  setApiLoading(true);
-  fetch(`http://localhost:3000/api/categories/slug/${slug}`)
-    .then(r => r.json())
-    .then(catData => {
-      if (!catData?._id) throw new Error("Category not found");
-      return fetch(`http://localhost:3000/api/products?category=${catData._id}&limit=50`);
-    })
-    .then(r => r.json())
-    .then(d => {
-      setApiProducts(d.products || []);
-      setApiLoading(false);
-    })
-    .catch(e => { setApiError(e.message); setApiLoading(false); });
-
-}, [slug]); // re-runs whenever slug changes
-
-
-
-  /* Use store products if available, otherwise use API products */
-const baseProducts = apiProducts.length > 0 ? apiProducts : categoryProducts;
-  const isLoading    = apiLoading && baseProducts.length === 0;
-
-  /* ── Local filter + sort state ── */
+  // Local filter state
   const [filters, setFilters] = useState({
     minPrice: "", maxPrice: "",
     sizes: [], colors: [],
     inStock: false, isNew: false, isFeatured: false,
   });
-  const [sort,      setSort]      = useState("newest");
-  const [view,      setView]      = useState("grid");
+  const [sort, setSort] = useState("newest");
+  const [view, setView] = useState("grid");
   const [panelOpen, setPanelOpen] = useState(false);
-  const [page,      setPage]      = useState(1);
+  const [page, setPage] = useState(1);
   const PER_PAGE = 12;
 
   const setFilter = (key, value) => {
@@ -418,22 +420,23 @@ const baseProducts = apiProducts.length > 0 ? apiProducts : categoryProducts;
     setPage(1);
   };
 
-  /* ── Extract unique colors from these products ── */
+  // Extract unique colors
   const allColors = [...new Map(
-    baseProducts
+    products
       .flatMap(p => p.variants || [])
       .filter(v => v.color && v.colorCode)
       .map(v => [v.color, { name: v.color, code: v.colorCode }])
   ).values()];
 
-  /* ── Apply filters ── */
-  const filtered = baseProducts.filter(p => {
+  // Apply filters
+  const filtered = products.filter(p => {
+    if (!p) return false;
     const price = calcPrice(p);
     if (filters.minPrice && price < Number(filters.minPrice)) return false;
     if (filters.maxPrice && price > Number(filters.maxPrice)) return false;
-    if (filters.inStock    && p.totalStock === 0) return false;
-    if (filters.isNew      && !p.isNewArrival)   return false;
-    if (filters.isFeatured && !p.isFeatured)     return false;
+    if (filters.inStock && p.totalStock === 0) return false;
+    if (filters.isNew && !p.isNewArrival) return false;
+    if (filters.isFeatured && !p.isFeatured) return false;
 
     if (filters.sizes.length > 0) {
       const productSizes = (p.variants || []).filter(v => v.stock > 0).map(v => v.size);
@@ -446,24 +449,25 @@ const baseProducts = apiProducts.length > 0 ? apiProducts : categoryProducts;
     return true;
   });
 
-  /* ── Sort ── */
+  // Sort products
   const sorted = [...filtered].sort((a, b) => {
     switch (sort) {
-      case "priceLow":  return calcPrice(a) - calcPrice(b);
+      case "priceLow": return calcPrice(a) - calcPrice(b);
       case "priceHigh": return calcPrice(b) - calcPrice(a);
-      case "bestSell":  return (b.totalSold || 0) - (a.totalSold || 0);
-      case "topRated":  return (b.averageRating || 0) - (a.averageRating || 0);
-      default:          return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      case "bestSell": return (b.totalSold || 0) - (a.totalSold || 0);
+      case "topRated": return (b.averageRating || 0) - (a.averageRating || 0);
+      default: return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
     }
   });
 
-  /* ── Paginate ── */
+  // Paginate
   const totalFiltered = sorted.length;
-  const totalPages    = Math.max(1, Math.ceil(totalFiltered / PER_PAGE));
-  const paginated     = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / PER_PAGE));
+  const paginated = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  /* Reset page if filters change and current page is now out of range */
-  useEffect(() => { if (page > totalPages) setPage(1); }, [totalPages]);
+  useEffect(() => { 
+    if (page > totalPages) setPage(1); 
+  }, [totalPages, page]);
 
   const activeN = [
     filters.minPrice, filters.maxPrice,
@@ -471,12 +475,12 @@ const baseProducts = apiProducts.length > 0 ? apiProducts : categoryProducts;
     filters.inStock, filters.isNew, filters.isFeatured,
   ].filter(Boolean).length;
 
-  const catName = catInfo?.name ?? slug ?? "";
+  const pageTitle = categoryInfo?.name ?? slug ?? "";
+  const pageType = subCategories.length > 0 ? "Category" : (parentCategory ? "Subcategory" : "Products");
 
   return (
     <div className={styles.page}>
-
-      {/* ── Hero ── */}
+      {/* Hero Section */}
       <div className={styles.hero}>
         <div className={styles.heroBg} />
         <div className={styles.heroOverlay} />
@@ -486,24 +490,49 @@ const baseProducts = apiProducts.length > 0 ? apiProducts : categoryProducts;
             <span className={styles.sep}>◆</span>
             <Link to="/collections" className={styles.crumb}>Collections</Link>
             <span className={styles.sep}>◆</span>
-            <span className={styles.crumbNow}>{catName}</span>
+            {parentCategory && (
+              <>
+                <Link to={`/collections/${parentCategory.slug}`} className={styles.crumb}>
+                  {parentCategory.name}
+                </Link>
+                <span className={styles.sep}>◆</span>
+              </>
+            )}
+            <span className={styles.crumbNow}>{pageTitle}</span>
           </nav>
 
-          <h1 className={styles.heroTitle}>{catName || slug}</h1>
+          <h1 className={styles.heroTitle}>{pageTitle}</h1>
+          
+          {categoryInfo?.description && (
+            <p className={styles.heroDesc}>{categoryInfo.description}</p>
+          )}
 
-          {catInfo?.description && (
-            <p className={styles.heroDesc}>{catInfo.description}</p>
+          {/* Show subcategories if available */}
+          {subCategories.length > 0 && (
+            <div className={styles.subcategoryNav}>
+              <div className={styles.subcategoryLinks}>
+                {subCategories.map(sub => (
+                  <Link 
+                    key={sub._id} 
+                    to={`/collections/${sub.slug}`}
+                    className={styles.subcategoryLink}
+                  >
+                    {sub.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
           )}
 
           <div className={styles.heroMeta}>
-            <span>{isLoading ? "—" : `${totalFiltered} Pieces`}</span>
+            <span>{loading ? "..." : `${products.length} Pieces`}</span>
             <span className={styles.metaDot}>·</span>
-            <span>SS25 Collection</span>
+            <span>{pageType}</span>
           </div>
         </div>
       </div>
 
-      {/* ── Toolbar ── */}
+      {/* Toolbar */}
       <div className={styles.toolbar}>
         <div className={styles.tbL}>
           <button
@@ -515,35 +544,27 @@ const baseProducts = apiProducts.length > 0 ? apiProducts : categoryProducts;
             </svg>
             Filter
             {activeN > 0 && <span className={styles.fCount}>{activeN}</span>}
-            <svg className={`${styles.chev} ${panelOpen ? styles.chevUp : ""}`}
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
           </button>
 
-          {/* Active chips */}
           {activeN > 0 && (
             <div className={styles.chipRow}>
               {filters.sizes.map(s => (
-                <button key={s} className={styles.chip}
-                  onClick={() => setFilter("sizes", filters.sizes.filter(x => x !== s))}>
+                <button key={s} className={styles.chip} onClick={() => setFilter("sizes", filters.sizes.filter(x => x !== s))}>
                   {s} ×
                 </button>
               ))}
               {filters.colors.map(c => (
-                <button key={c} className={styles.chip}
-                  onClick={() => setFilter("colors", filters.colors.filter(x => x !== c))}>
+                <button key={c} className={styles.chip} onClick={() => setFilter("colors", filters.colors.filter(x => x !== c))}>
                   {c} ×
                 </button>
               ))}
               {(filters.minPrice || filters.maxPrice) && (
-                <button className={styles.chip}
-                  onClick={() => { setFilter("minPrice",""); setFilter("maxPrice",""); }}>
+                <button className={styles.chip} onClick={() => { setFilter("minPrice",""); setFilter("maxPrice",""); }}>
                   ₹{filters.minPrice||"0"}–₹{filters.maxPrice||"∞"} ×
                 </button>
               )}
-              {filters.inStock    && <button className={styles.chip} onClick={() => setFilter("inStock",false)}>In Stock ×</button>}
-              {filters.isNew      && <button className={styles.chip} onClick={() => setFilter("isNew",false)}>New ×</button>}
+              {filters.inStock && <button className={styles.chip} onClick={() => setFilter("inStock",false)}>In Stock ×</button>}
+              {filters.isNew && <button className={styles.chip} onClick={() => setFilter("isNew",false)}>New ×</button>}
               {filters.isFeatured && <button className={styles.chip} onClick={() => setFilter("isFeatured",false)}>Featured ×</button>}
               <button className={styles.chipX} onClick={clearAll}>Clear All</button>
             </div>
@@ -552,35 +573,28 @@ const baseProducts = apiProducts.length > 0 ? apiProducts : categoryProducts;
 
         <div className={styles.tbR}>
           <span className={styles.resTxt}>
-            {isLoading ? "…" : `${totalFiltered} result${totalFiltered !== 1 ? "s" : ""}`}
+            {loading ? "..." : `${totalFiltered} result${totalFiltered !== 1 ? "s" : ""}`}
           </span>
 
           <div className={styles.sortBox}>
             <select className={styles.sortSel} value={sort} onChange={e => { setSort(e.target.value); setPage(1); }}>
               {SORT_OPTIONS.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
             </select>
-            <svg className={styles.sortArrow} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
           </div>
 
           <div className={styles.viewTog}>
             {["grid","list"].map(m => (
               <button key={m} className={`${styles.vBtn} ${view===m ? styles.vBtnOn : ""}`}
-                onClick={() => setView(m)} aria-label={m}>
-                {m === "grid"
-                  ? <svg viewBox="0 0 18 18" fill="currentColor"><rect x="1" y="1" width="7" height="7" rx="1"/><rect x="10" y="1" width="7" height="7" rx="1"/><rect x="1" y="10" width="7" height="7" rx="1"/><rect x="10" y="10" width="7" height="7" rx="1"/></svg>
-                  : <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.8"><line x1="2" y1="4.5" x2="16" y2="4.5"/><line x1="2" y1="9" x2="16" y2="9"/><line x1="2" y1="13.5" x2="16" y2="13.5"/></svg>
-                }
+                onClick={() => setView(m)}>
+                {m === "grid" ? "□" : "≡"}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* ── Layout ── */}
+      {/* Layout */}
       <div className={`${styles.layout} ${panelOpen ? styles.layoutOpen : ""}`}>
-
         <FilterSidebar
           open={panelOpen}
           onClose={() => setPanelOpen(false)}
@@ -591,37 +605,41 @@ const baseProducts = apiProducts.length > 0 ? apiProducts : categoryProducts;
         />
 
         <main className={styles.main}>
-          {apiError && baseProducts.length === 0 ? (
+          {error ? (
             <div className={styles.errBox}>
               <span>◆</span>
-              <p>{apiError}</p>
+              <h3>Error loading products</h3>
+              <p>{error}</p>
               <button onClick={() => window.location.reload()}>Retry</button>
             </div>
           ) : (
             <>
               <div className={`${styles.grid} ${view === "list" ? styles.gridList : ""}`}>
-                {isLoading
-                  ? Array.from({ length: 12 }, (_, i) => <Skeleton key={i} view={view} />)
-                  : paginated.length === 0
-                  ? (
-                    <div className={styles.emptyBox}>
-                      <span className={styles.emptyDia}>◆</span>
-                      <h3>No pieces found</h3>
-                      <p>{activeN > 0 ? "Try adjusting your filters" : "No products in this category yet"}</p>
-                      {activeN > 0 && <button className={styles.emptyClear} onClick={clearAll}>Clear Filters</button>}
-                    </div>
-                  )
-                  : paginated.map((p, i) => (
-                      <Card key={p._id} product={p} index={i} view={view} />
-                    ))
-                }
+                {loading ? (
+                  Array.from({ length: 12 }, (_, i) => <Skeleton key={i} view={view} />)
+                ) : paginated.length === 0 ? (
+                  <div className={styles.emptyBox}>
+                    <span className={styles.emptyDia}>◆</span>
+                    <h3>No pieces found</h3>
+                    <p>
+                      {activeN > 0 
+                        ? "Try adjusting your filters" 
+                        : `No products found in "${pageTitle}".`}
+                    </p>
+                    {activeN > 0 && <button className={styles.emptyClear} onClick={clearAll}>Clear Filters</button>}
+                  </div>
+                ) : (
+                  paginated.map((p, i) => (
+                    <Card key={p._id} product={p} index={i} view={view} />
+                  ))
+                )}
               </div>
 
               {/* Pagination */}
-              {totalPages > 1 && !isLoading && (
+              {totalPages > 1 && !loading && (
                 <div className={styles.pager}>
                   <button className={styles.pgBtn} disabled={page === 1}
-                    onClick={() => { setPage(p => p - 1); window.scrollTo({top:0,behavior:"smooth"}); }}>
+                    onClick={() => { setPage(p => p - 1); window.scrollTo({top:0, behavior:"smooth"}); }}>
                     ← Prev
                   </button>
                   <div className={styles.pgNums}>
@@ -635,13 +653,13 @@ const baseProducts = apiProducts.length > 0 ? apiProducts : categoryProducts;
                         ? <span key={`e${i}`} className={styles.pgDots}>…</span>
                         : <button key={n}
                             className={`${styles.pgN} ${n === page ? styles.pgNOn : ""}`}
-                            onClick={() => { setPage(n); window.scrollTo({top:0,behavior:"smooth"}); }}>
+                            onClick={() => { setPage(n); window.scrollTo({top:0, behavior:"smooth"}); }}>
                             {n}
                           </button>
                       )}
                   </div>
                   <button className={styles.pgBtn} disabled={page === totalPages}
-                    onClick={() => { setPage(p => p + 1); window.scrollTo({top:0,behavior:"smooth"}); }}>
+                    onClick={() => { setPage(p => p + 1); window.scrollTo({top:0, behavior:"smooth"}); }}>
                     Next →
                   </button>
                 </div>

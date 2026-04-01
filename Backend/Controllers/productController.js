@@ -6,11 +6,6 @@ import { generateSlug }      from "../utils/generateSlug.js";
 import { ApiFeatures }       from "../utils/apiFeatures.js";
 import { uploadToCloudinary } from "../utils/cloudinaryUpload.js";
 
-/* ─────────────────────────────────────────────
-   HELPERS
-───────────────────────────────────────────── */
-
-// Fields safe to send for list/card views — never send full description, ratings array, etc.
 const LIST_SELECT  = "name slug mainImage basePrice discountType discountValue averageRating totalReviews isBestSeller isNewArrival isFeatured totalStock category subCategory";
 const CARD_SELECT  = "name slug mainImage basePrice discountType discountValue averageRating totalReviews totalStock category";
 
@@ -19,10 +14,6 @@ const bustProductCache = () => {
   ["featured", "new-arrivals", "best-sellers"].forEach((k) => cache.del(k));
 };
 
-/* ─────────────────────────────────────────────
-   CREATE PRODUCT
-   POST /api/products
-───────────────────────────────────────────── */
 export const createProduct = async (req, res) => {
   try {
     const { name, category, variants, ...otherData } = req.body;
@@ -100,10 +91,6 @@ export const createProduct = async (req, res) => {
   }
 };
 
-/* ─────────────────────────────────────────────
-   GET ALL PRODUCTS
-   GET /api/products
-───────────────────────────────────────────── */
 export const getProducts = async (req, res) => {
   try {
     // ── Build base query with lean ──
@@ -140,10 +127,7 @@ export const getProducts = async (req, res) => {
   }
 };
 
-/* ─────────────────────────────────────────────
-   GET PRODUCT BY ID
-   GET /api/products/:id
-───────────────────────────────────────────── */
+
 export const getProductById = async (req, res) => {
   try {
     // ── Fetch product + reviews in parallel ──
@@ -170,10 +154,6 @@ export const getProductById = async (req, res) => {
   }
 };
 
-/* ─────────────────────────────────────────────
-   GET PRODUCT BY SLUG
-   GET /api/products/slug/:slug
-───────────────────────────────────────────── */
 export const getProductBySlug = async (req, res) => {
   try {
     const product = await Product.findOne({ slug: req.params.slug })
@@ -208,11 +188,174 @@ export const getProductBySlug = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// Add this after your existing functions
 
 /* ─────────────────────────────────────────────
-   UPDATE PRODUCT
-   PUT /api/products/:id
+   GET PRODUCTS BY CATEGORY (INCLUDING SUBCATEGORIES)
+   GET /api/products/category/:slug
 ───────────────────────────────────────────── */
+/* ─────────────────────────────────────────────
+   GET PRODUCTS BY CATEGORY (INCLUDING SUBCATEGORIES)
+   GET /api/products/category/:slug
+───────────────────────────────────────────── */
+export const getProductsByCategory = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { limit = 50, page = 1, sort = "-createdAt" } = req.query;
+    
+    // Find the category by slug
+    const category = await Category.findOne({ slug }).lean();
+    
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+    
+    console.log(`🔍 Found category: ${category.name} (ID: ${category._id})`);
+    console.log(`🔍 Parent category: ${category.parentCategory}`);
+    
+    // Get all subcategories of this category
+    const subCategories = await Category.find({ parentCategory: category._id }).lean();
+    const subCategoryIds = subCategories.map(sc => sc._id);
+    
+    console.log(`📁 Found ${subCategories.length} subcategories:`, subCategories.map(sc => sc.name));
+    
+    // Build query: products where category matches OR subCategory matches
+    const query = {
+      isActive: true,
+      $or: [
+        { category: category._id },
+        { subCategory: category._id }  // ← THIS IS KEY! Products where subCategory = this category ID
+      ]
+    };
+    
+    // Also include products that belong to any subcategory
+    if (subCategoryIds.length > 0) {
+      query.$or.push({ subCategory: { $in: subCategoryIds } });
+    }
+    
+    console.log("📝 Query:", JSON.stringify(query, null, 2));
+    
+    // Get products with pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const products = await Product.find(query)
+      .lean()
+      .select("name slug mainImage basePrice discountType discountValue averageRating totalReviews isBestSeller isNewArrival isFeatured totalStock category subCategory")
+      .populate('category', 'name slug')
+      .populate('subCategory', 'name slug')
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(limit));
+    
+    const total = await Product.countDocuments(query);
+    
+    console.log(`✅ Found ${products.length} products for category: ${category.name}`);
+    console.log("📦 Products:", products.map(p => ({ name: p.name, category: p.category?.name, subCategory: p.subCategory?.name })));
+    
+    res.json({
+      success: true,
+      category: {
+        _id: category._id,
+        name: category.name,
+        slug: category.slug,
+        description: category.description,
+        image: category.image,
+        parentCategory: category.parentCategory
+      },
+      subCategories: subCategories.map(sc => ({
+        _id: sc._id,
+        name: sc.name,
+        slug: sc.slug
+      })),
+      products,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+    
+  } catch (error) {
+    console.error("Error in getProductsByCategory:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/* ─────────────────────────────────────────────
+   GET PRODUCTS BY SUBCATEGORY
+   GET /api/products/subcategory/:slug
+───────────────────────────────────────────── */
+/* ─────────────────────────────────────────────
+   GET PRODUCTS BY SUBCATEGORY
+   GET /api/products/subcategory/:slug
+───────────────────────────────────────────── */
+export const getProductsBySubCategory = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { limit = 50, page = 1, sort = "-createdAt" } = req.query;
+    
+    // Find the subcategory
+    const subCategory = await Category.findOne({ slug }).lean();
+    
+    if (!subCategory) {
+      return res.status(404).json({ message: "Subcategory not found" });
+    }
+    
+    console.log(`🔍 Found subcategory: ${subCategory.name} (ID: ${subCategory._id})`);
+    
+    // Get parent category if exists
+    let parentCategory = null;
+    if (subCategory.parentCategory) {
+      parentCategory = await Category.findById(subCategory.parentCategory).lean();
+    }
+    
+    // Get products with this subcategory
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const products = await Product.find({ 
+      subCategory: subCategory._id,
+      isActive: true 
+    })
+      .lean()
+      .select("name slug mainImage basePrice discountType discountValue averageRating totalReviews isBestSeller isNewArrival isFeatured totalStock category subCategory")
+      .populate('category', 'name slug')
+      .populate('subCategory', 'name slug')
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(limit));
+    
+    const total = await Product.countDocuments({ subCategory: subCategory._id, isActive: true });
+    
+    console.log(`✅ Found ${products.length} products for subcategory: ${subCategory.name}`);
+    
+    res.json({
+      success: true,
+      subCategory: {
+        _id: subCategory._id,
+        name: subCategory.name,
+        slug: subCategory.slug,
+        description: subCategory.description,
+        image: subCategory.image,
+        parentCategory: parentCategory ? {
+          _id: parentCategory._id,
+          name: parentCategory.name,
+          slug: parentCategory.slug
+        } : null
+      },
+      products,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+    
+  } catch (error) {
+    console.error("Error in getProductsBySubCategory:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const updateProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -283,10 +426,6 @@ export const updateProduct = async (req, res) => {
   }
 };
 
-/* ─────────────────────────────────────────────
-   DELETE PRODUCT
-   DELETE /api/products/:id
-───────────────────────────────────────────── */
 export const deleteProduct = async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id).lean();
@@ -302,10 +441,6 @@ export const deleteProduct = async (req, res) => {
   }
 };
 
-/* ─────────────────────────────────────────────
-   GET FEATURED PRODUCTS
-   GET /api/products/featured
-───────────────────────────────────────────── */
 export const getFeaturedProducts = async (req, res) => {
   try {
     const CACHE_KEY = "featured";
@@ -326,10 +461,6 @@ export const getFeaturedProducts = async (req, res) => {
   }
 };
 
-/* ─────────────────────────────────────────────
-   GET NEW ARRIVALS
-   GET /api/products/new-arrivals
-───────────────────────────────────────────── */
 export const getNewArrivals = async (req, res) => {
   try {
     const CACHE_KEY = "new-arrivals";
@@ -350,10 +481,6 @@ export const getNewArrivals = async (req, res) => {
   }
 };
 
-/* ─────────────────────────────────────────────
-   GET BEST SELLERS
-   GET /api/products/best-sellers
-───────────────────────────────────────────── */
 export const getBestSellers = async (req, res) => {
   try {
     const CACHE_KEY = "best-sellers";
@@ -374,10 +501,6 @@ export const getBestSellers = async (req, res) => {
   }
 };
 
-/* ─────────────────────────────────────────────
-   SEARCH PRODUCTS
-   GET /api/products/search
-───────────────────────────────────────────── */
 export const searchProducts = async (req, res) => {
   try {
     const {

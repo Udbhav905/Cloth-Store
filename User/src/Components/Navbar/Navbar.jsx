@@ -8,15 +8,27 @@ import styles from "./Navbar.module.css";
 const API_URL = "http://localhost:3000/api";
 
 const getInitials = (name = "") =>
-  name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
+  name
+    .split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
 export default function Navbar() {
   const navigate = useNavigate();
 
-  const { user, isLoggedIn, logout, openAuthModal, fetchProfile } = useAuthStore();
-  const { items, wishlist } = useCartStore();
-  const cartCount = items.reduce((s, i) => s + i.quantity, 0);
-  const wishCount = wishlist.length;
+  const { user, isLoggedIn, logout, openAuthModal, fetchProfile } =
+    useAuthStore();
+  
+  // Get cart store state and actions
+  const cartItems = useCartStore((state) => state.items);
+  const wishlistItems = useCartStore((state) => state.wishlist);
+  const cartCount = useCartStore((state) => state.cartCount);
+  const wishCount = useCartStore((state) => state.wishCount);
+  const initialize = useCartStore((state) => state.initialize);
+  const resetCart = useCartStore((state) => state.resetCart);
+  const isInitialized = useCartStore((state) => state.isInitialized);
 
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -25,24 +37,52 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
   const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [cartReady, setCartReady] = useState(false);
+  
   const drawerTimerRef = useRef(null);
   const searchRef = useRef(null);
   const profileRef = useRef(null);
   const cursorRef = useRef(null);
 
-  // Fetch categories from API
+  // Initialize cart and wishlist when user logs in
+  useEffect(() => {
+    const initStore = async () => {
+      if (isLoggedIn) {
+        if (!isInitialized) {
+          await initialize();
+        }
+      } else {
+        resetCart();
+      }
+    };
+
+    initStore();
+  }, [isLoggedIn, initialize, resetCart, isInitialized]);
+
+  // Listen to cart initialization
+  useEffect(() => {
+    const unsubscribe = useCartStore.subscribe((state) => {
+      if (state.isInitialized) {
+        setCartReady(true);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        setLoading(true);
+        setLoadingCategories(true);
         console.log("Fetching categories from:", `${API_URL}/categories`);
-        
+
         const response = await axios.get(`${API_URL}/categories`);
         console.log("Raw categories response:", response.data);
-        
+
         let categoriesData = [];
-        
+
         if (response.data.success) {
           categoriesData = response.data.data;
         } else if (Array.isArray(response.data)) {
@@ -52,116 +92,125 @@ export default function Navbar() {
         } else {
           categoriesData = response.data;
         }
-        
+
         console.log("Categories data:", categoriesData);
-        
+
         // Create a structured menu with proper subcategories
-        const menSubcategories = categoriesData.filter(cat => 
-          cat.parentCategory === "699d7d23a7f166db0aabd088" || 
-          cat.name === "Shirt" || 
-          cat.name === "T-shirts" || 
-          cat.name === "Jacket" || 
-          cat.name === "Pants"
-        ).map(cat => ({
-          _id: cat._id,
-          name: cat.name,
-          slug: cat.slug,
-          subcategories: []
-        }));
-        
+        const menSubcategories = categoriesData
+          .filter(
+            (cat) =>
+              cat.parentCategory === "699d7d23a7f166db0aabd088" ||
+              cat.name === "Shirt" ||
+              cat.name === "T-shirts" ||
+              cat.name === "Jacket" ||
+              cat.name === "Pants",
+          )
+          .map((cat) => ({
+            _id: cat._id,
+            name: cat.name,
+            slug: cat.slug,
+            subcategories: [],
+          }));
+
         console.log("Men subcategories:", menSubcategories);
-        
+
         const structuredCategories = [
           {
             _id: "men",
             name: "Men",
             slug: "men",
-            subcategories: menSubcategories.length > 0 ? menSubcategories : [
-              { _id: "shirt", name: "Shirt", slug: "shirt" },
-              { _id: "tshirts", name: "T-shirts", slug: "t-shirts" },
-              { _id: "jacket", name: "Jacket", slug: "jacket" },
-              { _id: "pants", name: "Pants", slug: "pants" }
-            ]
+            subcategories:
+              menSubcategories.length > 0
+                ? menSubcategories
+                : [
+                    { _id: "shirt", name: "Shirt", slug: "shirt" },
+                    { _id: "tshirts", name: "T-shirts", slug: "t-shirts" },
+                    { _id: "jacket", name: "Jacket", slug: "jacket" },
+                    { _id: "pants", name: "Pants", slug: "pants" },
+                  ],
           },
           {
             _id: "women",
             name: "Women",
             slug: "women",
-            subcategories: []
+            subcategories: [],
           },
           {
             _id: "couture",
             name: "Couture",
             slug: "couture",
-            subcategories: []
+            subcategories: [],
           },
           {
             _id: "season",
             name: "Season",
             slug: "season",
-            subcategories: []
-          }
+            subcategories: [],
+          },
         ];
-        
-        setCategories([{
-          _id: "collections",
-          name: "Collections",
-          slug: "collections",
-          subcategories: structuredCategories
-        }]);
-        
+
+        setCategories([
+          {
+            _id: "collections",
+            name: "Collections",
+            slug: "collections",
+            subcategories: structuredCategories,
+          },
+        ]);
+
         console.log("Final categories structure:", structuredCategories);
-        
       } catch (error) {
         console.error("Error fetching categories:", error);
         // Fallback data
-        setCategories([{
-          _id: "1",
-          name: "Collections",
-          slug: "collections",
-          subcategories: [
-            { 
-              _id: "men",
-              name: "Men", 
-              slug: "men",
-              subcategories: [
-                { _id: "shirt", name: "Shirt", slug: "shirt" },
-                { _id: "tshirts", name: "T-shirts", slug: "t-shirts" },
-                { _id: "jacket", name: "Jacket", slug: "jacket" },
-                { _id: "pants", name: "Pants", slug: "pants" }
-              ]
-            },
-            { 
-              _id: "women",
-              name: "Women", 
-              slug: "women",
-              subcategories: []
-            },
-            { 
-              _id: "couture",
-              name: "Couture", 
-              slug: "couture",
-              subcategories: []
-            },
-            { 
-              _id: "season",
-              name: "Season", 
-              slug: "season",
-              subcategories: []
-            }
-          ]
-        }]);
+        setCategories([
+          {
+            _id: "1",
+            name: "Collections",
+            slug: "collections",
+            subcategories: [
+              {
+                _id: "men",
+                name: "Men",
+                slug: "men",
+                subcategories: [
+                  { _id: "shirt", name: "Shirt", slug: "shirt" },
+                  { _id: "tshirts", name: "T-shirts", slug: "t-shirts" },
+                  { _id: "jacket", name: "Jacket", slug: "jacket" },
+                  { _id: "pants", name: "Pants", slug: "pants" },
+                ],
+              },
+              {
+                _id: "women",
+                name: "Women",
+                slug: "women",
+                subcategories: [],
+              },
+              {
+                _id: "couture",
+                name: "Couture",
+                slug: "couture",
+                subcategories: [],
+              },
+              {
+                _id: "season",
+                name: "Season",
+                slug: "season",
+                subcategories: [],
+              },
+            ],
+          },
+        ]);
       } finally {
-        setLoading(false);
+        setLoadingCategories(false);
       }
     };
 
     fetchCategories();
   }, []);
 
-  useEffect(() => { 
-    fetchProfile(); 
-  }, []);
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -186,7 +235,8 @@ export default function Navbar() {
 
   useEffect(() => {
     const h = (e) => {
-      if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
+      if (profileRef.current && !profileRef.current.contains(e.target))
+        setProfileOpen(false);
     };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
@@ -196,11 +246,11 @@ export default function Navbar() {
     clearTimeout(drawerTimerRef.current);
     setDrawerOpen(true);
   };
-  
+
   const handleDrawerLeave = () => {
     drawerTimerRef.current = setTimeout(() => setDrawerOpen(false), 120);
   };
-  
+
   const handleDrawerEnter = () => clearTimeout(drawerTimerRef.current);
 
   const handleLogout = async () => {
@@ -218,7 +268,10 @@ export default function Navbar() {
 
   const handleSearchKeyDown = (e) => {
     if (e.key === "Enter") handleSearchSubmit();
-    if (e.key === "Escape") { setSearchOpen(false); setSearchQuery(""); }
+    if (e.key === "Escape") {
+      setSearchOpen(false);
+      setSearchQuery("");
+    }
   };
 
   const handleSearchIconClick = () => {
@@ -239,6 +292,8 @@ export default function Navbar() {
   };
 
   const activeCategory = categories[0] || null;
+  const cartItemCount = cartCount(); // Call the function to get count
+  const wishlistCount = wishCount(); // Call the function to get count
 
   return (
     <>
@@ -246,15 +301,18 @@ export default function Navbar() {
 
       <div className={styles.marqueeStrip}>
         <div className={styles.marqueeTrack}>
-          {Array(8).fill("LUXURIA · Wear the Trend. Own the Moment · Crafted for Comfort · Designed for You · Where Quality Meets Elegance ·").map((t, i) => (
-            <span key={i}>{t}&nbsp;</span>
-          ))}
+          {Array(8)
+            .fill(
+              "LUXURIA · Wear the Trend. Own the Moment · Crafted for Comfort · Designed for You · Where Quality Meets Elegance ·",
+            )
+            .map((t, i) => (
+              <span key={i}>{t}&nbsp;</span>
+            ))}
         </div>
       </div>
 
       <nav className={`${styles.nav} ${scrolled ? styles.navScrolled : ""}`}>
         <div className={styles.navInner}>
-
           {/* LEFT */}
           <div className={styles.navLeft}>
             <button
@@ -264,7 +322,13 @@ export default function Navbar() {
               aria-expanded={drawerOpen}
             >
               <span className={styles.collectionsBtnText}>Collections</span>
-              <svg className={`${styles.chevron} ${drawerOpen ? styles.chevronUp : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg
+                className={`${styles.chevron} ${drawerOpen ? styles.chevronUp : ""}`}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </button>
@@ -281,9 +345,10 @@ export default function Navbar() {
 
           {/* RIGHT */}
           <div className={styles.navRight}>
-
             {/* Search */}
-            <div className={`${styles.searchWrap} ${searchOpen ? styles.searchWrapOpen : ""}`}>
+            <div
+              className={`${styles.searchWrap} ${searchOpen ? styles.searchWrapOpen : ""}`}
+            >
               {searchOpen && (
                 <input
                   ref={searchRef}
@@ -298,12 +363,35 @@ export default function Navbar() {
               <button
                 className={styles.iconBtn}
                 onClick={handleSearchIconClick}
-                aria-label={searchOpen && searchQuery.trim() ? "Submit search" : searchOpen ? "Close search" : "Open search"}
-              >
-                {searchOpen && !searchQuery.trim()
-                  ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                aria-label={
+                  searchOpen && searchQuery.trim()
+                    ? "Submit search"
+                    : searchOpen
+                      ? "Close search"
+                      : "Open search"
                 }
+              >
+                {searchOpen && !searchQuery.trim() ? (
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                ) : (
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                  >
+                    <circle cx="11" cy="11" r="7" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                )}
               </button>
             </div>
 
@@ -316,7 +404,9 @@ export default function Navbar() {
                   aria-label="Profile"
                   title={user.name}
                 >
-                  <span className={styles.avatarInitials}>{getInitials(user.name)}</span>
+                  <span className={styles.avatarInitials}>
+                    {getInitials(user.name)}
+                  </span>
                   <span className={styles.avatarOnline} />
                 </button>
 
@@ -336,48 +426,92 @@ export default function Navbar() {
                       { label: "My Orders", to: "/my-orders" },
                       { label: "Wishlist", to: "/wishlist" },
                     ].map((item) => (
-                      <Link key={item.label} to={item.to} className={styles.profileItem} onClick={() => setProfileOpen(false)}>
+                      <Link
+                        key={item.label}
+                        to={item.to}
+                        className={styles.profileItem}
+                        onClick={() => setProfileOpen(false)}
+                      >
                         {item.label}
                       </Link>
                     ))}
                     {user.role === "admin" && (
-                      <Link to="/admin" className={styles.profileItemAdmin} onClick={() => setProfileOpen(false)}>
+                      <Link
+                        to="/admin"
+                        className={styles.profileItemAdmin}
+                        onClick={() => setProfileOpen(false)}
+                      >
                         ◆ Admin Panel
                       </Link>
                     )}
                     <div className={styles.profileDivider} />
-                    <button className={styles.profileSignOut} onClick={handleLogout}>
+                    <button
+                      className={styles.profileSignOut}
+                      onClick={handleLogout}
+                    >
                       Sign Out
                     </button>
                   </div>
                 )}
               </div>
             ) : (
-              <button className={styles.signInBtn} onClick={() => openAuthModal("login")}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
-                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
+              <button
+                className={styles.signInBtn}
+                onClick={() => openAuthModal("login")}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                >
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
                 </svg>
                 <span>Sign In</span>
               </button>
             )}
 
-            {/* Cart */}
+            {/* Cart - Fixed */}
             <Link to="/cart" className={styles.iconBtn} aria-label="Cart">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
-                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
-                <line x1="3" y1="6" x2="21" y2="6"/>
-                <path d="M16 10a4 4 0 01-8 0"/>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.4"
+              >
+                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <path d="M16 10a4 4 0 01-8 0" />
               </svg>
-              {cartCount > 0 && <span className={styles.badge}>{cartCount}</span>}
+              {!cartReady ? (
+                <span className={styles.badge}>0</span>
+              ) : (
+                cartItemCount > 0 && (
+                  <span className={styles.badge}>{cartItemCount}</span>
+                )
+              )}
             </Link>
 
             {/* Wishlist */}
-            <Link to="/wishlist" className={styles.iconBtn} aria-label="wishlist">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
-                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+            <Link
+              to="/wishlist"
+              className={styles.iconBtn}
+              aria-label="Wishlist"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.4"
+              >
+                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
               </svg>
-              {wishCount > 0 && <span className={`${styles.badge} ${styles.badgeHeart}`}>{wishCount}</span>}
+              {wishlistCount > 0 && (
+                <span className={`${styles.badge} ${styles.badgeHeart}`}>
+                  {wishlistCount}
+                </span>
+              )}
             </Link>
 
             {/* Hamburger */}
@@ -386,12 +520,14 @@ export default function Navbar() {
               onClick={() => setMenuOpen((p) => !p)}
               aria-label="Menu"
             >
-              <span /><span /><span />
+              <span />
+              <span />
+              <span />
             </button>
           </div>
         </div>
 
-        {/* MEGA DRAWER - Fixed to show category names */}
+        {/* MEGA DRAWER */}
         <div
           className={`${styles.drawer} ${drawerOpen ? styles.drawerOpen : ""}`}
           onMouseEnter={handleDrawerEnter}
@@ -402,7 +538,11 @@ export default function Navbar() {
               <div className={styles.drawerEditorialBg} />
               <div className={styles.drawerEditorialContent}>
                 <span className={styles.drawerTag}>New Arrival</span>
-                <h2 className={styles.drawerHeadline}>Spring<br /><em>Séduction</em></h2>
+                <h2 className={styles.drawerHeadline}>
+                  Spring
+                  <br />
+                  <em>Séduction</em>
+                </h2>
                 <p className={styles.drawerSub}>2025 Resort Collection</p>
                 <button
                   onClick={() => {
@@ -411,57 +551,97 @@ export default function Navbar() {
                     setDrawerOpen(false);
                   }}
                   className={styles.drawerCta}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '10px' }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
                 >
                   Explore Now
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  >
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
                   </svg>
                 </button>
               </div>
             </div>
             <div className={styles.drawerCategories}>
-              {!loading && activeCategory?.subcategories?.map((sub, si) => {
-                console.log("Rendering category:", sub.name, "with subcategories:", sub.subcategories);
-                return (
-                  <div key={sub._id} className={styles.drawerCol} style={{ "--col-delay": `${si * 0.06}s` }}>
+              {!loadingCategories &&
+                activeCategory?.subcategories?.map((sub, si) => (
+                  <div
+                    key={sub._id}
+                    className={styles.drawerCol}
+                    style={{ "--col-delay": `${si * 0.06}s` }}
+                  >
                     <h3 className={styles.drawerColTitle}>{sub.name}</h3>
                     <ul className={styles.drawerList}>
                       {sub.subcategories && sub.subcategories.length > 0 ? (
                         sub.subcategories.map((item, ii) => (
-                          <li key={item._id} style={{ "--item-delay": `${si * 0.06 + ii * 0.04}s` }}>
+                          <li
+                            key={item._id}
+                            style={{
+                              "--item-delay": `${si * 0.06 + ii * 0.04}s`,
+                            }}
+                          >
                             <button
-                              onClick={() => handleCategoryClick(item.slug, item.name)}
+                              onClick={() =>
+                                handleCategoryClick(item.slug, item.name)
+                              }
                               className={styles.drawerLink}
                             >
                               <span className={styles.drawerLinkDot}>·</span>
-                              <span className={styles.drawerLinkText}>{item.name}</span>
+                              <span className={styles.drawerLinkText}>
+                                {item.name}
+                              </span>
                             </button>
                           </li>
                         ))
                       ) : (
                         <li className={styles.drawerEmpty}>
                           <span className={styles.drawerLinkDot}>·</span>
-                          <span className={styles.drawerLinkText}>Coming Soon</span>
+                          <span className={styles.drawerLinkText}>
+                            Coming Soon
+                          </span>
                         </li>
                       )}
                     </ul>
                   </div>
-                );
-              })}
+                ))}
             </div>
           </div>
           <div className={styles.drawerBottomAccent} />
         </div>
 
-        {drawerOpen && <div className={styles.backdrop} onMouseEnter={handleDrawerLeave} />}
+        {drawerOpen && (
+          <div className={styles.backdrop} onMouseEnter={handleDrawerLeave} />
+        )}
       </nav>
 
-      {/* MOBILE MENU - Fixed to show category names */}
-      <div className={`${styles.mobileMenu} ${menuOpen ? styles.mobileMenuOpen : ""}`}>
-        <button className={styles.mobileCloseBtn} onClick={() => setMenuOpen(false)} aria-label="Close menu">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      {/* MOBILE MENU */}
+      <div
+        className={`${styles.mobileMenu} ${menuOpen ? styles.mobileMenuOpen : ""}`}
+      >
+        <button
+          className={styles.mobileCloseBtn}
+          onClick={() => setMenuOpen(false)}
+          aria-label="Close menu"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.4"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
         <div className={styles.mobileMenuInner}>
@@ -476,55 +656,85 @@ export default function Navbar() {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && e.target.value.trim()) {
                   setMenuOpen(false);
-                  navigate(`/search?q=${encodeURIComponent(e.target.value.trim())}`);
+                  navigate(
+                    `/search?q=${encodeURIComponent(e.target.value.trim())}`,
+                  );
                   e.target.value = "";
                 }
               }}
             />
-            <svg className={styles.mobileSearchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
-              <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            <svg
+              className={styles.mobileSearchIcon}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.4"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
           </div>
 
-          {!loading && categories[0]?.subcategories?.map((sub, si) => (
-            <div key={sub._id} className={styles.mobileSection} style={{ "--delay": `${si * 0.08}s` }}>
-              <h4 className={styles.mobileSectionTitle}>{sub.name}</h4>
-              <div className={styles.mobileSectionItems}>
-                {sub.subcategories && sub.subcategories.length > 0 ? (
-                  sub.subcategories.map((item) => (
-                    <button
-                      key={item._id}
-                      onClick={() => {
-                        console.log(`Mobile: Navigating to /collections/${item.slug}`);
-                        navigate(`/collections/${item.slug}`);
-                        setMenuOpen(false);
-                      }}
-                      className={styles.mobileSectionLink}
-                    >
-                      {item.name}
-                    </button>
-                  ))
-                ) : (
-                  <p className={styles.mobileEmpty}>Coming Soon</p>
-                )}
+          {!loadingCategories &&
+            categories[0]?.subcategories?.map((sub, si) => (
+              <div
+                key={sub._id}
+                className={styles.mobileSection}
+                style={{ "--delay": `${si * 0.08}s` }}
+              >
+                <h4 className={styles.mobileSectionTitle}>{sub.name}</h4>
+                <div className={styles.mobileSectionItems}>
+                  {sub.subcategories && sub.subcategories.length > 0 ? (
+                    sub.subcategories.map((item) => (
+                      <button
+                        key={item._id}
+                        onClick={() => {
+                          console.log(
+                            `Mobile: Navigating to /collections/${item.slug}`,
+                          );
+                          navigate(`/collections/${item.slug}`);
+                          setMenuOpen(false);
+                        }}
+                        className={styles.mobileSectionLink}
+                      >
+                        {item.name}
+                      </button>
+                    ))
+                  ) : (
+                    <p className={styles.mobileEmpty}>Coming Soon</p>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-          
+            ))}
+
           <div className={styles.mobileMenuFooter}>
             {isLoggedIn && user ? (
               <div className={styles.mobileUserInfo}>
                 <span className={styles.mobileUserName}>{user.name}</span>
-                <button className={styles.mobileSignOut} onClick={() => { setMenuOpen(false); logout(); }}>
+                <button
+                  className={styles.mobileSignOut}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    logout();
+                  }}
+                >
                   Sign Out
                 </button>
               </div>
             ) : (
-              <button className={styles.mobileSignIn} onClick={() => { setMenuOpen(false); openAuthModal("login"); }}>
+              <button
+                className={styles.mobileSignIn}
+                onClick={() => {
+                  setMenuOpen(false);
+                  openAuthModal("login");
+                }}
+              >
                 Sign In to LUXURIA
               </button>
             )}
-            <p className={styles.mobileFooterCities}>Paris · Milan · New York · Dubai</p>
+            <p className={styles.mobileFooterCities}>
+              Paris · Milan · New York · Dubai
+            </p>
           </div>
         </div>
       </div>

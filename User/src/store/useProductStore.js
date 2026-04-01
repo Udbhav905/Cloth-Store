@@ -110,7 +110,7 @@ const useProductStore = create((set, get) => ({
       const res = await fetch(`${API}/products/${endpoint}`, {
         headers: { "Content-Type": "application/json" },
       });
-
+        
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || `Server error ${res.status}`);

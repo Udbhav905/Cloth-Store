@@ -25,15 +25,14 @@
 ═══════════════════════════════════════════════════════════ */
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import useCartStore from "./Usecartstore";
 
 const API = "http://localhost:3000/api";
 
 function extractUserAndToken(data) {
   const payload = data?.data ?? data;
   const user =
-    payload?.user ??
-    payload?.userData ??
-    (payload?._id ? payload : null);
+    payload?.user ?? payload?.userData ?? (payload?._id ? payload : null);
   const token =
     payload?.accessToken ??
     payload?.token ??
@@ -45,38 +44,47 @@ function extractUserAndToken(data) {
 }
 
 const isAdmin = (u) => u?.role === "admin";
-const EMPTY   = { user: null, accessToken: null, isLoggedIn: false };
+const EMPTY = { user: null, accessToken: null, isLoggedIn: false };
 
 const useAuthStore = create(
   persist(
     (set, get) => ({
       ...EMPTY,
-      loading:   false,
-      error:     null,
+      loading: false,
+      error: null,
       authModal: false,
-      authTab:   "login",
+      authTab: "login",
 
-      openAuthModal:  (tab = "login") => set({ authModal: true,  authTab: tab, error: null }),
-      closeAuthModal: ()               => set({ authModal: false, error: null }),
-      setAuthTab:     (tab)            => set({ authTab: tab,     error: null }),
-      clearError:     ()               => set({ error: null }),
+      openAuthModal: (tab = "login") =>
+        set({ authModal: true, authTab: tab, error: null }),
+      closeAuthModal: () => set({ authModal: false, error: null }),
+      setAuthTab: (tab) => set({ authTab: tab, error: null }),
+      clearError: () => set({ error: null }),
 
       /* ── Register ── */
       register: async ({ name, email, mobileNo, password }) => {
         set({ loading: true, error: null });
         try {
-          const res  = await fetch(`${API}/auth/register`, {
-            method:  "POST",
+          const res = await fetch(`${API}/auth/register`, {
+            method: "POST",
             /* NO credentials:"include" — do NOT send/receive cookies */
             headers: { "Content-Type": "application/json" },
-            body:    JSON.stringify({ name, email, mobileNo, password }),
+            body: JSON.stringify({ name, email, mobileNo, password }),
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.message || "Registration failed");
           const { user, token } = extractUserAndToken(data);
-          if (!user)    throw new Error("No user returned from server");
-          if (isAdmin(user)) throw new Error("Admin accounts cannot register here.");
-          set({ user, accessToken: token, isLoggedIn: true, loading: false, authModal: false, error: null });
+          if (!user) throw new Error("No user returned from server");
+          if (isAdmin(user))
+            throw new Error("Admin accounts cannot register here.");
+          set({
+            user,
+            accessToken: token,
+            isLoggedIn: true,
+            loading: false,
+            authModal: false,
+            error: null,
+          });
           return { success: true };
         } catch (err) {
           set({ loading: false, error: err.message });
@@ -85,24 +93,36 @@ const useAuthStore = create(
       },
 
       /* ── Login ── */
+      /* ── Login ── */
       login: async ({ email, password }) => {
         set({ loading: true, error: null });
         try {
-          const res  = await fetch(`${API}/auth/login`, {
-            method:  "POST",
-            /* NO credentials:"include" — we store token ourselves, skip cookie */
+          const res = await fetch(`${API}/auth/login`, {
+            method: "POST",
             headers: { "Content-Type": "application/json" },
-            body:    JSON.stringify({ email, password }),
+            body: JSON.stringify({ email, password }),
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.message || "Login failed");
           const { user, token } = extractUserAndToken(data);
-          if (!user)    throw new Error("Server returned no user object");
-          if (isAdmin(user)) throw new Error(
-            "Admin accounts must use the Admin Panel."
-          );
+          if (!user) throw new Error("Server returned no user object");
+          if (isAdmin(user))
+            throw new Error("Admin accounts must use the Admin Panel.");
           if (!token) throw new Error("No token received from server");
-          set({ user, accessToken: token, isLoggedIn: true, loading: false, authModal: false, error: null });
+
+          set({
+            user,
+            accessToken: token,
+            isLoggedIn: true,
+            loading: false,
+            authModal: false,
+            error: null,
+          });
+
+          // Initialize cart after successful login
+          const useCartStore = (await import("./Usecartstore")).default;
+          await useCartStore.getState().initialize();
+
           return { success: true };
         } catch (err) {
           set({ loading: false, error: err.message });
@@ -116,11 +136,12 @@ const useAuthStore = create(
         try {
           /* Send token via header, not cookie */
           await fetch(`${API}/auth/logout`, {
-            method:  "POST",
+            method: "POST",
             headers: accessToken
               ? { Authorization: `Bearer ${accessToken}` }
               : { "Content-Type": "application/json" },
           });
+          useCartStore.getState().resetCart();
         } catch (_) {}
         /* Only reset this store's state — never touch localStorage directly */
         set(EMPTY);
@@ -132,21 +153,18 @@ const useAuthStore = create(
          Cookie is shared across ports and causes cross-
          contamination between admin and user sessions.
       ─────────────────────────────────────────────────────── */
+      /* ── Refresh profile ── */
       fetchProfile: async () => {
         const { accessToken, isLoggedIn } = get();
 
-        /* If no token in OUR store, don't make the request at all.
-           This prevents the shared cookie from being used. */
         if (!accessToken || !isLoggedIn) return;
 
         try {
           const res = await fetch(`${API}/auth/profile`, {
-            /* NO credentials:"include" — send only our stored token */
             headers: { Authorization: `Bearer ${accessToken}` },
           });
 
           if (!res.ok) {
-            /* Token invalid/expired — clear our state */
             set(EMPTY);
             return;
           }
@@ -154,39 +172,47 @@ const useAuthStore = create(
           const data = await res.json();
           const user = data?.user ?? data?.data ?? data;
 
-          if (!user?._id) { set(EMPTY); return; }
+          if (!user?._id) {
+            set(EMPTY);
+            return;
+          }
 
-          /* If the token we stored somehow belongs to an admin, evict */
           if (isAdmin(user)) {
-            console.warn("[USER APP] Admin token found in user store — clearing.");
+            console.warn(
+              "[USER APP] Admin token found in user store — clearing.",
+            );
             set(EMPTY);
             return;
           }
 
           set({ user, isLoggedIn: true });
+
+          // Initialize cart after profile refresh (if token is valid)
+          const useCartStore = (await import("./Usecartstore")).default;
+          await useCartStore.getState().initialize();
         } catch (_) {
-          /* Network error — keep existing state, don't clear */
+          // Network error — keep existing state, don't clear
         }
       },
     }),
 
     {
-      name: "luxuria_user_auth",   /* unique to user app */
+      name: "luxuria_user_auth" /* unique to user app */,
       partialize: (s) => ({
-        user:        s.user,
+        user: s.user,
         accessToken: s.accessToken,
-        isLoggedIn:  s.isLoggedIn,
+        isLoggedIn: s.isLoggedIn,
       }),
       onRehydrateStorage: () => (state) => {
         /* If somehow admin data ended up here, clear on load */
         if (state && isAdmin(state.user)) {
-          state.user        = null;
+          state.user = null;
           state.accessToken = null;
-          state.isLoggedIn  = false;
+          state.isLoggedIn = false;
         }
       },
-    }
-  )
+    },
+  ),
 );
 
 export default useAuthStore;

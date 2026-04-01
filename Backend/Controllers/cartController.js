@@ -1,13 +1,13 @@
 import Cart from "../model/Cart.js";
 import Product from "../model/Product.js";
-import Coupon from "../model/Coupon.js";
 
 // @desc    Get user cart
 // @route   GET /api/cart
 // @access  Private
 export const getCart = async (req, res) => {
   try {
-    let cart = await Cart.findOne({ userId: req.user._id });
+    let cart = await Cart.findOne({ userId: req.user._id })
+      .populate("items.productId", "name slug mainImage basePrice discountType discountValue");
 
     if (!cart) {
       cart = await Cart.create({ 
@@ -16,8 +16,9 @@ export const getCart = async (req, res) => {
       });
     }
 
-    res.json(cart);
+    res.status(200).json(cart);
   } catch (error) {
+    console.error("Error in getCart:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -27,7 +28,7 @@ export const getCart = async (req, res) => {
 // @access  Private
 export const addToCart = async (req, res) => {
   try {
-    const { productId, variantId, size, color, quantity = 1 } = req.body;
+    const { productId, size, color, quantity = 1 } = req.body;
 
     // Get product details
     const product = await Product.findById(productId);
@@ -36,14 +37,9 @@ export const addToCart = async (req, res) => {
     }
 
     // Find variant
-    let variant;
-    if (variantId) {
-      variant = product.variants.id(variantId);
-    } else {
-      variant = product.variants.find(v => 
-        v.size === size && v.color === color
-      );
-    }
+    let variant = product.variants.find(v => 
+      v.size === size && v.color === color
+    );
 
     if (!variant) {
       return res.status(404).json({ message: "Product variant not found" });
@@ -65,8 +61,8 @@ export const addToCart = async (req, res) => {
     // Check if item already in cart
     const existingItemIndex = cart.items.findIndex(item => 
       item.productId.toString() === productId &&
-      item.size === (size || variant.size) &&
-      item.color === (color || variant.color)
+      item.size === size &&
+      item.color === color
     );
 
     const price = variant.discountedPrice || variant.price;
@@ -84,10 +80,9 @@ export const addToCart = async (req, res) => {
       // Add new item
       cart.items.push({
         productId,
-        variantId: variant._id,
         name: product.name,
-        size: size || variant.size,
-        color: color || variant.color,
+        size: size,
+        color: color,
         price: variant.price,
         discountedPrice: variant.discountedPrice,
         quantity,
@@ -99,10 +94,11 @@ export const addToCart = async (req, res) => {
     await cart.save();
     
     // Populate product details
-    await cart.populate("items.productId", "name slug images");
+    await cart.populate("items.productId", "name slug mainImage basePrice discountType discountValue");
 
-    res.json(cart);
+    res.status(200).json(cart);
   } catch (error) {
+    console.error("Error in addToCart:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -128,6 +124,10 @@ export const updateCartItem = async (req, res) => {
 
     // Check stock
     const product = await Product.findById(item.productId);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    
     const variant = product.variants.find(v => 
       v.size === item.size && v.color === item.color
     );
@@ -146,10 +146,11 @@ export const updateCartItem = async (req, res) => {
     }
 
     await cart.save();
-    await cart.populate("items.productId", "name slug images");
+    await cart.populate("items.productId", "name slug mainImage basePrice discountType discountValue");
 
-    res.json(cart);
+    res.status(200).json(cart);
   } catch (error) {
+    console.error("Error in updateCartItem:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -170,10 +171,11 @@ export const removeFromCart = async (req, res) => {
     );
 
     await cart.save();
-    await cart.populate("items.productId", "name slug images");
+    await cart.populate("items.productId", "name slug mainImage basePrice discountType discountValue");
 
-    res.json(cart);
+    res.status(200).json(cart);
   } catch (error) {
+    console.error("Error in removeFromCart:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -192,8 +194,9 @@ export const clearCart = async (req, res) => {
       await cart.save();
     }
 
-    res.json({ message: "Cart cleared successfully" });
+    res.status(200).json({ message: "Cart cleared successfully", cart });
   } catch (error) {
+    console.error("Error in clearCart:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -210,61 +213,27 @@ export const applyCoupon = async (req, res) => {
       return res.status(400).json({ message: "Cart is empty" });
     }
 
-    // Find coupon
-    const coupon = await Coupon.findOne({ 
-      code: couponCode.toUpperCase(),
-      isActive: true,
-      startDate: { $lte: new Date() },
-      endDate: { $gte: new Date() }
-    });
-
-    if (!coupon) {
-      return res.status(400).json({ message: "Invalid or expired coupon" });
-    }
-
-    // Check minimum order amount
-    if (cart.subtotal < coupon.minOrderAmount) {
-      return res.status(400).json({ 
-        message: `Minimum order amount of ₹${coupon.minOrderAmount} required` 
-      });
-    }
-
-    // Check usage limits
-    if (coupon.maxUsage && coupon.totalUsed >= coupon.maxUsage) {
-      return res.status(400).json({ message: "Coupon usage limit exceeded" });
-    }
-
-    // Check user usage
-    const userUsage = coupon.userUsage.find(
-      u => u.userId.toString() === req.user._id.toString()
-    );
-    if (userUsage && userUsage.usedCount >= (coupon.usagePerUser || 1)) {
-      return res.status(400).json({ message: "You have already used this coupon" });
-    }
-
-    // Calculate discount
+    // Find coupon (you need to create a Coupon model)
+    // This is a placeholder - implement your coupon logic
     let discount = 0;
-    if (coupon.discountType === "percentage") {
-      discount = (cart.subtotal * coupon.discountValue) / 100;
-      if (coupon.maxDiscountAmount) {
-        discount = Math.min(discount, coupon.maxDiscountAmount);
-      }
-    } else {
-      discount = coupon.discountValue;
+    
+    // Example coupon logic:
+    if (couponCode === "SAVE10") {
+      discount = cart.subtotal * 0.1;
     }
 
-    // Apply to cart
-    cart.couponCode = coupon.code;
+    cart.couponCode = couponCode;
     cart.couponDiscount = discount;
     await cart.save();
 
-    res.json({
+    res.status(200).json({
       message: "Coupon applied successfully",
       discount,
-      couponCode: coupon.code,
+      couponCode,
       cart
     });
   } catch (error) {
+    console.error("Error in applyCoupon:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -282,8 +251,9 @@ export const removeCoupon = async (req, res) => {
       await cart.save();
     }
 
-    res.json({ message: "Coupon removed successfully", cart });
+    res.status(200).json({ message: "Coupon removed successfully", cart });
   } catch (error) {
+    console.error("Error in removeCoupon:", error);
     res.status(500).json({ message: error.message });
   }
 };
