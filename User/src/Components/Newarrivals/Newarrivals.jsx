@@ -90,9 +90,9 @@ function Card({ product: p, idx, onPause, onResume }) {
           loading="lazy"
         />
         <div className={styles.reveal}>
-          <span className={styles.revealLine} />
-          <span className={styles.revealText}>Discover</span>
-          <span className={styles.revealLine} />
+          <div className={styles.revealCircle}>
+            <span className={styles.revealText}>Explore</span>
+          </div>
         </div>
         <span className={styles.tag}>{tag}</span>
       </div>
@@ -106,14 +106,16 @@ function Card({ product: p, idx, onPause, onResume }) {
         </div>
         <div className={styles.nameRow}>
           <h3 className={styles.name}>{p.name}</h3>
+        </div>
+        <div className={styles.priceRow}>
           <div className={styles.priceBlock}>
             <span className={styles.price}>{priceLabel}</span>
             {origLabel && <span className={styles.origPrice}>{origLabel}</span>}
           </div>
-        </div>
-        <div className={styles.origin}>
-          <span className={styles.diamond}>◆</span>
-          {origin}
+          <div className={styles.origin}>
+            <span className={styles.diamond}>◆</span>
+            {origin}
+          </div>
         </div>
         <div className={`${styles.underline} ${hovered ? styles.underlineOn : ""}`} />
       </div>
@@ -144,7 +146,7 @@ export default function NewArrivals() {
   const pausedRef    = useRef(true);
   const rafRef       = useRef(null);
   const halfWidthRef = useRef(0);
-  const SPEED        = 0.55;
+  const SPEED        = 0.6;
 
   useEffect(() => {
     if (!inView || isLoading || newArrivals.length === 0) return;
@@ -161,7 +163,7 @@ export default function NewArrivals() {
       if (!pausedRef.current && trackRef.current && halfWidthRef.current > 0) {
         offsetRef.current -= SPEED;
         if (Math.abs(offsetRef.current) >= halfWidthRef.current) {
-          offsetRef.current = 0;
+          offsetRef.current += halfWidthRef.current;
         }
         trackRef.current.style.transform = `translateX(${offsetRef.current}px)`;
       }
@@ -182,6 +184,10 @@ export default function NewArrivals() {
   return (
     <section className={styles.section} ref={sectionRef}>
 
+      {/* Decorative Lights */}
+      <div className={styles.ambientLight1} />
+      <div className={styles.ambientLight2} />
+
       {/* Header */}
       <div className={`${styles.header} ${inView ? styles.headerIn : ""}`}>
         <div className={styles.hLeft}>
@@ -196,7 +202,7 @@ export default function NewArrivals() {
         <div className={styles.hRight}>
           <p className={styles.desc}>
             The season's most anticipated pieces — each a testament
-            to the relentless pursuit of perfection.
+            to the relentless pursuit of perfection. Experience the latest elegance.
           </p>
           <div className={styles.pills}>
             <span className={styles.pill}>
@@ -207,7 +213,7 @@ export default function NewArrivals() {
               }
             </span>
             <span className={styles.pillDiv} />
-            <span className={styles.pill}>SS 2025</span>
+            <span className={styles.pill}>Curated Exclusive</span>
           </div>
         </div>
       </div>

@@ -547,7 +547,7 @@ export default function Navbar() {
                 <button
                   onClick={() => {
                     console.log("New arrivals clicked");
-                    navigate("/collections/new-arrivals");
+                    navigate("/collections/");
                     setDrawerOpen(false);
                   }}
                   className={styles.drawerCta}

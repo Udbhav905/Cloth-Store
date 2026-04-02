@@ -283,16 +283,17 @@
   display: block;
   text-decoration: none;
   color: inherit;
-  overflow: hidden;
-  background: var(--surface);
+  
+  /* 3D setup */
+  perspective: 1200px;
+  transform-style: preserve-3d;
 
   /* Scroll reveal */
   opacity: 0;
   transform: translateY(44px) scale(0.98);
   transition:
     opacity   0.8s var(--ease) calc(var(--idx, 0) * 0.1s),
-    transform 0.8s var(--silk) calc(var(--idx, 0) * 0.1s),
-    box-shadow 0.45s var(--ease);
+    transform 0.8s var(--silk) calc(var(--idx, 0) * 0.1s);
 }
 
 .cardVisible {
@@ -301,8 +302,42 @@
 }
 
 .card:hover {
-  box-shadow: 0 0 0 1.5px rgba(201,168,76,0.35), 0 24px 64px rgba(0,0,0,0.5);
   z-index: 10;
+}
+
+/* ── Inner 3D Container ── */
+.cardInner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--surface);
+  overflow: hidden;
+  transform-style: preserve-3d;
+  /* Smooth return when mouse leaves */
+  transition: transform 0.8s var(--spring), box-shadow 0.45s var(--ease);
+  transform: rotateX(var(--rX, 0deg)) rotateY(var(--rY, 0deg));
+}
+
+.cardInnerHovered {
+  /* Fast follow when mouse moves */
+  transition: transform 0.1s linear, box-shadow 0.45s var(--ease);
+  box-shadow: 0 0 0 1.5px rgba(201,168,76,0.5), 0 32px 72px rgba(0,0,0,0.6);
+}
+
+/* ── Glare / Spotlight ── */
+.glare {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  background: radial-gradient(circle at var(--gX, 50%) var(--gY, 50%), rgba(255,255,255,0.12) 0%, transparent 60%);
+  mix-blend-mode: overlay;
+  opacity: 0;
+  transition: opacity 0.5s var(--ease);
+}
+
+.glareVisible {
+  opacity: 1;
 }
 
 /* ── Image wrap ── */

@@ -1,333 +1,202 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import img1 from '../../assets/men.png'
-import img2 from '../../assets/women.jpg'
-import img3 from '../../assets/medium-shot-man-posing-outdoors.jpg'
-import styles from "./HeroSection.module.css";
+import img1 from '../../assets/men.png';
+import img2 from '../../assets/women.jpg';
+import img3 from '../../assets/medium-shot-man-posing-outdoors.jpg';
+import styles from "./Herosection.module.css";
 import { Link } from "react-router-dom";
 
-/* ─────────────────────────────────────────────
-   SLIDE DATA
-───────────────────────────────────────────── */
 const SLIDES = [
   {
     id: 0,
-    tag: "New Arrival · SS 2025",
-    lines: ["Pure", "Indian", "Elegance"],
-    italic: 1,
-    sub: "Crafted in India.",
-    cta: "Explore",
+    tag: "Spring / Summer 2025",
+    title: "Ethereal",
+    subtitle: "A symphony of pure elegance and effortless grace. Discover the new collection that brings harmony back to modern fashion.",
+    cta: "Explore Collection",
     img: img3,
-    pos: "60% center",
+    pos: "center 30%",
   },
   {
     id: 1,
-    tag: "Couture · Limited Edition",
-    lines: ["Grace", "Power", "Royalty"],
-    italic: 2,
-    sub: "Luxury redefined.",
-    cta: "View",
+    tag: "High Fashion Archive",
+    title: "Midnight",
+    subtitle: "Embrace the power of shadows and striking silhouettes. Pieces that command attention when the sun goes down.",
+    cta: "Shop The Look",
     img: img2,
-    pos: "50% 30%",
+    pos: "center 20%",
   },
   {
     id: 2,
-    tag: "Heritage · Archive",
-    lines: ["Timeless", "Indian", "Craft"],
-    italic: 1,
-    sub: "Woven legacy.",
-    cta: "Discover",
+    tag: "Modern Heritage",
+    title: "Lumina",
+    subtitle: "Woven narratives meeting contemporary tailoring. A homage to traditional craftsmanship infused with tomorrow's vision.",
+    cta: "Discover Origins",
     img: img1,
-    pos: "40% center",
+    pos: "center 10%",
   },
 ];
-const DURATION = 5000; // ms per slide
 
-/* ─────────────────────────────────────────────
-   PARTICLES  (memoised — never re-creates)
-───────────────────────────────────────────── */
-const PARTICLE_DATA = Array.from({ length: 18 }, (_, i) => ({
-  id: i,
-  x: Math.random() * 100,
-  y: 20 + Math.random() * 70,
-  size: Math.random() * 2.2 + 0.6,
-  dur: Math.random() * 12 + 9,
-  delay: Math.random() * 8,
-  drift: (Math.random() - 0.5) * 50,
-}));
+const DURATION = 6000;
 
-function Particles() {
-  return (
-    <div className={styles.particles} aria-hidden="true">
-      {PARTICLE_DATA.map((p) => (
-        <span
-          key={p.id}
-          className={styles.particle}
-          style={{
-            left: `${p.x}%`,
-            top: `${p.y}%`,
-            width: `${p.size}px`,
-            height: `${p.size}px`,
-            animationDuration: `${p.dur}s`,
-            animationDelay: `${p.delay}s`,
-            "--drift": `${p.drift}px`,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
+export default function Herosection() {
+  const [current, setCurrent] = useState(0);
+  const [prev, setPrev] = useState(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  
+  const timerRef = useRef(null);
+  const heroRef = useRef(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-/* ─────────────────────────────────────────────
-   HERO
-───────────────────────────────────────────── */
-export default function HeroSection() {
-  const [current, setCurrent]   = useState(0);
-  const [animKey, setAnimKey]   = useState(0);   // forces re-mount of text on slide change
-  const [exiting, setExiting]   = useState(-1);  // index of slide currently fading out
-  const [progress, setProgress] = useState(0);
-  const [loaded, setLoaded]     = useState(false);
-  const [mouse, setMouse]       = useState({ x: 0.5, y: 0.5 });
-
-  const currentRef   = useRef(0);
-  const timerRef     = useRef(null);
-  const progressRef  = useRef(null);
-  const heroRef      = useRef(null);
-  const tickCountRef = useRef(0);
-
-  /* Entrance fade */
-  useEffect(() => {
-    const t = setTimeout(() => setLoaded(true), 80);
-    return () => clearTimeout(t);
-  }, []);
-
-  /* Mouse parallax — only on non-touch */
-  useEffect(() => {
-    const onMove = (e) => {
-      if (!heroRef.current) return;
-      const { left, top, width, height } = heroRef.current.getBoundingClientRect();
-      setMouse({
-        x: Math.max(0, Math.min(1, (e.clientX - left) / width)),
-        y: Math.max(0, Math.min(1, (e.clientY - top) / height)),
-      });
-    };
-    window.addEventListener("mousemove", onMove, { passive: true });
-    return () => window.removeEventListener("mousemove", onMove);
-  }, []);
-
-  /* ── Auto-advance (fixed: uses ref, not stale closure) ── */
-  const advance = useCallback(() => {
-    const next = (currentRef.current + 1) % SLIDES.length;
-    setExiting(currentRef.current);
-    currentRef.current = next;
-    setCurrent(next);
-    setAnimKey((k) => k + 1);
-    setTimeout(() => setExiting(-1), 900);
-  }, []);
-
-  const resetProgress = useCallback(() => {
-    clearInterval(progressRef.current);
-    clearTimeout(timerRef.current);
-    setProgress(0);
-    tickCountRef.current = 0;
-
-    const TICKS  = DURATION / 50;           // tick every 50ms
-    progressRef.current = setInterval(() => {
-      tickCountRef.current += 1;
-      setProgress((tickCountRef.current / TICKS) * 100);
-    }, 50);
-
-    timerRef.current = setTimeout(() => {
-      clearInterval(progressRef.current);
-      advance();
+  const changeSlide = useCallback((nextIdx) => {
+    if (isTransitioning || nextIdx === current) return;
+    setIsTransitioning(true);
+    setPrev(current);
+    setCurrent(nextIdx);
+    
+    // Reset timer
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+        changeSlide((nextIdx + 1) % SLIDES.length);
     }, DURATION);
-  }, [advance]);
 
-  /* Start timer on mount and whenever slide changes */
+    setTimeout(() => {
+      setIsTransitioning(false);
+      setPrev(null);
+    }, 1400); // duration of slide transition
+  }, [current, isTransitioning]);
+
   useEffect(() => {
-    resetProgress();
-    return () => {
-      clearInterval(progressRef.current);
-      clearTimeout(timerRef.current);
-    };
-  }, [current]); // eslint-disable-line
+    timerRef.current = setInterval(() => {
+        changeSlide((current + 1) % SLIDES.length);
+    }, DURATION);
+    return () => clearInterval(timerRef.current);
+  }, [changeSlide, current]);
 
-  /* Manual navigation */
-  const goTo = useCallback((idx) => {
-    if (idx === currentRef.current) return;
-    setExiting(currentRef.current);
-    currentRef.current = idx;
-    setCurrent(idx);
-    setAnimKey((k) => k + 1);
-    setTimeout(() => setExiting(-1), 900);
-  }, []);
+  const handleMouseMove = (e) => {
+    if (!heroRef.current) return;
+    const { width, height, left, top } = heroRef.current.getBoundingClientRect();
+    const x = (e.clientX - left) / width - 0.5;
+    const y = (e.clientY - top) / height - 0.5;
+    setMousePos({ x, y });
+  };
 
-  const slide = SLIDES[current];
-  const px    = (mouse.x - 0.5) * 22;
-  const py    = (mouse.y - 0.5) * 14;
+  const SplitText = ({ text, delayOffset = 0 }) => {
+    return (
+      <span className={styles.splitText}>
+        {text.split("").map((char, i) => (
+          <span 
+            key={i} 
+            className={styles.charWrapper}
+          >
+            <span 
+                className={styles.char}
+                style={{ animationDelay: `${delayOffset + i * 0.03}s` }}
+            >
+                {char === " " ? "\u00A0" : char}
+            </span>
+          </span>
+        ))}
+      </span>
+    );
+  };
 
   return (
-    <section
-      className={`${styles.hero} ${loaded ? styles.heroLoaded : ""}`}
+    <section 
+      className={styles.hero} 
       ref={heroRef}
+      onMouseMove={handleMouseMove}
     >
-      {/* ══ BACKGROUNDS ══ */}
-      <div className={styles.bgStack}>
-        {SLIDES.map((s, i) => (
-          <div
-            key={s.id}
-            className={`${styles.bgLayer}
-              ${i === current  ? styles.bgActive  : ""}
-              ${i === exiting  ? styles.bgExiting : ""}
-              ${i !== current && i !== exiting ? styles.bgHidden : ""}
-            `}
-          >
-            <img
-              src={s.img}
-              alt=""
-              loading={i === 0 ? "eager" : "lazy"}
-              style={{
-                objectPosition: s.pos,
-                transform:
-                  i === current
-                    ? `translate(${px * 0.35}px, ${py * 0.35}px) scale(1.07)`
-                    : "scale(1.07)",
-                transition: "transform 0.12s linear",
-              }}
-            />
-            <div className={styles.imgOverlay} />
-          </div>
-        ))}
-        {/* Deep vignette always on top */}
-        <div className={styles.vignette} />
-      </div>
+        {/* Backgrounds */}
+        <div className={styles.bgContainer}>
+            {SLIDES.map((slide, idx) => {
+                const isActive = idx === current;
+                const isPrev = idx === prev;
+                let stateClass = "";
+                if (isActive) stateClass = styles.slideActive;
+                else if (isPrev) stateClass = styles.slidePrev;
+                else stateClass = styles.slideHidden;
 
-      {/* ══ GRAIN ══ */}
-      <div className={styles.grain} aria-hidden="true" />
-
-      {/* ══ PARTICLES ══ */}
-      <Particles />
-
-      {/* ══ DECO FRAME ══ */}
-      <div className={styles.decoFrame} aria-hidden="true">
-        <div className={styles.decoTL} />
-        <div className={styles.decoTR} />
-        <div className={styles.decoBL} />
-        <div className={styles.decoBR} />
-        <div className={styles.decoLineLeft} />
-      </div>
-
-      {/* ══ MAIN CONTENT ══ */}
-      <div className={styles.content}>
-        {/* Tag */}
-        <p className={styles.tag} key={`tag-${animKey}`}>
-          <span className={styles.tagPulse} />
-          {slide.tag}
-        </p>
-
-        {/* Headline */}
-        <h1 className={styles.headline} key={`h-${animKey}`}>
-          {slide.lines.map((line, i) => (
-            <span
-              key={i}
-              className={styles.hLine}
-              style={{ "--d": `${0.1 + i * 0.14}s` }}
-            >
-              {i === slide.italic ? <em>{line}</em> : line}
-            </span>
-          ))}
-        </h1>
-
-        {/* Subtext */}
-        <p className={styles.sub} key={`sub-${animKey}`}>{slide.sub}</p>
-
-        {/* CTAs */}
-        <div className={styles.ctaRow} key={`cta-${animKey}`}>
-          <Link to="/collections" className={styles.btnPrimary}>
-            <span>{slide.cta}</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
-            </svg>
-          </Link>
-          
+                return (
+                    <div key={slide.id} className={`${styles.bgLayer} ${stateClass}`}>
+                        <div 
+                            className={styles.bgImage} 
+                            style={{ 
+                                backgroundImage: `url(${slide.img})`,
+                                backgroundPosition: slide.pos,
+                                transform: isActive 
+                                    ? `scale(1.05) translate(${mousePos.x * 15}px, ${mousePos.y * 15}px)` 
+                                    : `scale(1.15) translate(0,0)`
+                            }} 
+                        />
+                        <div className={styles.overlay} />
+                    </div>
+                )
+            })}
         </div>
 
-        {/* Scroll indicator */}
-        <div className={styles.scrollCue}>
-          <span className={styles.scrollBar} />
-          <span className={styles.scrollText}>Scroll</span>
-        </div>
-      </div>
-
-      {/* ══ SIDE STATS (desktop only) ══ */}
-      <aside className={styles.sideStats}>
-        {[
-          { num: "XII", label: "Collections" },
-          { num: "48", label: "Countries" },
-          { num: "∞", label: "Craftsmanship" },
-        ].map((s, i) => (
-          <div key={i} className={styles.statBlock}>
-            <span className={styles.statNum}>{s.num}</span>
-            <span className={styles.statLabel}>{s.label}</span>
-          </div>
-        ))}
-      </aside>
-
-      {/* ══ SLIDE CONTROLS ══ */}
-      <nav className={styles.controls} aria-label="Slide navigation">
-        <button
-          className={styles.arrow}
-          onClick={() => goTo((current - 1 + SLIDES.length) % SLIDES.length)}
-          aria-label="Previous slide"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <line x1="19" y1="12" x2="5" y2="12" />
-            <polyline points="12 19 5 12 12 5" />
-          </svg>
-        </button>
-
-        <div className={styles.indicators}>
-          {SLIDES.map((_, i) => (
-            <button
-              key={i}
-              className={`${styles.indicator} ${i === current ? styles.indicatorActive : ""}`}
-              onClick={() => goTo(i)}
-              aria-label={`Go to slide ${i + 1}`}
-            >
-              <span
-                className={styles.indicatorFill}
-                style={i === current ? { width: `${progress}%` } : { width: i < current ? "100%" : "0%" }}
-              />
-            </button>
-          ))}
+        {/* Content */}
+        <div className={styles.content}>
+            {SLIDES.map((slide, idx) => {
+                const isActive = idx === current;
+                const isPrev = idx === prev;
+                if (!isActive && !isPrev) return null;
+                
+                return (
+                    <div key={`content-${slide.id}`} className={`${styles.textWrap} ${isActive ? styles.textActive : styles.textPrev}`}>
+                        <div className={styles.tagWrap}>
+                            <div className={styles.tagLine} />
+                            <p className={styles.tag}><SplitText text={slide.tag} delayOffset={0.2} /></p>
+                        </div>
+                        
+                        <h1 className={styles.title}>
+                            <SplitText text={slide.title} delayOffset={0.4} />
+                        </h1>
+                        
+                        <div className={styles.subWrap}>
+                            <p className={styles.subtitle}>{slide.subtitle}</p>
+                        </div>
+                        
+                        <div className={styles.ctaWrap}>
+                            <Link to="/collections" className={styles.ctaBtn}>
+                                <span className={styles.ctaBg}></span>
+                                <span className={styles.ctaText}>{slide.cta}</span>
+                                <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="1.5"/></svg>
+                            </Link>
+                        </div>
+                    </div>
+                )
+            })}
         </div>
 
-        <button
-          className={styles.arrow}
-          onClick={() => goTo((current + 1) % SLIDES.length)}
-          aria-label="Next slide"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <line x1="5" y1="12" x2="19" y2="12" />
-            <polyline points="12 5 19 12 12 19" />
-          </svg>
-        </button>
-
-        <span className={styles.counter}>
-          <b>{String(current + 1).padStart(2, "0")}</b>
-          <span> / {String(SLIDES.length).padStart(2, "0")}</span>
-        </span>
-      </nav>
-
-      {/* ══ BOTTOM PERKS STRIP ══ */}
-      <div className={styles.perksStrip}>
-        {["Free Global Shipping", "Handcrafted in India", "Carbon Neutral 2026", "Made By U & M"].map((t, i) => (
-          <div key={i} className={styles.perk}>
-            <span className={styles.perkDot}>◆</span>
-            {t}
-          </div>
-        ))}
-      </div>
+        {/* Slide Progress Controls */}
+        <div className={styles.pagination}>
+            {SLIDES.map((_, idx) => (
+                <button 
+                    key={idx}
+                    className={`${styles.dot} ${idx === current ? styles.dotActive : ""}`}
+                    onClick={() => changeSlide(idx)}
+                    aria-label={`Slide ${idx + 1}`}
+                >
+                    <div className={styles.dotProgress}>
+                        <div className={styles.dotFill} style={{
+                            animationDuration: `${DURATION}ms`,
+                            animationPlayState: idx === current && !isTransitioning ? 'running' : 'paused'
+                        }} />
+                    </div>
+                </button>
+            ))}
+        </div>
+        
+        {/* Decor */}
+        <div className={styles.decorLeft} />
+        <div className={styles.decorRight} />
+        
+        {/* Scroll Indicator */}
+        <div className={styles.scrollIndicator}>
+            <span>Scroll</span>
+            <div className={styles.scrollLine}>
+                <div className={styles.scrollDot} />
+            </div>
+        </div>
     </section>
   );
 }

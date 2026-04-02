@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import useProductStore, {
   calcFinalPrice,
@@ -24,8 +24,6 @@ const FALLBACK_IMGS = [
 
 /* ─────────────────────────────────────────────
    HOOK — generic section reveal (header, ticker)
-   One-shot is fine for these because they are
-   always in the DOM when the observer fires.
 ───────────────────────────────────────────── */
 function useScrollReveal(threshold = 0.1) {
   const ref = useRef(null);
@@ -33,7 +31,6 @@ function useScrollReveal(threshold = 0.1) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    // If already in viewport on mount (e.g. after back-navigation) → show immediately
     const rect = el.getBoundingClientRect();
     if (rect.top < window.innerHeight) { setVisible(true); return; }
 
@@ -49,12 +46,6 @@ function useScrollReveal(threshold = 0.1) {
 
 /* ─────────────────────────────────────────────
    HOOK — per-card reveal
-   ⚡ THE KEY FIX:
-   Each card creates its OWN observer when it
-   mounts.  Because cards mount *after* the API
-   returns, they individually check whether they
-   are already in the viewport.  If yes → visible
-   immediately.  If no → wait for scroll.
 ───────────────────────────────────────────── */
 function useCardReveal(delay = 0) {
   const ref = useRef(null);
@@ -66,14 +57,12 @@ function useCardReveal(delay = 0) {
 
     const show = () => setVisible(true);
 
-    // Already on screen? Show after a tiny staggered delay only.
     const rect = el.getBoundingClientRect();
     if (rect.top < window.innerHeight + 60) {
       const t = setTimeout(show, delay);
       return () => clearTimeout(t);
     }
 
-    // Below the fold → observe normally
     const obs = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting) {
@@ -86,8 +75,7 @@ function useCardReveal(delay = 0) {
     );
     obs.observe(el);
     return () => obs.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // runs once when the card mounts
+  }, [delay]);
 
   return [ref, visible];
 }
@@ -118,26 +106,28 @@ function SkeletonCard({ index }) {
       style={{ "--idx": index }}
       aria-hidden="true"
     >
-      <div className={`${styles.imgBlock} ${styles.skeletonImgBlock}`}>
-        <div className={styles.skeletonShimmer} />
-      </div>
-      <div className={styles.body}>
-        <div className={styles.skeletonLine} style={{ width: "35%", height: "9px" }} />
-        <div className={styles.skeletonLine} style={{ width: "65%", height: "28px", marginTop: "8px" }} />
-        <div className={styles.skeletonLine} style={{ width: "25%", height: "13px", marginTop: "10px" }} />
+      <div className={styles.cardInner}>
+        <div className={`${styles.imgBlock} ${styles.skeletonImgBlock}`}>
+          <div className={styles.skeletonShimmer} />
+        </div>
+        <div className={styles.body}>
+          <div className={styles.skeletonLine} style={{ width: "35%", height: "9px" }} />
+          <div className={styles.skeletonLine} style={{ width: "65%", height: "28px", marginTop: "8px" }} />
+          <div className={styles.skeletonLine} style={{ width: "25%", height: "13px", marginTop: "10px" }} />
+        </div>
       </div>
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────
-   PRODUCT CARD — each card manages its own reveal
+   PRODUCT CARD — 3D Tilt + Realistic Hover
 ───────────────────────────────────────────── */
 function ProductCard({ product, index }) {
   const [hovered,   setHovered]   = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const innerRef = useRef(null);
 
-  // ⚡ Per-card observer — staggered by 80ms × index, max 400ms
   const staggerDelay = Math.min(index * 80, 400);
   const [cardRef, visible] = useCardReveal(staggerDelay);
 
@@ -153,6 +143,29 @@ function ProductCard({ product, index }) {
   const categoryName  = product.category?.name ?? product.subCategory?.name ?? "Collection";
   const imgSrc        = product.mainImage || FALLBACK_IMGS[index % FALLBACK_IMGS.length];
 
+  const handleMouseMove = (e) => {
+    if (!innerRef.current) return;
+    const rect = innerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Calculate rotation (-10 to 10 degrees max depends on distance from center)
+    const xPct = (x / rect.width - 0.5) * 2; 
+    const yPct = (y / rect.height - 0.5) * 2;
+    
+    innerRef.current.style.setProperty('--rx', `${-yPct * 8}deg`);
+    innerRef.current.style.setProperty('--ry', `${xPct * 8}deg`);
+    innerRef.current.style.setProperty('--gx', `${x}px`);
+    innerRef.current.style.setProperty('--gy', `${y}px`);
+  };
+
+  const handleMouseLeave = () => {
+    setHovered(false);
+    if (!innerRef.current) return;
+    innerRef.current.style.setProperty('--rx', `0deg`);
+    innerRef.current.style.setProperty('--ry', `0deg`);
+  };
+
   return (
     <Link
       ref={cardRef}
@@ -162,55 +175,62 @@ function ProductCard({ product, index }) {
         ${visible ? styles.cardIn : ""}
         ${isEven ? styles.cardEven : styles.cardOdd}
       `}
-      style={{ "--idx": 0, "--accent": "#c9a84c" }} /* idx=0 so CSS delay doesn't stack on top of JS delay */
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      style={{ "--idx": index, "--accent": "#c9a84c" }}
       draggable={false}
     >
-      <span className={styles.rankBg}>{rank}</span>
+      <div 
+        className={`${styles.cardInner} ${hovered ? styles.cardInnerHovered : ""}`}
+        ref={innerRef}
+        onMouseEnter={() => setHovered(true)}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      >
+        <div className={styles.glare} />
+        <span className={styles.rankBg}>{rank}</span>
 
-      <div className={styles.imgBlock}>
-        {!imgLoaded && <div className={styles.shimmer} />}
-        <img
-          src={imgSrc}
-          alt={product.name}
-          className={`${styles.img} ${imgLoaded ? styles.imgOn : ""}`}
-          onLoad={() => setImgLoaded(true)}
-          onError={(e) => { e.currentTarget.src = FALLBACK_IMGS[index % FALLBACK_IMGS.length]; }}
-          draggable={false}
-          style={{ transform: hovered ? "scale(1.09)" : "scale(1.0)" }}
-          loading={index < 3 ? "eager" : "lazy"}
-        />
-        <span className={styles.badge}>{badge}</span>
-        <span className={styles.tagPill}>{tag}</span>
-        <div className={`${styles.overlay} ${hovered ? styles.overlayOn : ""}`}>
-          <div className={styles.overlayInner}>
-            <span className={styles.overlayRank}>{rank}</span>
-            <span className={styles.overlayDivider} />
-            <span className={styles.overlayLabel}>View Piece</span>
+        <div className={styles.imgBlock}>
+          {!imgLoaded && <div className={styles.shimmer} />}
+          <img
+            src={imgSrc}
+            alt={product.name}
+            className={`${styles.img} ${imgLoaded ? styles.imgOn : ""}`}
+            onLoad={() => setImgLoaded(true)}
+            onError={(e) => { e.currentTarget.src = FALLBACK_IMGS[index % FALLBACK_IMGS.length]; }}
+            draggable={false}
+            loading={index < 3 ? "eager" : "lazy"}
+          />
+          <span className={styles.badge}>{badge}</span>
+          <span className={styles.tagPill}>{tag}</span>
+          
+          <div className={`${styles.overlay} ${hovered ? styles.overlayOn : ""}`}>
+            <div className={styles.overlayInner}>
+              <span className={styles.overlayRank}>{rank}</span>
+              <span className={styles.overlayDivider} />
+              <span className={styles.overlayLabel}>View Piece</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className={styles.body}>
-        <div className={styles.topRow}>
-          <span className={styles.category}>{categoryName}</span>
-          <span className={styles.sold}>{soldText}</span>
+        <div className={styles.body}>
+          <div className={styles.topRow}>
+            <span className={styles.category}>{categoryName}</span>
+            <span className={styles.sold}>{soldText}</span>
+          </div>
+          <h3 className={styles.name}>{product.name}</h3>
+          <div className={styles.priceRow}>
+            <span className={styles.price}>{priceDisplay}</span>
+            {originalPrice && <span className={styles.originalPrice}>{originalPrice}</span>}
+            {product.averageRating > 0 && (
+              <span className={styles.rating}>
+                {"★".repeat(Math.round(product.averageRating))}
+                {"☆".repeat(5 - Math.round(product.averageRating))}
+                <span className={styles.ratingNum}>&nbsp;{product.averageRating.toFixed(1)}</span>
+              </span>
+            )}
+            <span className={styles.priceDot}>◆</span>
+          </div>
+          <div className={`${styles.hoverBar} ${hovered ? styles.hoverBarOn : ""}`} />
         </div>
-        <h3 className={styles.name}>{product.name}</h3>
-        <div className={styles.priceRow}>
-          <span className={styles.price}>{priceDisplay}</span>
-          {originalPrice && <span className={styles.originalPrice}>{originalPrice}</span>}
-          {product.averageRating > 0 && (
-            <span className={styles.rating}>
-              {"★".repeat(Math.round(product.averageRating))}
-              {"☆".repeat(5 - Math.round(product.averageRating))}
-              <span className={styles.ratingNum}>&nbsp;{product.averageRating.toFixed(1)}</span>
-            </span>
-          )}
-          <span className={styles.priceDot}>◆</span>
-        </div>
-        <div className={`${styles.hoverBar} ${hovered ? styles.hoverBarOn : ""}`} />
       </div>
     </Link>
   );
@@ -253,13 +273,13 @@ export default function Trending() {
 
   useEffect(() => {
     fetchTrending();
-  }, []);
+  }, [fetchTrending]);
 
   const isLoading = trendingLoading && trending.length === 0;
   const hasError  = !trendingLoading && !!trendingError && trending.length === 0;
   const isEmpty   = !trendingLoading && !trendingError && trending.length === 0;
 
-  const TICKER = "TRENDING NOW · MOST WANTED · THIS WEEK'S OBSESSIONS · ";
+  const TICKER = "TRENDING NOW · THE NEW STANDARD · LUXURY REDEFINED · ";
 
   return (
     <section className={styles.section} ref={sectionRef}>
@@ -268,13 +288,14 @@ export default function Trending() {
         <div className={styles.bgGrid} />
         <div className={styles.bgGlow1} />
         <div className={styles.bgGlow2} />
+        <div className={styles.bgGlow3} />
         <div className={styles.bgNoise} />
       </div>
 
       {/* Ticker */}
       <div className={`${styles.ticker} ${inView ? styles.tickerIn : ""}`}>
         <div className={styles.tickerTrack}>
-          {Array(6).fill(TICKER).map((t, i) => (
+          {Array(8).fill(TICKER).map((t, i) => (
             <span key={i} className={styles.tickerItem}>{t}</span>
           ))}
         </div>
@@ -292,7 +313,7 @@ export default function Trending() {
         <div className={styles.headerCenter}>
           <p className={styles.eyebrow}>
             <span className={styles.eyebrowLine} />
-            Right Now
+            <span className={styles.eyebrowGlowText}>Right Now</span>
             <span className={styles.eyebrowLine} />
           </p>
           <h2 className={styles.title}>
@@ -306,11 +327,14 @@ export default function Trending() {
           <p className={styles.desc}>
             {isLoading
               ? "Fetching this week's most wanted pieces…"
-              : "Curated from our best-sellers. Updated weekly. These are the pieces the world can't stop talking about."}
+              : "Curated from our finest collection. Updated weekly. These are the pieces dictating tomorrow's trends."}
           </p>
-          <div className={styles.liveTag}>
-            <span className={`${styles.liveDot} ${!isLoading ? styles.liveDotActive : ""}`} />
-            {isLoading ? "Loading…" : "Live Trending Data"}
+          <div className={styles.liveTagWrap}>
+            <div className={styles.liveTagBackground} />
+            <div className={styles.liveTag}>
+              <span className={`${styles.liveDot} ${!isLoading ? styles.liveDotActive : ""}`} />
+              {isLoading ? "Syncing…" : "Live Pulse Data"}
+            </div>
           </div>
         </div>
       </div>
@@ -321,7 +345,7 @@ export default function Trending() {
           message={
             hasError
               ? trendingError
-              : "No trending products yet. Mark products as Best Sellers in your admin panel."
+              : "No trending products right now. Stay tuned for our latest drops."
           }
           onRetry={refreshTrending}
         />
@@ -337,12 +361,12 @@ export default function Trending() {
       {/* Bottom ticker */}
       <div className={`${styles.tickerBottom} ${inView ? styles.tickerIn : ""}`}>
         <div className={`${styles.tickerTrack} ${styles.tickerTrackRev}`}>
-          {Array(6).fill("LUXURIA SELECTION · MOST COVETED · STYLE ICONS CHOOSE · ").map((t, i) => (
+          {Array(8).fill("CLASSIC ELEGANCE · MODERN AESTHETIC · ICONIC SILHOUETTES · ").map((t, i) => (
             <span key={i} className={styles.tickerItem}>{t}</span>
           ))}
         </div>
       </div>
-
+      
     </section>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import useCategoryStore from "../../store/Usecategorystore";
 import styles from "./ShopByCategory.module.css";
@@ -62,6 +62,36 @@ function SkeletonCard({ size, index }) {
 function CategoryCard({ cat, index, visible }) {
   const [hovered, setHovered] = useState(false);
   const [loaded,  setLoaded]  = useState(false);
+  const cardRef = useRef(null);
+  
+  // 3D Tilt Parameters
+  const [tilt, setTilt] = useState({ rX: 0, rY: 0, gX: 50, gY: 50 });
+
+  const handleMouseMove = useCallback((e) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+
+    // Intense but smooth rotation limits calculation
+    const rotateX = ((y - centerY) / centerY) * -10; // Max tilt up/down
+    const rotateY = ((x - centerX) / centerX) * 10;  // Max tilt left/right
+
+    // Glare positioning in %
+    const glareX = (x / rect.width) * 100;
+    const glareY = (y / rect.height) * 100;
+
+    setTilt({ rX: rotateX, rY: rotateY, gX: glareX, gY: glareY });
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setHovered(false);
+    // Reset tilt with smooth spring
+    setTilt({ rX: 0, rY: 0, gX: 50, gY: 50 });
+  }, []);
 
   /* Use backend Cloudinary image, fall back to placeholder */
   const imgSrc = cat.img || FALLBACK_IMGS[index % FALLBACK_IMGS.length];
@@ -69,16 +99,29 @@ function CategoryCard({ cat, index, visible }) {
   return (
     <Link
       to={`/collections/${cat.slug}`}
+      ref={cardRef}
       className={`
         ${styles.card}
         ${styles[`card--${cat.size}`]}
         ${visible ? styles.cardVisible : ""}
       `}
-      style={{ "--idx": index, "--accent": cat.accent }}
+      style={{ 
+        "--idx": index, 
+        "--accent": cat.accent,
+        "--rX": `${tilt.rX}deg`,
+        "--rY": `${tilt.rY}deg`,
+        "--gX": `${tilt.gX}%`,
+        "--gY": `${tilt.gY}%`,
+      }}
       onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       draggable={false}
     >
+      <div className={`${styles.cardInner} ${hovered ? styles.cardInnerHovered : ""}`}>
+      {/* ── Spotlight / Glare ── */}
+      <div className={`${styles.glare} ${hovered ? styles.glareVisible : ""}`} />
+
       {/* ── Image ── */}
       <div className={styles.imgWrap}>
         {!loaded && <div className={styles.skeleton} />}
@@ -147,6 +190,7 @@ function CategoryCard({ cat, index, visible }) {
           </span>
         </div>
         <span className={`${styles.revealLine} ${hovered ? styles.revealLineOn : ""}`} />
+      </div>
       </div>
     </Link>
   );

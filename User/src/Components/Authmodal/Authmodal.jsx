@@ -5,34 +5,39 @@ import styles from "./AuthModal.module.css";
 /* ─────────────────────────────────────────────
    INPUT FIELD
 ───────────────────────────────────────────── */
-function Field({ label, type = "text", name, value, onChange, placeholder, required, icon }) {
+function Field({ label, type = "text", name, value, onChange, required, icon }) {
   const [show, setShow] = useState(false);
   const [focused, setFocused] = useState(false);
   const isPassword = type === "password";
 
   return (
     <div className={`${styles.field} ${focused || value ? styles.fieldActive : ""}`}>
-      <label className={styles.fieldLabel}>{label}</label>
       <div className={styles.fieldWrap}>
         {icon && <span className={styles.fieldIcon}>{icon}</span>}
-        <input
-          className={styles.fieldInput}
-          type={isPassword && show ? "text" : type}
-          name={name}
-          value={value}
-          onChange={onChange}
-          placeholder={focused ? placeholder : ""}
-          required={required}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          autoComplete={isPassword ? "current-password" : "on"}
-        />
+        
+        <div className={styles.inputBox}>
+          <input
+            className={styles.fieldInput}
+            type={isPassword && show ? "text" : type}
+            name={name}
+            value={value}
+            onChange={onChange}
+            required={required}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            autoComplete={isPassword ? "current-password" : "on"}
+            placeholder=" "
+          />
+          <label className={styles.floatingLabel}>{label}</label>
+        </div>
+
         {isPassword && (
           <button
             type="button"
             className={styles.eyeBtn}
             onClick={() => setShow((p) => !p)}
             tabIndex={-1}
+            aria-label="Toggle Password Visibility"
           >
             {show ? (
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
@@ -49,7 +54,6 @@ function Field({ label, type = "text", name, value, onChange, placeholder, requi
           </button>
         )}
       </div>
-      <span className={styles.fieldLine} />
     </div>
   );
 }
@@ -79,7 +83,6 @@ function LoginForm({ onSwitch }) {
         name="email"
         value={form.email}
         onChange={onChange}
-        placeholder="your@email.com"
         required
         icon={
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3">
@@ -94,7 +97,6 @@ function LoginForm({ onSwitch }) {
         name="password"
         value={form.password}
         onChange={onChange}
-        placeholder="Your password"
         required
         icon={
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3">
@@ -164,7 +166,6 @@ function RegisterForm({ onSwitch }) {
         name="name"
         value={form.name}
         onChange={onChange}
-        placeholder="Aria Fontaine"
         required
         icon={
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3">
@@ -179,7 +180,6 @@ function RegisterForm({ onSwitch }) {
         name="email"
         value={form.email}
         onChange={onChange}
-        placeholder="your@email.com"
         required
         icon={
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3">
@@ -194,7 +194,6 @@ function RegisterForm({ onSwitch }) {
         name="mobileNo"
         value={form.mobileNo}
         onChange={onChange}
-        placeholder="+91 98765 43210"
         required
         icon={
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3">
@@ -209,7 +208,6 @@ function RegisterForm({ onSwitch }) {
         name="password"
         value={form.password}
         onChange={onChange}
-        placeholder="Create a strong password"
         required
         icon={
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3">
@@ -301,7 +299,7 @@ export default function AuthModal() {
           <div className={styles.leftBg} />
           <div className={styles.leftOverlay} />
           <div className={styles.leftContent}>
-            <span className={styles.leftEyebrow}>◆ LUXURIA ◆</span>
+            <span className={styles.leftEyebrow}>LUXURIA</span>
             <h2 className={styles.leftTitle}>
               {isLogin ? (
                 <>Welcome<br /><em>Back</em></>
@@ -402,7 +400,7 @@ export default function AuthModal() {
             ].map((s) => (
               <button key={s.name} className={styles.socialBtn} type="button">
                 <span className={styles.socialIcon}>{s.icon}</span>
-                <span>Continue with {s.name}</span>
+                <span>Continue</span>
               </button>
             ))}
           </div>

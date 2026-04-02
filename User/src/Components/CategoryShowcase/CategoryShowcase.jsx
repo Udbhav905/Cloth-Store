@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import men from "../../assets/confident-young-handsome-man-holds-his-coat-shoulder-near-lake-autumn-forest.jpg"
+import women from "../../assets/women-cat.jpg"
 import styles from "./CategoryShowcase.module.css";
 
 // High-quality optimized images (using Unsplash CDN with specific dimensions for low file size)
@@ -13,7 +14,7 @@ const categoryImages = {
     slug: "men"
   },
   women: {
-    url: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=800&h=1000&fit=crop&q=80&auto=format",
+    url: women,
     fallback: "https://images.pexels.com/photos/1468379/pexels-photo-1468379.jpeg?w=800&h=1000&fit=crop&q=80&auto=format",
     label: "Women",
     description: "Elegance redefined",
@@ -23,9 +24,9 @@ const categoryImages = {
 
 // SVG Icons
 const ArrowIcon = () => (
-  <svg className={styles.arrowIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-    <line x1="5" y1="12" x2="19" y2="12"/>
-    <polyline points="12 5 19 12 12 19"/>
+  <svg className={styles.arrowIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
+    <line x1="4" y1="12" x2="20" y2="12"/>
+    <polyline points="14 6 20 12 14 18"/>
   </svg>
 );
 
@@ -60,19 +61,13 @@ const CategoryCard = ({ category, index, isVisible }) => {
 
         {/* Content Overlay */}
         <div className={styles.cardContent}>
-          <span className={styles.categoryBadge}>{category.label}</span>
+          <span className={styles.categoryBadge}>Collection</span>
           <h3 className={styles.categoryTitle}>{category.label}</h3>
           <p className={styles.categoryDescription}>{category.description}</p>
           <div className={styles.ctaWrapper}>
-            <span className={styles.ctaText}>Explore Collection</span>
+            <span className={styles.ctaText}>Explore</span>
             <ArrowIcon />
           </div>
-        </div>
-
-        {/* Decorative Elements */}
-        <div className={styles.decorativeLines}>
-          <span className={styles.line} />
-          <span className={styles.line} />
         </div>
       </div>
     </Link>
