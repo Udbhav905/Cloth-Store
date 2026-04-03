@@ -158,16 +158,80 @@ export const updateCartItem = async (req, res) => {
 // @desc    Remove item from cart
 // @route   DELETE /api/cart/remove/:itemId
 // @access  Private
+// export const removeFromCart = async (req, res) => {
+//   try {
+//     const cart = await Cart.findOne({ userId: req.user._id });
+
+//     if (!cart) {
+//       return res.status(404).json({ message: "Cart not found" });
+//     }
+
+//     cart.items = cart.items.filter(
+//       item => item._id.toString() !== req.params.itemId
+//     );
+
+//     await cart.save();
+//     await cart.populate("items.productId", "name slug mainImage basePrice discountType discountValue");
+
+//     res.status(200).json(cart);
+//   } catch (error) {
+//     console.error("Error in removeFromCart:", error);
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+// In cartController.js
+// export const removeFromCart = async (req, res) => {
+//   try {
+//     const { productId, size, color } = req.body; // Get from body
+//     const { itemId } = req.params; // Or from params
+
+//     const cart = await Cart.findOne({ userId: req.user._id });
+
+//     if (!cart) {
+//       return res.status(404).json({ message: "Cart not found" });
+//     }
+
+//     // Remove by itemId OR by productId/size/color
+//     if (itemId) {
+//       // Remove by cart item ID
+//       cart.items = cart.items.filter(
+//         item => item._id.toString() !== itemId
+//       );
+//     } else if (productId && size && color) {
+//       // Remove by product details
+//       cart.items = cart.items.filter(
+//         item => 
+//           item.productId.toString() !== productId ||
+//           item.size !== size ||
+//           item.color !== color
+//       );
+//     } else {
+//       return res.status(400).json({ message: "Invalid removal parameters" });
+//     }
+
+//     await cart.save();
+//     await cart.populate("items.productId", "name slug mainImage basePrice discountType discountValue");
+
+//     res.status(200).json(cart);
+//   } catch (error) {
+//     console.error("Error in removeFromCart:", error);
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+// Replace your removeFromCart controller with this simpler version
 export const removeFromCart = async (req, res) => {
   try {
+    const { itemId } = req.params;
+
     const cart = await Cart.findOne({ userId: req.user._id });
 
     if (!cart) {
       return res.status(404).json({ message: "Cart not found" });
     }
 
+    // Remove by cart item ID
     cart.items = cart.items.filter(
-      item => item._id.toString() !== req.params.itemId
+      item => item._id.toString() !== itemId
     );
 
     await cart.save();

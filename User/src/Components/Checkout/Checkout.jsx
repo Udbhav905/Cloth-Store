@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import useAuthStore from "../../store/Useauthstore";
 import useCartStore from "../../store/Usecartstore";
@@ -6,22 +6,6 @@ import styles from "./Checkout.module.css";
 
 const API = "http://localhost:3000/api";
 
-/* ══════════════════════════════════════════════════════════
-   BUG FIX — authHeader + apiFetch
-
-   ORIGINAL PROBLEMS:
-   1. authHeader() had localStorage.getItem("accessToken")
-      → always returns null (token lives inside Zustand JSON,
-        not as a raw localStorage key)
-   2. apiFetch had credentials:"include"
-      → sends the shared HTTP cookie, which may belong to the
-        admin session, causing 401 / wrong-user responses.
-        This is why addresses never loaded even though they
-        exist in the Profile page — Profile.jsx was already
-        fixed but Checkout.jsx still had the old broken version.
-
-   FIX: read token from Zustand state only, no cookie.
-══════════════════════════════════════════════════════════ */
 function authHeader() {
   const token = useAuthStore.getState()?.accessToken || "";
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -34,7 +18,6 @@ async function apiFetch(path, options = {}) {
       ...authHeader(),
       ...(options.headers || {}),
     },
-    /* NO credentials:"include" */
     ...options,
   });
   const data = await res.json().catch(() => ({}));
@@ -42,11 +25,15 @@ async function apiFetch(path, options = {}) {
   return data;
 }
 
-/* ── Price helpers ── */
 function fmt(n) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency", currency: "INR", maximumFractionDigits: 0,
   }).format(n || 0);
+}
+
+function calculateGST(amount) {
+  const rate = amount < 1000 ? 0.05 : 0.12;
+  return { rate, amount: Math.round(amount * rate) };
 }
 
 /* ── Step indicator ── */
@@ -92,8 +79,15 @@ function AddressOption({ addr, selected, onSelect }) {
 
 const EMPTY = { address1: "", address2: "", city: "", state: "", pincode: "", country: "India" };
 
+// Static coupon codes
+const STATIC_COUPONS = {
+  "LUXURIA10": { discountPercent: 10, code: "LUXURIA10" },
+  "WELCOME20": { discountPercent: 20, code: "WELCOME20" },
+  "SAVE50": { discountPercent: 5, code: "SAVE50" }
+};
+
 /* ════════════════════════════════════════════════════════
-   MAIN
+   MAIN CHECKOUT COMPONENT
 ════════════════════════════════════════════════════════ */
 export default function Checkout() {
   const navigate = useNavigate();
@@ -101,7 +95,17 @@ export default function Checkout() {
 
   const buyNow = location.state?.buyNow || null;
 
-  const { user }  = useAuthStore();
+  // Get saved order summary from sessionStorage (passed from cart)
+  const [savedSummary] = useState(() => {
+    const saved = sessionStorage.getItem("checkoutOrderSummary");
+    if (saved) {
+      sessionStorage.removeItem("checkoutOrderSummary");
+      return JSON.parse(saved);
+    }
+    return null;
+  });
+
+  const { user, isLoggedIn } = useAuthStore();
   const cartItems = useCartStore((s) => s.items);
   const clearCart = useCartStore((s) => s.clearCart);
 
@@ -111,43 +115,59 @@ export default function Checkout() {
       const { product, selectedVariant, quantity = 1 } = buyNow;
       return [{
         productId: product._id,
-        name:      product.name,
-        price:     selectedVariant?.discountedPrice || selectedVariant?.price || product.basePrice,
-        size:      selectedVariant?.size  || "FREE",
-        color:     selectedVariant?.color || "Default",
-        sku:       selectedVariant?.sku   || "",
+        name: product.name,
+        price: selectedVariant?.discountedPrice || selectedVariant?.price || product.basePrice,
+        size: selectedVariant?.size || "FREE",
+        color: selectedVariant?.color || "Default",
+        sku: selectedVariant?.sku || "",
         quantity,
-        image:     product.mainImage,
-        slug:      product.slug,
-        _product:  product,
+        image: product.mainImage,
+        slug: product.slug,
+        _product: product,
       }];
     }
     return cartItems.map((i) => ({ ...i, productId: i.productId }));
   }, [buyNow, cartItems]);
 
-  const [step,          setStep]          = useState(0);
-  const [addresses,     setAddresses]     = useState([]);
-  const [selAddr,       setSelAddr]       = useState(null);
-  const [showNewAddr,   setShowNewAddr]   = useState(false);
-  const [newAddrForm,   setNewAddrForm]   = useState(EMPTY);
-  const [payMethod,     setPayMethod]     = useState("cod");
-  const [loading,       setLoading]       = useState(false);
-  const [addrLoading,   setAddrLoading]   = useState(true);
-  const [error,         setError]         = useState("");
-  const [coupon,        setCoupon]        = useState("");
+  const [step, setStep] = useState(0);
+  const [addresses, setAddresses] = useState([]);
+  const [selAddr, setSelAddr] = useState(null);
+  const [showNewAddr, setShowNewAddr] = useState(false);
+  const [newAddrForm, setNewAddrForm] = useState(EMPTY);
+  const [payMethod, setPayMethod] = useState("cod");
+  const [loading, setLoading] = useState(false);
+  const [addrLoading, setAddrLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [coupon, setCoupon] = useState("");
   const [couponApplied, setCouponApplied] = useState(null);
+  const [couponLoading, setCouponLoading] = useState(false);
 
-  /* ── Totals ── */
+  /* ── Calculate totals with dynamic GST and no shipping ── */
   const subtotal = useMemo(() =>
-    orderItems.reduce((acc, i) => acc + (i.price * i.quantity), 0),
-  [orderItems]);
-  const shipping = subtotal > 500 ? 0 : 50;
-  const tax      = Math.round(subtotal * 0.18);
-  const discount = couponApplied?.discount || 0;
-  const total    = subtotal + shipping + tax - discount;
+  orderItems.reduce((acc, i) => acc + (i.price * i.quantity), 0),
+  [orderItems]
+);
+  
+  // Use saved summary values if available (for discount from cart)
+const discountAmount = savedSummary?.discountAmount || couponApplied?.discount || 0;
+  const afterDiscount = subtotal - discountAmount;
+  
+  // Calculate GST based on after-discount amount (5% if <1000, else 12%)
+  const gstCalc = calculateGST(afterDiscount);
+  const gst =  gstCalc.amount;
+  const gstRate = gstCalc.rate;
+  
+  // No shipping charges
+  const shipping = 0;
+  const total = afterDiscount + gst;
 
   /* ── Fetch saved addresses ── */
   useEffect(() => {
+    if (!user || !isLoggedIn) {
+      navigate("/login");
+      return;
+    }
+    
     setAddrLoading(true);
     apiFetch("/users/addresses")
       .then((data) => {
@@ -161,17 +181,22 @@ export default function Checkout() {
         setError("Could not load saved addresses. Please add one below.");
       })
       .finally(() => setAddrLoading(false));
-  }, []);
+  }, [user, isLoggedIn, navigate]);
 
   /* ── Redirect if no items ── */
   useEffect(() => {
-    if (!buyNow && cartItems.length === 0) navigate("/cart");
-  }, []);
+    if (!buyNow && cartItems.length === 0 && !savedSummary) {
+      navigate("/cart");
+    }
+  }, [buyNow, cartItems.length, navigate, savedSummary]);
 
   const setField = (k) => (e) => setNewAddrForm((f) => ({ ...f, [k]: e.target.value }));
 
   const handleSaveNewAddr = async () => {
-    if (!newAddrForm.address1.trim()) { setError("Address line 1 is required"); return; }
+    if (!newAddrForm.address1.trim()) { 
+      setError("Address line 1 is required"); 
+      return; 
+    }
     try {
       setLoading(true);
       setError("");
@@ -179,7 +204,6 @@ export default function Checkout() {
         method: "POST",
         body: JSON.stringify(newAddrForm),
       });
-      /* API returns array of all addresses */
       const list = Array.isArray(saved) ? saved : (saved.addresses || []);
       setAddresses(list);
       const last = list[list.length - 1];
@@ -193,53 +217,104 @@ export default function Checkout() {
     }
   };
 
-  const handleApplyCoupon = async () => {
-    if (!coupon.trim()) return;
-    try {
-      const data = await apiFetch(`/coupons/validate?code=${coupon}&amount=${subtotal}`);
-      setCouponApplied({ code: coupon, discount: data.discount || 0 });
-      setError("");
-    } catch {
-      setError("Invalid or expired coupon");
+  // Static coupon handler (no API call)
+  const handleApplyCoupon = () => {
+    if (!coupon.trim()) {
+      setError("Please enter a coupon code");
+      return;
     }
+    
+    setCouponLoading(true);
+    setError("");
+    
+    // Simulate loading for better UX
+    setTimeout(() => {
+      const enteredCode = coupon.trim().toUpperCase();
+      const validCoupon = STATIC_COUPONS[enteredCode];
+      
+      if (validCoupon) {
+        const discount = Math.round(subtotal * (validCoupon.discountPercent / 100));
+        setCouponApplied({ 
+          code: validCoupon.code, 
+          discount: discount,
+          discountPercent: validCoupon.discountPercent 
+        });
+        setError("");
+      } else {
+        setError("Invalid or expired coupon");
+        setCouponApplied(null);
+      }
+      setCouponLoading(false);
+    }, 500);
+  };
+
+  const handleRemoveCoupon = () => {
+    setCouponApplied(null);
+    setCoupon("");
+    setError("");
   };
 
   const handlePlaceOrder = async () => {
-    if (!selAddr) { setError("Please select a delivery address"); return; }
+    if (!selAddr) { 
+      setError("Please select a delivery address"); 
+      return; 
+    }
     setError("");
     setLoading(true);
+
+    const finalDiscount = couponApplied?.discount || savedSummary?.discountAmount || 0;
+    const finalAfterDiscount = subtotal - finalDiscount;
+    const finalGstCalc = calculateGST(finalAfterDiscount);
 
     const body = {
       items: orderItems.map((i) => ({
         productId: i.productId,
-        name:      i.name,
-        price:     i.price,
-        size:      i.size,
-        color:     i.color,
-        sku:       i.sku || "",
-        quantity:  i.quantity,
-        image:     i.image,
+        name: i.name,
+        price: i.price,
+        size: i.size,
+        color: i.color,
+        sku: i.sku || "",
+        quantity: i.quantity,
+        image: i.image,
       })),
       shippingAddress: {
         address1: selAddr.address1,
         address2: selAddr.address2 || "",
-        city:     selAddr.city,
-        state:    selAddr.state,
-        pincode:  selAddr.pincode,
-        country:  selAddr.country || "India",
+        city: selAddr.city,
+        state: selAddr.state,
+        pincode: selAddr.pincode,
+        country: selAddr.country || "India",
       },
       paymentMethod: payMethod,
-      couponCode:    coupon || undefined,
+      couponCode: couponApplied?.code || (savedSummary?.promoApplied ? savedSummary.promoCode : null),
+      couponDiscount: finalDiscount,
+      subtotal: subtotal,
+      discount: finalDiscount,
+      gst: finalGstCalc.amount,
+      gstRate: finalGstCalc.rate,
+      shippingCharge: 0,
+      totalAmount: finalAfterDiscount + finalGstCalc.amount,
     };
 
     try {
       if (payMethod === "cod") {
-        const order = await apiFetch("/orders", { method: "POST", body: JSON.stringify(body) });
+        const order = await apiFetch("/orders", { 
+          method: "POST", 
+          body: JSON.stringify(body) 
+        });
         if (!buyNow) clearCart();
         navigate("/order-success", { state: { order }, replace: true });
       } else {
         navigate("/checkout/payment", {
-          state: { orderBody: body, subtotal, shipping, tax, discount, total },
+          state: { 
+            orderBody: body, 
+            subtotal, 
+            shipping: 0, 
+            gst: finalGstCalc.amount,
+            gstRate: finalGstCalc.rate,
+            discount: finalDiscount, 
+            total: finalAfterDiscount + finalGstCalc.amount 
+          },
         });
       }
     } catch (e) {
@@ -357,8 +432,12 @@ export default function Checkout() {
               <button
                 className={styles.btnNext}
                 onClick={() => {
-                  if (!selAddr) { setError("Select a delivery address"); return; }
-                  setError(""); setStep(1);
+                  if (!selAddr) { 
+                    setError("Select a delivery address"); 
+                    return; 
+                  }
+                  setError(""); 
+                  setStep(1);
                 }}
               >
                 Continue to Payment
@@ -467,18 +546,58 @@ export default function Checkout() {
                 </p>
               </div>
 
-              <div className={styles.couponRow}>
-                <input
-                  className={styles.input}
-                  placeholder="Coupon code"
-                  value={coupon}
-                  onChange={(e) => setCoupon(e.target.value.toUpperCase())}
-                />
-                <button className={styles.couponApplyBtn} onClick={handleApplyCoupon}>Apply</button>
+              {/* Coupon Section - Static like cart */}
+              <div className={styles.couponSection}>
+                {!couponApplied && !savedSummary?.promoApplied ? (
+                  <div className={styles.couponRow}>
+                    <input
+                      className={styles.couponInput}
+                      type="text"
+                      placeholder="Enter coupon code (LUXURIA10, WELCOME20, SAVE50)"
+                      value={coupon}
+                      onChange={(e) => setCoupon(e.target.value.toUpperCase())}
+                      disabled={couponLoading}
+                    />
+                    <button 
+                      className={styles.couponApplyBtn} 
+                      onClick={handleApplyCoupon}
+                      disabled={couponLoading || !coupon.trim()}
+                    >
+                      {couponLoading ? "Applying..." : "Apply"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className={styles.couponAppliedBox}>
+                    <div className={styles.couponSuccess}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>
+                        Coupon <strong>{couponApplied?.code || savedSummary?.promoCode}</strong> applied! 
+                        You saved {fmt(couponApplied?.discount || savedSummary?.discountAmount || 0)}
+                        {couponApplied?.discountPercent && ` (${couponApplied.discountPercent}% off)`}
+                      </span>
+                    </div>
+                    <button 
+                      className={styles.couponRemoveBtn}
+                      onClick={handleRemoveCoupon}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+                
+                {!couponApplied && !savedSummary?.promoApplied && (
+                  <div className={styles.couponHint}>
+                    <p>✨ Available coupons:</p>
+                    <div className={styles.couponList}>
+                      <span className={styles.couponTag}>LUXURIA10 (10% off)</span>
+                      <span className={styles.couponTag}>WELCOME20 (20% off)</span>
+                      <span className={styles.couponTag}>SAVE50 (5% off)</span>
+                    </div>
+                  </div>
+                )}
               </div>
-              {couponApplied && (
-                <p className={styles.couponSuccess}>✓ Coupon applied — saving {fmt(couponApplied.discount)}</p>
-              )}
 
               {error && <p className={styles.errorMsg}>{error}</p>}
 
@@ -519,25 +638,37 @@ export default function Checkout() {
           </div>
 
           <div className={styles.summaryLines}>
-            <div className={styles.summaryLine}><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
             <div className={styles.summaryLine}>
-              <span>Shipping</span>
-              <span>{shipping === 0 ? <span className={styles.free}>Free</span> : fmt(shipping)}</span>
+              <span>Subtotal</span>
+              <span>{fmt(subtotal)}</span>
             </div>
-            <div className={styles.summaryLine}><span>GST (18%)</span><span>{fmt(tax)}</span></div>
-            {discount > 0 && (
+            
+            {discountAmount > 0 && (
               <div className={`${styles.summaryLine} ${styles.summaryLineDiscount}`}>
-                <span>Coupon</span><span>-{fmt(discount)}</span>
+                <span>Discount {couponApplied?.discountPercent && `(${couponApplied.discountPercent}%)`}</span>
+                <span>-{fmt(discountAmount)}</span>
               </div>
             )}
+            
+            <div className={styles.summaryLine}>
+              <span>GST ({Math.round(gstRate * 100)}%)</span>
+              <span>{fmt(gst)}</span>
+            </div>
+            
+            <div className={styles.summaryLine}>
+              <span>Shipping</span>
+              <span className={styles.free}>Free</span>
+            </div>
+            
             <div className={`${styles.summaryLine} ${styles.summaryLineTotal}`}>
-              <span>Total</span><span>{fmt(total)}</span>
+              <span>Total</span>
+              <span>{fmt(total)}</span>
             </div>
           </div>
 
-          {subtotal <= 500 && (
-            <p className={styles.freeShipNote}>Add {fmt(500 - subtotal)} more for free shipping</p>
-          )}
+          <p className={styles.gstNote}>
+            * GST calculated at {Math.round(gstRate * 100)}% on order value after discount
+          </p>
         </aside>
       </div>
     </div>

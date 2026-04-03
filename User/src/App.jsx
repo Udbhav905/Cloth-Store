@@ -83,7 +83,6 @@ function ScrollProvider({ children }) {
       orientation: "vertical",
       // IMPORTANT: These settings prevent scroll from blocking clicks
       syncTouch: true,
-      touchMultiplier: 1,
     });
 
     // RAF loop for smooth scroll

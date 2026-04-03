@@ -11,6 +11,7 @@
 
 /* ── Header ── */
 .header {
+  margin-top: 9svh;
   display: flex; align-items: center; justify-content: space-between;
   padding: 20px 48px; border-bottom: 1px solid var(--border);
   background: rgba(6,6,6,0.9); backdrop-filter: blur(12px);
@@ -118,12 +119,164 @@
 .confirmText        { font-family: var(--sans); font-size: 0.84rem; color: var(--muted); margin: 0 0 2px; }
 
 /* ── Coupon ── */
-.couponRow           { display: flex; gap: 0; margin: 20px 0 6px; }
-.couponRow .input    { border-right: none; flex: 1; }
-.couponApplyBtn      { background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 0 20px; cursor: pointer; white-space: nowrap; transition: border-color 0.15s, color 0.15s; }
-.couponApplyBtn:hover { border-color: var(--gold-b); color: var(--gold); }
-.couponSuccess       { font-family: var(--sans); font-size: 0.75rem; color: var(--green); margin: 4px 0; }
+.couponSection {
+  margin: 20px 0;
+}
+.couponRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
 
+.couponInput {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  outline: none;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  padding: 12px 16px;
+  transition: border-color 0.2s;
+}
+
+.couponInput:focus {
+  border-color: var(--gold-b);
+}
+
+.couponInput::placeholder {
+  color: var(--muted);
+}
+
+.couponApplyBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 12px 24px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.couponApplyBtn:hover:not(:disabled) {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: var(--gold-dim);
+}
+
+.couponApplyBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Applied coupon box */
+.couponAppliedBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--gold-dim);
+  border: 1px solid var(--gold-b);
+  padding: 12px 16px;
+  border-radius: 0;
+}
+
+.couponSuccess {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: var(--green);
+}
+
+.couponSuccess svg {
+  width: 16px;
+  height: 16px;
+  color: var(--green);
+  flex-shrink: 0;
+}
+
+.couponSuccess strong {
+  color: var(--gold);
+}
+
+.couponRemoveBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.couponRemoveBtn:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* Coupon hint section */
+.couponHint {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+}
+
+.couponHint p {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin: 0 0 8px 0;
+  letter-spacing: 0.05em;
+}
+
+.couponList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.couponTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--gold-dim);
+  border: 1px solid var(--gold-b);
+  padding: 4px 10px;
+  font-family: var(--sans);
+  font-size: 0.65rem;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.couponTag:hover {
+  background: var(--gold);
+  color: #060606;
+  border-color: var(--gold);
+}
+
+/* Error message styling */
+.errorMsg {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: var(--red);
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  background: rgba(220, 80, 80, 0.1);
+  border-left: 2px solid var(--red);
+}
 /* ── Form elements ── */
 .fieldRow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .field    { display: flex; flex-direction: column; gap: 6px; }
@@ -249,4 +402,258 @@
 @media (max-width: 360px) {
   .layout  { padding: 12px 12px 40px; }
   .section { padding: 16px 12px; }
+}
+/* ── Coupon Section Styles (Matching Cart Page) ── */
+.couponSection {
+  margin: 20px 0;
+}
+
+.couponRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.couponInput {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  outline: none;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  padding: 12px 16px;
+  transition: border-color 0.2s;
+}
+
+.couponInput:focus {
+  border-color: var(--gold-b);
+}
+
+.couponInput::placeholder {
+  color: var(--muted);
+}
+
+.couponApplyBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 12px 24px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.couponApplyBtn:hover:not(:disabled) {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: var(--gold-dim);
+}
+
+.couponApplyBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Applied coupon box */
+.couponAppliedBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--gold-dim);
+  border: 1px solid var(--gold-b);
+  padding: 12px 16px;
+  border-radius: 0;
+}
+
+.couponSuccess {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: var(--green);
+}
+
+.couponSuccess svg {
+  width: 16px;
+  height: 16px;
+  color: var(--green);
+  flex-shrink: 0;
+}
+
+.couponSuccess strong {
+  color: var(--gold);
+}
+
+.couponRemoveBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.couponRemoveBtn:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* Coupon hint section */
+.couponHint {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+}
+
+.couponHint p {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin: 0 0 8px 0;
+  letter-spacing: 0.05em;
+}
+
+.couponList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.couponTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--gold-dim);
+  border: 1px solid var(--gold-b);
+  padding: 4px 10px;
+  font-family: var(--sans);
+  font-size: 0.65rem;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.couponTag:hover {
+  background: var(--gold);
+  color: #060606;
+  border-color: var(--gold);
+}
+
+/* Error message styling */
+.errorMsg {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: var(--red);
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  background: rgba(220, 80, 80, 0.1);
+  border-left: 2px solid var(--red);
+}
+
+/* Responsive adjustments for coupon section */
+@media (max-width: 768px) {
+  .couponRow {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .couponInput {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .couponApplyBtn {
+    width: 100%;
+    padding: 10px 20px;
+  }
+  
+  .couponAppliedBox {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .couponSuccess {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .couponRemoveBtn {
+    width: auto;
+    padding: 5px 12px;
+  }
+  
+  .couponList {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .couponTag {
+    font-size: 0.6rem;
+    padding: 3px 8px;
+  }
+  
+  .couponSuccess {
+    font-size: 0.7rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+  }
+  
+  .couponHint p {
+    font-size: 0.65rem;
+    text-align: center;
+  }
+}
+
+/* Optional: Add click-to-fill functionality for coupon tags */
+.couponTag[data-clickable="true"] {
+  cursor: pointer;
+}
+
+/* Make the entire section consistent with cart styling */
+.couponSection {
+  margin: 20px 0;
+}
+
+/* Ensure input styling matches your cart page */
+.couponInput:focus {
+  border-color: var(--gold);
+  box-shadow: none;
+}
+
+/* Disabled state styling */
+.couponApplyBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Success state animation */
+.couponSuccess {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

@@ -118,7 +118,7 @@ function WishlistCard({ product, index, onRemove, onMoveToCart }) {
       style={{ "--i": index }}
     >
       {/* Image */}
-      <Link to={`/product/${product.slug}`} className={styles.cardImgWrap}>
+      <Link to={`/products/${product._id}`} className={styles.cardImgWrap}>
         {product.mainImage
           ? <img src={product.mainImage} alt={product.name} loading="lazy" className={styles.cardImg} />
           : <div className={styles.cardImgFallback}><span>◆</span></div>

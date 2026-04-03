@@ -6,7 +6,6 @@ import axios from "axios";
 import styles from "./Navbar.module.css";
 
 const API_URL = "http://localhost:3000/api";
-
 const getInitials = (name = "") =>
   name
     .split(" ")
@@ -15,20 +14,24 @@ const getInitials = (name = "") =>
     .join("")
     .toUpperCase();
 
+
 export default function Navbar() {
   const navigate = useNavigate();
 
   const { user, isLoggedIn, logout, openAuthModal, fetchProfile } =
     useAuthStore();
   
-  // Get cart store state and actions
+  // Get cart store state and actions - get the actual arrays, not functions
   const cartItems = useCartStore((state) => state.items);
   const wishlistItems = useCartStore((state) => state.wishlist);
-  const cartCount = useCartStore((state) => state.cartCount);
-  const wishCount = useCartStore((state) => state.wishCount);
   const initialize = useCartStore((state) => state.initialize);
   const resetCart = useCartStore((state) => state.resetCart);
   const isInitialized = useCartStore((state) => state.isInitialized);
+  const syncInProgress = useCartStore((state) => state.syncInProgress);
+
+  // Compute counts from the actual items (these will update when items change)
+  const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const wishlistCount = wishlistItems.length;
 
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -38,7 +41,6 @@ export default function Navbar() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
-  const [cartReady, setCartReady] = useState(false);
   
   const drawerTimerRef = useRef(null);
   const searchRef = useRef(null);
@@ -60,17 +62,13 @@ export default function Navbar() {
     initStore();
   }, [isLoggedIn, initialize, resetCart, isInitialized]);
 
-  // Listen to cart initialization
+  // Debug: Log cart changes in real-time
   useEffect(() => {
-    const unsubscribe = useCartStore.subscribe((state) => {
-      if (state.isInitialized) {
-        setCartReady(true);
-      }
-    });
+    console.log("Cart updated - Items:", cartItems.length, "Count:", cartItemCount);
+  }, [cartItems, cartItemCount]);
 
-    return () => unsubscribe();
-  }, []);
-
+  // Rest of your existing code remains the same...
+  
   // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
@@ -292,8 +290,6 @@ export default function Navbar() {
   };
 
   const activeCategory = categories[0] || null;
-  const cartItemCount = cartCount(); // Call the function to get count
-  const wishlistCount = wishCount(); // Call the function to get count
 
   return (
     <>
@@ -472,7 +468,7 @@ export default function Navbar() {
               </button>
             )}
 
-            {/* Cart - Fixed */}
+            {/* Cart - Now updates in real-time */}
             <Link to="/cart" className={styles.iconBtn} aria-label="Cart">
               <svg
                 viewBox="0 0 24 24"
@@ -484,7 +480,7 @@ export default function Navbar() {
                 <line x1="3" y1="6" x2="21" y2="6" />
                 <path d="M16 10a4 4 0 01-8 0" />
               </svg>
-              {!cartReady ? (
+              {!isInitialized || syncInProgress ? (
                 <span className={styles.badge}>0</span>
               ) : (
                 cartItemCount > 0 && (
@@ -493,7 +489,7 @@ export default function Navbar() {
               )}
             </Link>
 
-            {/* Wishlist */}
+            {/* Wishlist - Now updates in real-time */}
             <Link
               to="/wishlist"
               className={styles.iconBtn}

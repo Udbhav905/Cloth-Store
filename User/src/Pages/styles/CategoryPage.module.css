@@ -23,6 +23,8 @@
 .hero {
   position: relative; height: 260px;
   display: flex; align-items: flex-end; overflow: hidden;
+     margin-top: 8vh;
+
 }
 .heroBg {
   position: absolute; inset: 0;
@@ -305,7 +307,8 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1px; background: var(--border);
+  gap: 1px; 
+  /* background: var(--border); */
 }
 .gridList { grid-template-columns: 1fr; background: none; gap: 1px; }
 
@@ -444,4 +447,36 @@
 }
 @media (max-width: 380px) {
   .grid { grid-template-columns: 1fr; }
+}
+/* ── Subcategory nav ── */
+.subcategoryNav {
+  margin: 12px 0 8px;
+}
+
+.subcategoryLinks {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.subcategoryLink {
+  font-family: var(--sans);
+  font-size: 9.5px;
+  font-weight: 300;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 5px 14px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.subcategoryLink:hover {
+  color: var(--gold);
+  border-color: rgba(201, 168, 76, 0.4);
+  background: var(--gold-d);
 }

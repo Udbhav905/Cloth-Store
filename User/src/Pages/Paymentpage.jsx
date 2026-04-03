@@ -46,15 +46,11 @@ function fmt(n) {
 
 /* ── Build card number display from Stripe's brand + completion state ── */
 function buildCardDisplay(brand, filledGroups) {
-  // AMEX: 4-6-5 → 15 digits; others: 4-4-4-4 → 16 digits
   const isAmex = brand === "amex";
   const groups = isAmex ? [4, 6, 5] : [4, 4, 4, 4];
-  const totalDigits = groups.reduce((a, b) => a + b, 0);
-
-  // filledGroups = how many groups Stripe has received (0..groups.length)
   const result = groups.map((len, i) => {
     if (i < filledGroups) return "•".repeat(len);
-    return "·".repeat(len); // empty slot — different char so user can tell
+    return "·".repeat(len);
   });
   return result.join("  ");
 }
@@ -98,61 +94,52 @@ export default function PaymentPage() {
   const location = useLocation();
   const clearCart = useCartStore((s) => s.clearCart);
 
-  const { orderBody, subtotal, shipping, tax, discount, total } =
+  // IMPORTANT: Get ALL values from checkout state
+  const { orderBody, subtotal, shipping, gst, gstRate, discount, total } =
     location.state || {};
 
   useEffect(() => {
-    if (!orderBody || !total) navigate("/cart", { replace: true });
+    if (!orderBody || !total) {
+      navigate("/cart", { replace: true });
+    }
   }, []);
 
-  /* ── Card display state ─────────────────────────────────── */
-  // Stripe brand string: "visa" | "mastercard" | "amex" | "unknown" | …
+  /* ── Card display state ── */
   const [stripeBrand,   setStripeBrand]   = useState("unknown");
-  // How many 4-digit groups have been filled (0–4 for normal, 0–3 for AMEX)
   const [filledGroups,  setFilledGroups]  = useState(0);
-  // Real expiry from Stripe's value object  e.g. "12 / 28"
   const [cardExpiry,    setCardExpiry]    = useState("");
-  // CVC length (1–4) so we can show correct dots
   const [cvcLength,     setCvcLength]     = useState(0);
-  // Cardholder name
   const [cardName,      setCardName]      = useState(
     useAuthStore.getState()?.user?.name?.toUpperCase() || ""
   );
-  // Flip state — true = show back (CVC side)
   const [flipped,       setFlipped]       = useState(false);
-  // Which field is focused: "number" | "expiry" | "cvc" | "name" | ""
   const [focusedField,  setFocused]       = useState("");
 
-  /* ── Stripe completeness flags ──────────────────────────── */
   const [numComplete, setNumComplete] = useState(false);
   const [expComplete, setExpComplete] = useState(false);
   const [cvcComplete, setCvcComplete] = useState(false);
   const cardComplete = numComplete && expComplete && cvcComplete;
 
-  /* ── UI state ───────────────────────────────────────────── */
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
 
   const nameRef = useRef(null);
 
-  /* Flip to back when CVC focused */
   useEffect(() => {
     setFlipped(focusedField === "cvc");
   }, [focusedField]);
 
-  /* ── Derived display values ─────────────────────────────── */
   const brand          = mapBrand(stripeBrand);
   const cardNumDisplay = buildCardDisplay(stripeBrand, filledGroups);
-
-  /* CVC display: dots matching what user typed, fallback placeholder */
   const cvcDisplay = cvcLength > 0
     ? "•".repeat(cvcLength)
     : (brand === "AMEX" ? "····" : "···");
-
-  /* Expiry display */
   const expiryDisplay = cardExpiry || "MM / YY";
 
-  /* ── Payment handler ────────────────────────────────────── */
+  // Calculate display GST percentage
+  const displayGSTPercent = gstRate ? Math.round(gstRate * 100) : 0;
+
+  /* ── Payment handler ── */
   const handlePay = async () => {
     if (!stripe || !elements) { setError("Stripe not ready."); return; }
     if (!cardComplete)         { setError("Please complete all card fields."); return; }
@@ -162,13 +149,25 @@ export default function PaymentPage() {
     setLoading(true);
 
     try {
+      // Use the exact total from checkout (already includes correct GST)
+      const amountToPay = Math.round(total);
+      
+      console.log("💰 Payment Amount:", amountToPay);
+      console.log("📊 GST Details:", { gst, gstRate, displayGSTPercent });
+      
       /* Step 1 — Create PaymentIntent */
       const { clientSecret } = await apiFetch("/payments/create-intent", {
         method: "POST",
         body: JSON.stringify({
-          amount:   total,
+          amount:   amountToPay,
           currency: "inr",
-          metadata: { itemCount: String(orderBody?.items?.length || 0) },
+          metadata: { 
+            itemCount: String(orderBody?.items?.length || 0),
+            subtotal: subtotal,
+            discount: discount,
+            gst: gst,
+            gstRate: gstRate
+          },
         }),
       });
       if (!clientSecret) throw new Error("No client secret from server.");
@@ -186,7 +185,7 @@ export default function PaymentPage() {
       if (paymentIntent.status !== "succeeded")
         throw new Error(`Payment ${paymentIntent.status}. Try again.`);
 
-      /* Step 3 — Create order */
+      /* Step 3 — Create order with ALL correct values */
       const order = await apiFetch("/orders", {
         method: "POST",
         body: JSON.stringify({
@@ -194,6 +193,12 @@ export default function PaymentPage() {
           paymentMethod:  "card",
           paymentStatus:  "paid",
           orderStatus:    "confirmed",
+          subtotal: subtotal,
+          discount: discount,
+          gst: gst,
+          gstRate: gstRate,
+          shippingCharge: shipping || 0,
+          totalAmount: amountToPay,
           paymentDetails: {
             transactionId: paymentIntent.id,
             paymentId:     paymentIntent.id,
@@ -222,7 +227,7 @@ export default function PaymentPage() {
     }
   };
 
-  /* ── Brand logo JSX ─────────────────────────────────────── */
+  /* ── Brand logo JSX ── */
   const BrandLogo = () => {
     if (brand === "VISA") return <span className={styles.brandVisa}>VISA</span>;
     if (brand === "MC")
@@ -242,10 +247,9 @@ export default function PaymentPage() {
   return (
     <div className={styles.page}>
 
-      {/* ── Header ─────────────────────────────────────────── */}
+      {/* Header */}
       <header className={styles.header}>
         <Link to="/" className={styles.logo}>◆ LUXURIA</Link>
-
         <div className={styles.headerCenter}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
             strokeWidth="1.3" className={styles.lockIcon}>
@@ -254,7 +258,6 @@ export default function PaymentPage() {
           </svg>
           <span>Secure Payment</span>
         </div>
-
         <button className={styles.backBtn} onClick={() => navigate(-1)}>
           ← Back
         </button>
@@ -262,10 +265,10 @@ export default function PaymentPage() {
 
       <div className={styles.layout}>
 
-        {/* ═══════════════ LEFT COLUMN ═══════════════════════ */}
+        {/* LEFT COLUMN */}
         <div className={styles.left}>
 
-          {/* ── 3-D Flip Card ──────────────────────────────── */}
+          {/* 3-D Flip Card */}
           <div
             className={`${styles.cardScene} ${flipped ? styles.cardSceneFlipped : ""}`}
             aria-label="Credit card preview"
@@ -273,9 +276,7 @@ export default function PaymentPage() {
             {/* FRONT */}
             <div className={styles.cardFace}>
               <div className={styles.cardShine} />
-
               <div className={styles.cardTopRow}>
-                {/* Chip */}
                 <div className={styles.cardChip}>
                   <div className={styles.chipGrid}>
                     <div /><div /><div />
@@ -283,11 +284,8 @@ export default function PaymentPage() {
                     <div /><div /><div />
                   </div>
                 </div>
-                {/* Brand */}
                 <div className={styles.cardBrand}><BrandLogo /></div>
               </div>
-
-              {/* Card number */}
               <div
                 className={`${styles.cardNumberDisplay} ${
                   focusedField === "number" ? styles.cardFieldHighlight : ""
@@ -295,8 +293,6 @@ export default function PaymentPage() {
               >
                 {cardNumDisplay}
               </div>
-
-              {/* Bottom row */}
               <div className={styles.cardBottomRow}>
                 <div
                   className={`${styles.cardFieldBlock} ${
@@ -334,7 +330,7 @@ export default function PaymentPage() {
             </div>
           </div>
 
-          {/* ── Form ───────────────────────────────────────── */}
+          {/* Form */}
           <div className={styles.formCard}>
             <h2 className={styles.formTitle}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -359,44 +355,16 @@ export default function PaymentPage() {
                   onBlur={()  => setFocused("")}
                   onChange={(e) => {
                     setNumComplete(e.complete);
-
-                    /* ── Real brand from Stripe ── */
                     if (e.brand) setStripeBrand(e.brand);
-
-                    /*
-                     * Stripe doesn't expose raw digits, but we can infer
-                     * how many 4-digit groups are filled from the element's
-                     * internal value string length hint via e.value if
-                     * available, otherwise approximate from empty/complete.
-                     *
-                     * Best approximation strategy:
-                     *   empty    → 0 groups
-                     *   complete → all groups
-                     *   partial  → we listen to onChange repeatedly;
-                     *              each time a group of 4 digits fills,
-                     *              Stripe fires a change event.
-                     *              We can track this by watching the
-                     *              previous vs current completion of each
-                     *              segment using a ref counter trick.
-                     */
                     const isAmex   = e.brand === "amex";
                     const maxGroups = isAmex ? 3 : 4;
-
                     if (e.empty)     setFilledGroups(0);
                     else if (e.complete) setFilledGroups(maxGroups);
                     else {
-                      // Partial: Stripe fires onChange for each keystroke.
-                      // We use the element's value hint — Stripe doesn't give
-                      // digits but gives us elementType. A simple approach:
-                      // increment/decrement based on prior state in a ref,
-                      // but the cleanest reliable approach is to leave at 1–(max-1)
-                      // proportionally. We'll use a stable mid-point here:
                       setFilledGroups((prev) => {
-                        // Keep between 1 and maxGroups-1
                         return Math.max(1, Math.min(prev, maxGroups - 1));
                       });
                     }
-
                     if (e.error) setError(e.error.message);
                     else setError("");
                   }}
@@ -406,8 +374,6 @@ export default function PaymentPage() {
 
             {/* Expiry + CVC row */}
             <div className={styles.fieldRow}>
-
-              {/* Expiry */}
               <div className={styles.field}>
                 <label className={styles.label}>Expiry Date</label>
                 <div
@@ -421,13 +387,6 @@ export default function PaymentPage() {
                     onBlur={()  => setFocused("")}
                     onChange={(e) => {
                       setExpComplete(e.complete);
-
-                      /*
-                       * ── KEY FIX ──
-                       * Stripe's CardExpiryElement exposes e.value with
-                       * { month: number, year: number } when both are present.
-                       * Use those real values for display.
-                       */
                       if (e.value?.month && e.value?.year) {
                         const mm = String(e.value.month).padStart(2, "0");
                         const yy = String(e.value.year).slice(-2);
@@ -435,13 +394,11 @@ export default function PaymentPage() {
                       } else if (e.empty) {
                         setCardExpiry("");
                       } else if (e.value?.month && !e.value?.year) {
-                        // Month filled, year still being typed
                         const mm = String(e.value.month).padStart(2, "0");
                         setCardExpiry(`${mm} / ··`);
                       } else {
                         setCardExpiry("·· / ··");
                       }
-
                       if (e.error) setError(e.error.message);
                       else setError("");
                     }}
@@ -449,7 +406,6 @@ export default function PaymentPage() {
                 </div>
               </div>
 
-              {/* CVC */}
               <div className={styles.field}>
                 <label className={styles.label}>
                   CVC
@@ -466,20 +422,10 @@ export default function PaymentPage() {
                     onBlur={()  => setFocused("")}
                     onChange={(e) => {
                       setCvcComplete(e.complete);
-
-                      /*
-                       * ── KEY FIX ──
-                       * Stripe doesn't expose raw CVC digits, but we know:
-                       *   AMEX → 4 digits, others → 3 digits
-                       * e.complete tells us all digits entered.
-                       * e.empty tells us nothing entered.
-                       * Partial → show dots proportionally.
-                       */
                       const maxCvc = stripeBrand === "amex" ? 4 : 3;
                       if (e.empty)     setCvcLength(0);
                       else if (e.complete) setCvcLength(maxCvc);
                       else             setCvcLength(Math.max(1, maxCvc - 1));
-
                       if (e.error) setError(e.error.message);
                       else setError("");
                     }}
@@ -567,7 +513,7 @@ export default function PaymentPage() {
           </div>
         </div>
 
-        {/* ═══════════════ RIGHT — ORDER SUMMARY ═══════════ */}
+        {/* RIGHT — ORDER SUMMARY */}
         <aside className={styles.summary} aria-label="Order summary">
           <h3 className={styles.summaryTitle}>Order Summary</h3>
 
@@ -602,22 +548,22 @@ export default function PaymentPage() {
             <div className={styles.summaryLine}>
               <span>Subtotal</span><span>{fmt(subtotal)}</span>
             </div>
-            <div className={styles.summaryLine}>
-              <span>Shipping</span>
-              <span className={shipping === 0 ? styles.free : ""}>
-                {shipping === 0 ? "Free" : fmt(shipping)}
-              </span>
-            </div>
-            <div className={styles.summaryLine}>
-              <span>GST (18%)</span><span>{fmt(tax)}</span>
-            </div>
             {discount > 0 && (
               <div className={`${styles.summaryLine} ${styles.summaryDiscount}`}>
-                <span>Discount</span><span>−{fmt(discount)}</span>
+                <span>Discount</span><span>-{fmt(discount)}</span>
               </div>
             )}
+            <div className={styles.summaryLine}>
+              <span>GST ({displayGSTPercent}%)</span>
+              <span>{fmt(gst)}</span>
+            </div>
+            <div className={styles.summaryLine}>
+              <span>Shipping</span>
+              <span className={styles.free}>Free</span>
+            </div>
             <div className={`${styles.summaryLine} ${styles.summaryTotal}`}>
-              <span>Total</span><span>{fmt(total)}</span>
+              <span>Total</span>
+              <span>{fmt(total)}</span>
             </div>
           </div>
 

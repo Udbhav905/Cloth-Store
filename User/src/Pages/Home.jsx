@@ -2,14 +2,13 @@ import { lazy, Suspense } from "react";
 
 // ── HeroSection loads eagerly — it's above the fold, user sees it first ──
 import HeroSection from "../Components/Herosection/Herosection";
-import CategoryShowcase from "../Components/CategoryShowcase/CategoryShowcase";
 
-// ── Everything below the fold loads lazily ──
-// User scrolls to them — by then they're already loaded
-const Trending       = lazy(() => import("../Components/Trending/Trending"));
-const NewArrivals    = lazy(() => import("../Components/Newarrivals/Newarrivals"));
-const ShopByCategory = lazy(() => import("../Components/ShopByCategory/ShopByCategory"));
-const Footer         = lazy(() => import("../Components/Footer/Footer"));
+// ── Everything else loads lazily ──
+const CategoryShowcase = lazy(() => import("../Components/CategoryShowcase/CategoryShowcase"));
+const Trending         = lazy(() => import("../Components/Trending/Trending"));
+const NewArrivals      = lazy(() => import("../Components/Newarrivals/Newarrivals"));
+const ShopByCategory   = lazy(() => import("../Components/ShopByCategory/ShopByCategory"));
+const Footer           = lazy(() => import("../Components/Footer/Footer"));
 
 // ── Lightweight section placeholder while a section loads ──
 function SectionSkeleton({ height = "400px" }) {
@@ -24,7 +23,7 @@ function SectionSkeleton({ height = "400px" }) {
       <style>{`
         @keyframes shimmer {
           0%   { background-position: -600px 0; }
-          100% { background-position:  600px 0; }
+          100% { background-position: 600px 0; }
         }
       `}</style>
     </div>
@@ -37,11 +36,11 @@ const Home = () => {
       {/* Hero — eager, no Suspense needed */}
       <HeroSection />
 
-      {/* Below-fold sections — each gets its own Suspense so they load */}
+      {/* All below-fold sections are now lazy */}
       <Suspense fallback={<SectionSkeleton height="480px" />}>
         <CategoryShowcase />
       </Suspense>
-      {/* independently and don't block each other                       */}
+      
       <Suspense fallback={<SectionSkeleton height="500px" />}>
         <Trending />
       </Suspense>

@@ -29,7 +29,7 @@ const useCartStore = create(
       total: 0,
       isInitialized: false,
       syncInProgress: false,
-      syncQueue: [], // Queue for pending sync operations
+      syncQueue: [],
 
       /* ── Helper to make authenticated requests ── */
       _fetchWithAuth: async (url, options = {}) => {
@@ -37,18 +37,17 @@ const useCartStore = create(
         if (!token) {
           throw new Error("No authentication token");
         }
-        
+
         try {
           const response = await fetch(`${API}${url}`, {
             ...options,
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${token}`,
+              Authorization: `Bearer ${token}`,
               ...options.headers,
             },
           });
-          
-          // Try to parse response as JSON
+
           let data;
           const contentType = response.headers.get("content-type");
           if (contentType && contentType.includes("application/json")) {
@@ -56,14 +55,14 @@ const useCartStore = create(
           } else {
             data = await response.text();
           }
-          
+
           if (!response.ok) {
             if (response.status === 401) {
               get().resetCart();
             }
             throw new Error(data.message || data || `HTTP ${response.status}`);
           }
-          
+
           return data;
         } catch (error) {
           console.error(`Fetch error for ${url}:`, error);
@@ -82,7 +81,7 @@ const useCartStore = create(
         quantity: item.quantity,
         image: item.image,
         variantId: item.variantId,
-        _id: item._id
+        _id: item._id,
       }),
 
       /* ── Transform backend wishlist item ── */
@@ -99,16 +98,16 @@ const useCartStore = create(
         try {
           set({ loading: true });
           const data = await get()._fetchWithAuth("/cart");
-          
+
           const items = (data.items || []).map(get()._transformCartItem);
-          
+
           set({
             items,
             coupon: data.couponCode,
             couponDiscount: data.couponDiscount || 0,
             subtotal: data.subtotal || 0,
             total: data.total || 0,
-            loading: false
+            loading: false,
           });
         } catch (error) {
           console.error("Failed to load cart:", error);
@@ -126,12 +125,12 @@ const useCartStore = create(
         try {
           set({ loading: true });
           const data = await get()._fetchWithAuth("/wishlist");
-          
+
           const wishlist = (data.items || []).map(get()._transformWishlistItem);
-          
+
           set({
             wishlist,
-            loading: false
+            loading: false,
           });
         } catch (error) {
           console.error("Failed to load wishlist:", error);
@@ -141,49 +140,64 @@ const useCartStore = create(
 
       /* ── Add to cart ── */
       addToCart: async (item) => {
-        // If not logged in, store locally only
         if (!isUserLoggedIn()) {
           const items = get().items;
           const exists = items.find(
-            (i) => i.productId === item.productId && i.size === item.size && i.color === item.color
+            (i) =>
+              i.productId === item.productId &&
+              i.size === item.size &&
+              i.color === item.color,
           );
-          
+
           if (exists) {
-            set({ items: items.map((i) =>
-              i.productId === item.productId && i.size === item.size && i.color === item.color
-                ? { ...i, quantity: i.quantity + (item.quantity || 1) }
-                : i
-            )});
+            set({
+              items: items.map((i) =>
+                i.productId === item.productId &&
+                i.size === item.size &&
+                i.color === item.color
+                  ? { ...i, quantity: i.quantity + (item.quantity || 1) }
+                  : i,
+              ),
+            });
           } else {
-            set({ items: [...items, { ...item, quantity: item.quantity || 1, _id: Date.now().toString() }] });
+            set({
+              items: [
+                ...items,
+                {
+                  ...item,
+                  quantity: item.quantity || 1,
+                  _id: Date.now().toString(),
+                },
+              ],
+            });
           }
           return { success: true, offline: true };
         }
 
         try {
           set({ loading: true });
-          
+
           const data = await get()._fetchWithAuth("/cart/add", {
             method: "POST",
             body: JSON.stringify({
               productId: item.productId,
               size: item.size,
               color: item.color,
-              quantity: item.quantity || 1
-            })
+              quantity: item.quantity || 1,
+            }),
           });
-          
+
           const items = (data.items || []).map(get()._transformCartItem);
-          
+
           set({
             items,
             coupon: data.couponCode,
             couponDiscount: data.couponDiscount || 0,
             subtotal: data.subtotal || 0,
             total: data.total || 0,
-            loading: false
+            loading: false,
           });
-          
+
           return { success: true, cart: data };
         } catch (error) {
           console.error("Failed to add to cart:", error);
@@ -192,32 +206,71 @@ const useCartStore = create(
         }
       },
 
-      /* ── Remove from cart ── */
-      removeFromCart: async (itemId) => {
+      /* ── Update cart item quantity ── */
+      updateCartItemQuantity: async (itemId, quantity) => {
         if (!isUserLoggedIn()) {
-          const items = get().items.filter(item => item._id !== itemId);
+          const items = get().items.map(item =>
+            item._id === itemId ? { ...item, quantity } : item
+          );
           set({ items });
           return { success: true, offline: true };
         }
 
         try {
           set({ loading: true });
-          
-          const data = await get()._fetchWithAuth(`/cart/remove/${itemId}`, {
-            method: "DELETE"
+
+          // ✅ FIX: Use correct endpoint (no '/update' in URL)
+          const data = await get()._fetchWithAuth(`/cart/${itemId}`, {
+            method: "PUT",
+            body: JSON.stringify({ quantity }),
           });
-          
+
           const items = (data.items || []).map(get()._transformCartItem);
-          
+
           set({
             items,
             coupon: data.couponCode,
             couponDiscount: data.couponDiscount || 0,
             subtotal: data.subtotal || 0,
             total: data.total || 0,
-            loading: false
+            loading: false,
           });
-          
+
+          return { success: true };
+        } catch (error) {
+          console.error("Failed to update cart item:", error);
+          set({ loading: false, error: error.message });
+          return { success: false, error: error.message };
+        }
+      },
+
+      /* ── Remove from cart ── */
+      removeFromCart: async (itemId) => {
+        if (!isUserLoggedIn()) {
+          const items = get().items.filter((item) => item._id !== itemId);
+          set({ items });
+          return { success: true, offline: true };
+        }
+
+        try {
+          set({ loading: true });
+
+          // ✅ FIX: Use correct endpoint (no '/remove' in URL)
+          const data = await get()._fetchWithAuth(`/cart/${itemId}`, {
+            method: "DELETE",
+          });
+
+          const items = (data.items || []).map(get()._transformCartItem);
+
+          set({
+            items,
+            coupon: data.couponCode,
+            couponDiscount: data.couponDiscount || 0,
+            subtotal: data.subtotal || 0,
+            total: data.total || 0,
+            loading: false,
+          });
+
           return { success: true };
         } catch (error) {
           console.error("Failed to remove from cart:", error);
@@ -229,7 +282,13 @@ const useCartStore = create(
       /* ── Clear cart ── */
       clearCart: async () => {
         if (!isUserLoggedIn()) {
-          set({ items: [], coupon: null, couponDiscount: 0, subtotal: 0, total: 0 });
+          set({
+            items: [],
+            coupon: null,
+            couponDiscount: 0,
+            subtotal: 0,
+            total: 0,
+          });
           return;
         }
 
@@ -242,11 +301,114 @@ const useCartStore = create(
             couponDiscount: 0,
             subtotal: 0,
             total: 0,
-            loading: false
+            loading: false,
           });
         } catch (error) {
           console.error("Failed to clear cart:", error);
           set({ loading: false, error: error.message });
+        }
+      },
+
+      /* ── Sync local cart with backend (after login) ── */
+      syncLocalCart: async () => {
+        const localItems = [...get().items];
+        if (localItems.length === 0) return;
+
+        set({ syncInProgress: true });
+
+        try {
+          let backendCart = null;
+          try {
+            const data = await get()._fetchWithAuth("/cart");
+            backendCart = data;
+            console.log("📦 Current backend cart:", backendCart);
+          } catch (error) {
+            console.error("Failed to fetch backend cart:", error);
+            set({ syncInProgress: false });
+            return;
+          }
+
+          let allSuccess = true;
+          const backendItems = backendCart?.items || [];
+
+          for (const localItem of localItems) {
+            const existingBackendItem = backendItems.find(
+              item => 
+                (item.productId?._id?.toString() === localItem.productId?.toString() ||
+                 item.productId?.toString() === localItem.productId?.toString()) &&
+                item.size === localItem.size &&
+                item.color === localItem.color
+            );
+
+            if (existingBackendItem) {
+              if (existingBackendItem.quantity !== localItem.quantity) {
+                console.log(`Updating quantity for ${localItem.name}`);
+                const result = await get().updateCartItemQuantity(
+                  existingBackendItem._id,
+                  localItem.quantity
+                );
+                if (!result.success) allSuccess = false;
+              }
+            } else {
+              console.log(`Adding new item: ${localItem.name}`);
+              const result = await get().addToCart({
+                productId: localItem.productId,
+                size: localItem.size,
+                color: localItem.color,
+                quantity: localItem.quantity,
+              });
+              if (!result.success) allSuccess = false;
+            }
+          }
+
+          if (allSuccess) {
+            await get().initCart();
+            set({ items: [] });
+            console.log("✅ Local cart synced to backend successfully");
+          } else {
+            console.warn("⚠️ Some cart items failed to sync, keeping local copy");
+          }
+        } catch (error) {
+          console.error("Failed to sync local cart:", error);
+        } finally {
+          set({ syncInProgress: false });
+        }
+      },
+
+      /* ── Sync local wishlist with backend ── */
+      syncLocalWishlist: async () => {
+        const localWishlist = [...get().wishlist];
+        if (localWishlist.length === 0) return;
+
+        try {
+          let existingWishlist = [];
+          try {
+            const data = await get()._fetchWithAuth("/wishlist");
+            existingWishlist = (data.items || []).map(
+              get()._transformWishlistItem,
+            );
+          } catch (error) {
+            console.error("Failed to fetch existing wishlist:", error);
+          }
+
+          const itemsToAdd = localWishlist.filter(
+            (id) => !existingWishlist.includes(id),
+          );
+
+          for (const productId of itemsToAdd) {
+            try {
+              await get().addToWishlist(productId);
+            } catch (error) {
+              if (!error.message.includes("already in wishlist")) {
+                console.error(`Failed to add product ${productId}:`, error);
+              }
+            }
+          }
+
+          set({ wishlist: [] });
+          console.log("✅ Local wishlist synced to backend");
+        } catch (error) {
+          console.error("Failed to sync local wishlist:", error);
         }
       },
 
@@ -264,14 +426,14 @@ const useCartStore = create(
           set({ loading: true });
           await get()._fetchWithAuth("/wishlist/add", {
             method: "POST",
-            body: JSON.stringify({ productId })
+            body: JSON.stringify({ productId }),
           });
-          
-          set(state => ({
+
+          set((state) => ({
             wishlist: [...state.wishlist, productId],
-            loading: false
+            loading: false,
           }));
-          
+
           return { success: true };
         } catch (error) {
           console.error("Failed to add to wishlist:", error);
@@ -282,7 +444,7 @@ const useCartStore = create(
 
       removeFromWishlist: async (productId) => {
         if (!isUserLoggedIn()) {
-          const wishlist = get().wishlist.filter(id => id !== productId);
+          const wishlist = get().wishlist.filter((id) => id !== productId);
           set({ wishlist });
           return { success: true, offline: true };
         }
@@ -290,14 +452,14 @@ const useCartStore = create(
         try {
           set({ loading: true });
           await get()._fetchWithAuth(`/wishlist/remove/${productId}`, {
-            method: "DELETE"
+            method: "DELETE",
           });
-          
-          set(state => ({
-            wishlist: state.wishlist.filter(id => id !== productId),
-            loading: false
+
+          set((state) => ({
+            wishlist: state.wishlist.filter((id) => id !== productId),
+            loading: false,
           }));
-          
+
           return { success: true };
         } catch (error) {
           console.error("Failed to remove from wishlist:", error);
@@ -308,7 +470,6 @@ const useCartStore = create(
 
       toggleWishlist: async (productId) => {
         const isWishlisted = get().isWishlisted(productId);
-        
         if (isWishlisted) {
           return await get().removeFromWishlist(productId);
         } else {
@@ -320,53 +481,6 @@ const useCartStore = create(
         return get().wishlist.includes(productId);
       },
 
-      /* ── Sync local cart with backend (after login) ── */
-      syncLocalCart: async () => {
-        const localItems = [...get().items]; // Copy items
-        if (localItems.length === 0) return;
-        
-        set({ syncInProgress: true });
-        
-        try {
-          // Add each local item to backend
-          for (const item of localItems) {
-            await get().addToCart({
-              productId: item.productId,
-              size: item.size,
-              color: item.color,
-              quantity: item.quantity
-            });
-          }
-          
-          // Clear local items after sync
-          set({ items: [] });
-          console.log("✅ Local cart synced to backend");
-        } catch (error) {
-          console.error("Failed to sync local cart:", error);
-        } finally {
-          set({ syncInProgress: false });
-        }
-      },
-
-      /* ── Sync local wishlist with backend ── */
-      syncLocalWishlist: async () => {
-        const localWishlist = [...get().wishlist]; // Copy wishlist
-        if (localWishlist.length === 0) return;
-        
-        try {
-          // Add each local wishlist item to backend
-          for (const productId of localWishlist) {
-            await get().addToWishlist(productId);
-          }
-          
-          // Clear local wishlist after sync
-          set({ wishlist: [] });
-          console.log("✅ Local wishlist synced to backend");
-        } catch (error) {
-          console.error("Failed to sync local wishlist:", error);
-        }
-      },
-
       /* ── Helper methods ── */
       cartCount: () => {
         return get().items.reduce((sum, item) => sum + item.quantity, 0);
@@ -375,7 +489,7 @@ const useCartStore = create(
       cartSubtotal: () => {
         return get().items.reduce((sum, item) => {
           const price = item.discountedPrice || item.price;
-          return sum + (price * item.quantity);
+          return sum + price * item.quantity;
         }, 0);
       },
 
@@ -384,7 +498,7 @@ const useCartStore = create(
       },
 
       clearError: () => set({ error: null }),
-      
+
       resetCart: () => {
         console.log("🔄 Resetting cart store");
         set({
@@ -397,48 +511,40 @@ const useCartStore = create(
           loading: false,
           error: null,
           isInitialized: false,
-          syncInProgress: false
+          syncInProgress: false,
         });
       },
 
-      /* ── Full initialization (call after login) ── */
+      /* ── Full initialization ── */
       initialize: async () => {
         if (!isUserLoggedIn()) {
           console.log("User not logged in, skipping initialization");
           return;
         }
-        
+
         console.log("🚀 Initializing cart and wishlist...");
         set({ loading: true, syncInProgress: true });
-        
+
         try {
-          // First, sync local data to backend
           await get().syncLocalCart();
           await get().syncLocalWishlist();
-          
-          // Then fetch fresh data from backend
-          await Promise.all([
-            get().initCart(),
-            get().fetchWishlist()
-          ]);
-          
+          await Promise.all([get().initCart(), get().fetchWishlist()]);
           console.log("✅ Cart and wishlist initialized successfully");
         } catch (error) {
           console.error("❌ Failed to initialize:", error);
         } finally {
           set({ loading: false, syncInProgress: false, isInitialized: true });
         }
-      }
+      },
     }),
     {
       name: "luxuria_cart",
       partialize: (state) => ({
-        // Only persist these fields for offline support
         items: state.items,
         wishlist: state.wishlist,
         coupon: state.coupon,
-        couponDiscount: state.couponDiscount
-      })
+        couponDiscount: state.couponDiscount,
+      }),
     }
   )
 );

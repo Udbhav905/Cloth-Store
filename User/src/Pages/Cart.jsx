@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import useCartStore from "../store/Usecartstore";
 import styles from "./styles/Cart.module.css";
@@ -19,7 +19,7 @@ function CartItem({ item, index, onRemove, onQtyChange }) {
 
   const handleRemove = () => {
     setRemoving(true);
-    setTimeout(() => onRemove(item.productId, item.size, item.color), 380);
+    setTimeout(() => onRemove(item._id), 380);
   };
 
   return (
@@ -27,7 +27,6 @@ function CartItem({ item, index, onRemove, onQtyChange }) {
       className={`${styles.item} ${removing ? styles.itemRemoving : ""}`}
       style={{ animationDelay: `${index * 0.07}s` }}
     >
-      {/* Image */}
       <Link to={`/products/${item.productId}`} className={styles.itemImgLink}>
         <div className={styles.itemImgWrap}>
           {!imgLoaded && <div className={styles.imgSkeleton} />}
@@ -47,7 +46,6 @@ function CartItem({ item, index, onRemove, onQtyChange }) {
         </div>
       </Link>
 
-      {/* Info */}
       <div className={styles.itemInfo}>
         <div className={styles.itemTop}>
           <div>
@@ -81,11 +79,10 @@ function CartItem({ item, index, onRemove, onQtyChange }) {
         </div>
 
         <div className={styles.itemBottom}>
-          {/* Qty stepper */}
           <div className={styles.qtyBox}>
             <button
               className={styles.qtyBtn}
-              onClick={() => onQtyChange(item.productId, item.size, item.color, item.quantity - 1)}
+              onClick={() => onQtyChange(item._id, item.quantity - 1)}
               disabled={item.quantity <= 1}
               aria-label="Decrease quantity"
             >
@@ -94,14 +91,13 @@ function CartItem({ item, index, onRemove, onQtyChange }) {
             <span className={styles.qtyNum}>{item.quantity}</span>
             <button
               className={styles.qtyBtn}
-              onClick={() => onQtyChange(item.productId, item.size, item.color, item.quantity + 1)}
+              onClick={() => onQtyChange(item._id, item.quantity + 1)}
               aria-label="Increase quantity"
             >
               +
             </button>
           </div>
 
-          {/* Price */}
           <div className={styles.itemPriceBlock}>
             <span className={styles.itemPrice}>{fmtPrice(item.price * item.quantity)}</span>
             {item.quantity > 1 && (
@@ -116,7 +112,7 @@ function CartItem({ item, index, onRemove, onQtyChange }) {
 
 /* ── Empty state ── */
 function EmptyCart() {
-    const nav=useNavigate()
+  const nav = useNavigate();
   return (
     <div className={styles.empty}>
       <div className={styles.emptyIcon}>
@@ -132,8 +128,8 @@ function EmptyCart() {
       <p className={styles.emptyText}>
         Discover our curated collection and add pieces that speak to you.
       </p>
-      <span  className={styles.emptyBtn}>
-       <span> <Link to={'/collections'}>Explore Collections</Link></span>
+      <span className={styles.emptyBtn}>
+        <span> <Link to={'/collections'}>Explore Collections</Link></span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
           <path d="M5 12h14M12 5l7 7-7 7" />
         </svg>
@@ -143,15 +139,14 @@ function EmptyCart() {
 }
 
 /* ── Promo code input ── */
-function PromoCode({ onApply, applied, discount }) {
+function PromoCode({ onApply, applied, discount, code: appliedCode }) {
   const [code, setCode] = useState("");
-  const [status, setStatus] = useState("idle"); // idle | loading | success | error
+  const [status, setStatus] = useState("idle");
 
   const handleApply = () => {
     if (!code.trim()) return;
     setStatus("loading");
     setTimeout(() => {
-      // Mock: "LUXURIA10" = 10% off
       if (code.trim().toUpperCase() === "LUXURIA10") {
         setStatus("success");
         onApply(10, code.trim().toUpperCase());
@@ -170,7 +165,7 @@ function PromoCode({ onApply, applied, discount }) {
         </svg>
         <span>
           <strong>{discount}% off</strong> applied with code{" "}
-          <em>{code || "LUXURIA10"}</em>
+          <em>{appliedCode || "LUXURIA10"}</em>
         </span>
       </div>
     );
@@ -210,23 +205,32 @@ function PromoCode({ onApply, applied, discount }) {
 ════════════════════════════════════ */
 export default function Cart() {
   const navigate = useNavigate();
-  const { items, removeFromCart, clearCart, addToCart } = useCartStore();
+  const { items, removeFromCart, clearCart, updateCartItemQuantity } = useCartStore();
   const cart = items ?? [];
 
   const [promoDiscount, setPromoDiscount] = useState(0);
-  const [promoApplied, setPromoApplied]   = useState(false);
-  const [clearing, setClearing]           = useState(false);
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [clearing, setClearing] = useState(false);
 
-  /* ── Totals ── */
-  const subtotal   = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const itemCount  = cart.reduce((sum, i) => sum + i.quantity, 0);
-  const discount   = promoDiscount > 0 ? Math.round(subtotal * promoDiscount / 100) : 0;
-  const shipping   = subtotal > 999 ? 0 : 99;
-  const total      = subtotal - discount + shipping;
+  /* ── Calculate GST based on subtotal after discount ── */
+  const subtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const itemCount = cart.reduce((sum, i) => sum + i.quantity, 0);
+  const discountAmount = promoDiscount > 0 ? Math.round(subtotal * promoDiscount / 100) : 0;
+  const afterDiscount = subtotal - discountAmount;
+  
+  // GST calculation: 5% if total < 1000, else 12%
+  const gstRate = afterDiscount < 1000 ? 0.05 : 0.12;
+  const gst = Math.round(afterDiscount * gstRate);
+  
+  // No shipping charges
+  const shipping = 0;
+  const total = afterDiscount + gst;
 
   const handleApplyPromo = (pct, code) => {
     setPromoDiscount(pct);
     setPromoApplied(true);
+    setPromoCode(code);
   };
 
   const handleClearCart = () => {
@@ -235,25 +239,35 @@ export default function Cart() {
     setTimeout(() => { clearCart(); setClearing(false); }, 400);
   };
 
-  const handleQtyChange = (productId, size, color, newQty) => {
+  const handleQtyChange = async (itemId, newQty) => {
     if (newQty < 1) return;
-    // Store has no updateQuantity — patch via set on items directly
-    useCartStore.setState(state => ({
-      items: state.items.map(i =>
-        i.productId === productId && i.size === size && i.color === color
-          ? { ...i, quantity: newQty }
-          : i
-      )
-    }));
+    await updateCartItemQuantity(itemId, newQty);
   };
 
-  const handleRemove = (productId, size, color) => {
-    removeFromCart(productId, size, color);
+  const handleRemove = async (itemId) => {
+    await removeFromCart(itemId);
+  };
+
+  // Save order summary to sessionStorage when navigating to checkout
+  const handleCheckout = () => {
+    const orderSummary = {
+      items: cart,
+      subtotal,
+      discountAmount,
+      gst,
+      gstRate,
+      total,
+      promoApplied,
+      promoDiscount,
+      promoCode,
+      afterDiscount
+    };
+    sessionStorage.setItem("checkoutOrderSummary", JSON.stringify(orderSummary));
+    navigate("/checkout");
   };
 
   return (
     <div className={styles.page}>
-
       {/* ── Header ── */}
       <div className={styles.header}>
         <div className={styles.headerInner}>
@@ -304,10 +318,8 @@ export default function Cart() {
         <EmptyCart />
       ) : (
         <div className={styles.body}>
-
           {/* Left — items */}
           <div className={styles.itemsCol}>
-
             {/* Column headers */}
             <div className={styles.colHeaders}>
               <span>Product</span>
@@ -319,7 +331,7 @@ export default function Cart() {
             <div className={styles.itemList}>
               {cart.map((item, i) => (
                 <CartItem
-                  key={`${item.productId}-${item.size}-${item.color}`}
+                  key={item._id || `${item.productId}-${item.size}-${item.color}`}
                   item={item}
                   index={i}
                   onRemove={handleRemove}
@@ -330,7 +342,7 @@ export default function Cart() {
 
             {/* Continue shopping */}
             <div className={styles.continueShopping}>
-              <span onClick={()=>navigate(-1)} className={styles.continueLink}>
+              <span onClick={() => navigate(-1)} className={styles.continueLink}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M19 12H5M12 19l-7-7 7-7" />
                 </svg>
@@ -342,7 +354,6 @@ export default function Cart() {
           {/* Right — summary */}
           <div className={styles.summaryCol}>
             <div className={styles.summaryCard}>
-
               <h2 className={styles.summaryTitle}>Order Summary</h2>
 
               {/* Line items */}
@@ -355,25 +366,24 @@ export default function Cart() {
                   <span className={styles.summaryVal}>{fmtPrice(subtotal)}</span>
                 </div>
 
-                {discount > 0 && (
+                {discountAmount > 0 && (
                   <div className={`${styles.summaryLine} ${styles.summaryDiscount}`}>
-                    <span className={styles.summaryKey}>Promo Discount</span>
-                    <span className={styles.summaryVal}>− {fmtPrice(discount)}</span>
+                    <span className={styles.summaryKey}>Promo Discount ({promoDiscount}%)</span>
+                    <span className={styles.summaryVal}>− {fmtPrice(discountAmount)}</span>
                   </div>
                 )}
 
                 <div className={styles.summaryLine}>
-                  <span className={styles.summaryKey}>Shipping</span>
-                  <span className={`${styles.summaryVal} ${shipping === 0 ? styles.summaryFree : ""}`}>
-                    {shipping === 0 ? "Free" : fmtPrice(shipping)}
-                  </span>
+                  <span className={styles.summaryKey}>GST ({Math.round(gstRate * 100)}%)</span>
+                  <span className={styles.summaryVal}>{fmtPrice(gst)}</span>
                 </div>
 
-                {shipping > 0 && (
-                  <p className={styles.freeShippingNote}>
-                    Add {fmtPrice(999 - subtotal)} more for free shipping
-                  </p>
-                )}
+                <div className={styles.summaryLine}>
+                  <span className={styles.summaryKey}>Shipping</span>
+                  <span className={`${styles.summaryVal} ${styles.summaryFree}`}>
+                    Free
+                  </span>
+                </div>
               </div>
 
               <div className={styles.summaryRule} />
@@ -398,6 +408,7 @@ export default function Cart() {
                   onApply={handleApplyPromo}
                   applied={promoApplied}
                   discount={promoDiscount}
+                  code={promoCode}
                 />
               </div>
 
@@ -406,7 +417,7 @@ export default function Cart() {
               {/* Checkout CTA */}
               <button
                 className={styles.checkoutBtn}
-                onClick={() => navigate("/checkout")}
+                onClick={handleCheckout}
               >
                 <span>Proceed to Checkout</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -418,8 +429,8 @@ export default function Cart() {
               <div className={styles.trustRow}>
                 {[
                   { icon: "🔒", text: "Secure Checkout" },
-                  { icon: "↩️",  text: "Easy Returns"    },
-                  { icon: "🚚", text: "Fast Delivery"   },
+                  { icon: "↩️", text: "Easy Returns" },
+                  { icon: "🚚", text: "Fast Delivery" },
                 ].map(t => (
                   <div key={t.text} className={styles.trust}>
                     <span>{t.icon}</span>
