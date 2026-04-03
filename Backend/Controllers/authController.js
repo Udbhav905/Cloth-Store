@@ -1,5 +1,8 @@
 import User from "../model/User.js";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import PasswordReset from "../model/PasswordReset.js";
+import { sendPasswordResetEmail, sendPasswordChangedConfirmation } from "../utils/emailService.js";
 
 /* ─────────────────────────────────────────────
    Helper — generate a simple JWT token
@@ -540,6 +543,144 @@ export const getUserOrders = async (req, res) => {
     return res.json([]);
   } catch (error) {
     console.error("Get user orders error:", error);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Please provide your email address" });
+    }
+
+    const user = await User.findOne({ email });
+    
+    // For security, always return success even if user doesn't exist
+    if (!user) {
+      return res.status(200).json({ 
+        message: "If an account exists with that email, you will receive reset instructions." 
+      });
+    }
+
+    // Check if user is blocked
+    if (user.isBlocked) {
+      return res.status(403).json({ message: "Your account has been blocked. Contact support." });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+
+    // Save to database
+    await PasswordReset.create({
+      userId: user._id,
+      token: hashedToken,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+    });
+
+    // Send email
+    await sendPasswordResetEmail(email, resetToken, user.name);
+
+    return res.status(200).json({
+      message: "Password reset instructions have been sent to your email.",
+    });
+
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: "Please provide token and new password" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
+
+    // Hash the provided token
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    // Find valid reset request
+    const resetRequest = await PasswordReset.findOne({
+      token: hashedToken,
+      used: false,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!resetRequest) {
+      return res.status(400).json({ message: "Invalid or expired reset token" });
+    }
+
+    // Get user
+    const user = await User.findById(resetRequest.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    // Mark token as used
+    resetRequest.used = true;
+    await resetRequest.save();
+
+    // Send confirmation email
+    await sendPasswordChangedConfirmation(user.email, user.name);
+
+    return res.status(200).json({
+      message: "Password reset successfully! You can now login with your new password.",
+    });
+
+  } catch (error) {
+    console.error("Reset password error:", error);
+    return res.status(500).json({ message: error.message });
+  }
+};
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Please provide current and new password" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "New password must be at least 6 characters" });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Verify current password
+    const isPasswordMatch = await user.comparePassword(currentPassword);
+    if (!isPasswordMatch) {
+      return res.status(401).json({ message: "Current password is incorrect" });
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    // Send confirmation email
+    await sendPasswordChangedConfirmation(user.email, user.name);
+
+    return res.status(200).json({
+      message: "Password changed successfully!",
+    });
+
+  } catch (error) {
+    console.error("Change password error:", error);
     return res.status(500).json({ message: error.message });
   }
 };

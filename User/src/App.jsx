@@ -33,6 +33,8 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import MyOrders from "./Pages/MyOrders";
 import ProtectedRoute from "./Components/ProtectedRoute";
+import ForgotPasswordModal from "./Components/ForgotPasswordModal/ForgotPasswordModal";
+import ResetPassword from "./Components/ResetPassword/ResetPassword";
 
 // IMPORTANT: create stripe promise OUTSIDE component
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
@@ -65,47 +67,49 @@ function PageSkeleton() {
 }
 
 // ── Smooth Scroll Wrapper with Optimized Settings for Quick Clicks ──────────
+// ── Smooth Scroll Wrapper with Optimized Settings for Quick Clicks ──────────
 function ScrollProvider({ children }) {
   const { pathname } = useLocation();
 
   useEffect(() => {
     // Initialize Lenis with OPTIMIZED settings for better click responsiveness
     const lenis = new Lenis({
-      duration: 0.4, // Reduced from 1.2 to 0.8 for faster response
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -8 * t)), // Faster easing
+      duration: 0.4,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -8 * t)),
       direction: "vertical",
       gestureDirection: "vertical",
       smooth: true,
       smoothTouch: false,
-      touchMultiplier: 0.9, // Reduced for better touch response
-      wheelMultiplier: 0.5, // Reduced for better wheel response
+      touchMultiplier: 0.9,
+      wheelMultiplier: 0.5,
       infinite: false,
       orientation: "vertical",
-      // IMPORTANT: These settings prevent scroll from blocking clicks
       syncTouch: true,
     });
 
+    // Expose lenis globally so other components can control it
+    window.lenis = lenis;
+
     // RAF loop for smooth scroll
+    let rafId;
     function raf(time) {
       lenis.raf(time);
-      requestAnimationFrame(raf);
+      rafId = requestAnimationFrame(raf);
     }
+    rafId = requestAnimationFrame(raf);
 
-    requestAnimationFrame(raf);
-
-    // Scroll to top on route change with faster animation
+    // Scroll to top on route change
     setTimeout(() => {
       lenis.scrollTo(0, { 
         immediate: false,
-        duration: 0.6, // Faster scroll to top
+        duration: 0.6,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -8 * t))
       });
-    }, 50); // Reduced delay from 100 to 50
-
-    // Don't stop scroll on any elements - let clicks work normally
-    // This ensures all click interactions are responsive
+    }, 50);
     
     return () => {
+      cancelAnimationFrame(rafId);
+      window.lenis = null;
       lenis.destroy();
     };
   }, [pathname]);
@@ -267,7 +271,8 @@ const App = () => {
 
                 {/* Success */}
                 <Route path="/order-success" element={<OrderSuccess />} />
-                
+                <Route path="/forgot-password" element={<ForgotPasswordModal />} />
+<Route path="/reset-password" element={<ResetPassword />} />
                 {/* 404 Fallback Route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

@@ -184,6 +184,16 @@ export default function Orders() {
   const canCancel   = (o) => !["delivered","cancelled","returned","refunded"].includes(o.orderStatus);
   const canAssign   = (o) => ["confirmed","processing"].includes(o.orderStatus);
 
+  // Helper function to get GST percentage
+  const getGSTPercent = (order) => {
+    if (order.gstRate) return Math.round(order.gstRate * 100);
+    if (order.tax && order.subtotal) {
+      const afterDiscount = order.subtotal - (order.discount || 0);
+      if (afterDiscount > 0) return Math.round((order.tax / afterDiscount) * 100);
+    }
+    return 18; // Default fallback
+  };
+
   /* ════ RENDER ════ */
   return (
     <div className={styles.page}>
@@ -294,7 +304,8 @@ export default function Orders() {
             <thead><tr>
               <th>Order</th><th>Customer</th><th>Items</th><th>Amount</th>
               <th>Payment</th><th>Status</th><th>Courier</th><th>Date</th><th>Actions</th>
-            </tr></thead>
+            </tr>
+            </thead>
             <tbody>
               {orders.map(order => {
                 const sc = STATUS_CONFIG[order.orderStatus]    || STATUS_CONFIG.pending;
@@ -419,24 +430,29 @@ export default function Orders() {
                         {item.image ? <img src={item.image} alt={item.productName}/> : <span>◆</span>}
                       </div>
                       <div className={styles.itemInfo}>
-                        <p className={styles.itemName}>{item.productName}</p>
-                        <p className={styles.itemMeta}>{[item.variant?.size,item.variant?.color,item.variant?.sku].filter(Boolean).join(" · ")}</p>
+                        <p className={styles.itemName}>{item.productName || item.name}</p>
+                        <p className={styles.itemMeta}>{[item.variant?.size || item.size, item.variant?.color || item.color, item.variant?.sku || item.sku].filter(Boolean).join(" · ")}</p>
                         <p className={styles.itemQty}>Qty: {item.quantity}</p>
                       </div>
-                      <div className={styles.itemPrice}><span>{fmt(item.totalPrice)}</span></div>
+                      <div className={styles.itemPrice}><span>{fmt(item.totalPrice || item.price * item.quantity)}</span></div>
                     </div>
                   ))}
                 </div>
               </section>
 
-              {/* Price */}
+              {/* Price Breakdown - FIXED with dynamic GST */}
               <section className={styles.panelSection}>
                 <h3 className={styles.sectionTitle}>Price Breakdown</h3>
                 <div className={styles.priceTable}>
                   <div className={styles.priceLine}><span>Subtotal</span><span>{fmt(selected.subtotal)}</span></div>
-                  {selected.discount>0 && <div className={styles.priceLine}><span>Discount</span><span className={styles.discountVal}>−{fmt(selected.discount)}</span></div>}
-                  <div className={styles.priceLine}><span>Shipping</span><span>{selected.shippingCharge===0?"Free":fmt(selected.shippingCharge)}</span></div>
-                  <div className={styles.priceLine}><span>GST (18%)</span><span>{fmt(selected.tax)}</span></div>
+                  {selected.discount > 0 && (
+                    <div className={styles.priceLine}><span>Discount</span><span className={styles.discountVal}>−{fmt(selected.discount)}</span></div>
+                  )}
+                  <div className={styles.priceLine}><span>Shipping</span><span>{selected.shippingCharge === 0 ? "Free" : fmt(selected.shippingCharge)}</span></div>
+                  <div className={styles.priceLine}>
+                    <span>GST ({selected.gstRate ? Math.round(selected.gstRate * 100) : (selected.tax && selected.subtotal ? Math.round((selected.tax / (selected.subtotal - (selected.discount || 0))) * 100) : 18)}%)</span>
+                    <span>{fmt(selected.gst || selected.tax)}</span>
+                  </div>
                   <div className={`${styles.priceLine} ${styles.priceTotal}`}><span>Total</span><span>{fmt(selected.totalAmount)}</span></div>
                 </div>
               </section>
