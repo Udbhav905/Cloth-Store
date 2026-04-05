@@ -1,11 +1,7 @@
-/* ═══════════════════════════════════════════════════════════
-   Orders.module.css — Luxuria Admin · Order Management
-   Dark luxury, gold accents, professional data density
-═══════════════════════════════════════════════════════════ */
+
 
 @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Jost:wght@200;300;400;500&family=JetBrains+Mono:wght@400;500&display=swap");
 
-/* ── Tokens ───────────────────────────────────────────── */
 .page {
   --gold:       #c9a84c;
   --gold-dim:   rgba(201,168,76,0.14);
@@ -35,9 +31,24 @@
   position: relative;
 }
 
-/* ════════════════════════════════════════════════════════
-   TOAST
-════════════════════════════════════════════════════════ */
+page {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  background: #0a0a0a;
+  color: #f5f0e8;
+  min-height: 100vh;
+  overflow-x: hidden;
+
+
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 100px #1e1e1e inset !important;
+  -webkit-text-fill-color: #f5f0e8 !important;
+  caret-color: #f5f0e8;
+}
+}
+
 .toast {
   position: fixed;
   top: 24px;
@@ -70,9 +81,7 @@
   to   { opacity:1; transform: none; }
 }
 
-/* ════════════════════════════════════════════════════════
-   PAGE HEADER
-════════════════════════════════════════════════════════ */
+
 .pageHeader {
   display: flex;
   align-items: flex-start;
@@ -976,7 +985,14 @@
 .modalSubtitle strong { color: var(--text); }
 
 /* Delivery partner list */
-.partnerList { padding: 12px 24px 0; display: flex; flex-direction: column; gap: 8px; }
+.partnerList {
+  padding: 12px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
 
 .partnerCard {
   display: flex;

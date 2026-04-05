@@ -503,6 +503,65 @@ export const adminAssignDelivery = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// @desc    Assign delivery partner to order
+// @route   PUT /api/orders/admin/:orderId/assign
+// @access  Private/Admin
+export const assignDeliveryPartner = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { courierName, trackingNumber, orderStatus, note, partnerId } = req.body;
+
+    // Find the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Update order
+    order.courierName = courierName;
+    order.trackingNumber = trackingNumber;
+    order.orderStatus = orderStatus || 'shipped';
+    
+    // Add to status history
+    order.statusHistory.push({
+      status: orderStatus || 'shipped',
+      note: note || `Assigned to ${courierName}`,
+      changedAt: new Date()
+    });
+
+    await order.save();
+
+    // ✅ IMPORTANT: Update the delivery partner's assignedOrders
+    if (partnerId) {
+      const deliveryPartner = await DeliveryPartner.findById(partnerId);
+      if (deliveryPartner) {
+        // Add order to partner's assignedOrders
+        deliveryPartner.assignedOrders.push({
+          orderId: order._id,
+          assignedAt: new Date(),
+          status: 'assigned'
+        });
+        await deliveryPartner.save();
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Delivery partner assigned successfully',
+      data: order
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
 
 // @desc    Save / update admin note on order
 // @route   PUT /api/orders/admin/:id/note

@@ -1,0 +1,1151 @@
+/* Analytics.module.css - FIXED & COMPLETE */
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600&family=Montserrat:wght@300;400;500;600;700&display=swap");
+
+:root {
+  --primary: #c9a84c;
+  --primary-dark: #a67c2a;
+  --primary-light: #e8d5a8;
+  --dark-bg: #0a0a0a;
+  --darker-bg: #0d0d0e;
+  --card-bg: #1a1a1e;
+  --border: rgba(201, 168, 76, 0.15);
+  --border-light: rgba(201, 168, 76, 0.08);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --success: #4ade80;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --purple: #8b5cf6;
+  --pink: #ec4899;
+  --cyan: #06b6d4;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.analytics {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--dark-bg) 0%, #0f0f12 100%);
+  padding: 2rem;
+  color: var(--text-primary);
+  font-family: "Montserrat", sans-serif;
+  overflow-x: hidden;
+}
+
+/* ─────────────────────────────────────────
+   HEADER
+   ───────────────────────────────────────── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3rem;
+  animation: slideInDown 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.headerContent h1 {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 2.8rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+
+.titleGradient {
+  background: linear-gradient(135deg, var(--primary), #ffe066, var(--primary));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shineText 4s linear infinite;
+}
+
+@keyframes shineText {
+  to {
+    background-position: 200% center;
+  }
+}
+
+.headerContent p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.headerControls {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.reportBtn {
+  background: rgba(26, 26, 30, 0.8);
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 15px rgba(201, 168, 76, 0.15);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.85rem;
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
+}
+
+.reportBtn:hover {
+  background: var(--primary);
+  color: var(--dark-bg);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(201, 168, 76, 0.4);
+}
+
+.reportIcon {
+  font-size: 1.1rem;
+}
+
+.select {
+  background: rgba(26, 26, 30, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  color: var(--primary);
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 150px;
+}
+
+.select:hover {
+  border-color: var(--primary);
+  background: rgba(201, 168, 76, 0.05);
+  box-shadow: 0 4px 15px rgba(201, 168, 76, 0.1);
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.2);
+}
+
+/* ─────────────────────────────────────────
+   TABS
+   ───────────────────────────────────────── */
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 3rem;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s backwards;
+  padding-bottom: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: 1rem 1.5rem;
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s ease;
+  position: relative;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: var(--primary);
+}
+
+.tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.tab.active::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary), transparent);
+  animation: slideRight 0.4s ease;
+}
+
+/* ─────────────────────────────────────────
+   CONTENT AREA
+   ───────────────────────────────────────── */
+.content {
+  animation: fadeIn 0.5s ease 0.2s backwards;
+}
+
+.noData {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+/* ─────────────────────────────────────────
+   KPI GRID
+   ───────────────────────────────────────── */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.kpiCard {
+  background: linear-gradient(135deg, rgba(30, 30, 35, 0.8) 0%, rgba(20, 20, 22, 0.9) 100%);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  padding: 2.5rem 2rem;
+  border-radius: 16px;
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  animation: popIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.kpiCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(201, 168, 76, 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: 0;
+}
+
+.kpiCard:hover {
+  border-color: var(--primary);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 0 20px rgba(201, 168, 76, 0.15);
+}
+
+.kpiCard:hover::before {
+  opacity: 1;
+}
+
+.kpiIcon {
+  font-size: 3rem;
+  line-height: 1;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+  z-index: 1;
+  transition: transform 0.5s ease;
+  flex-shrink: 0;
+}
+
+.kpiCard:hover .kpiIcon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.kpiContent {
+  flex: 1;
+  z-index: 1;
+  min-width: 0;
+}
+
+.kpiLabel {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.kpiValue {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  font-family: "Montserrat", sans-serif;
+  word-break: break-word;
+}
+
+.kpiChange {
+  display: inline-block;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.kpiChange.positive {
+  background: rgba(74, 222, 128, 0.15);
+  color: var(--success);
+}
+
+.kpiChange.negative {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+}
+
+/* ─────────────────────────────────────────
+   CHARTS ROW
+   ───────────────────────────────────────── */
+.chartsRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.revenueCharts {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.chartCard {
+  background: linear-gradient(135deg, rgba(30, 30, 35, 0.7) 0%, rgba(20, 20, 22, 0.8) 100%);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2rem;
+  transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: slideInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.chartCard:hover {
+  border-color: var(--primary);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3), 0 0 15px rgba(201, 168, 76, 0.1);
+  transform: translateY(-4px);
+}
+
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.chartHeader h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.badge {
+  background: rgba(201, 168, 76, 0.1);
+  border: 1px solid var(--border);
+  color: var(--primary);
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.metricToggle {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.4rem;
+  border-radius: 6px;
+}
+
+.metricBtn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+}
+
+.metricBtn:hover {
+  color: var(--primary);
+}
+
+.metricBtn.active {
+  background: var(--primary);
+  color: var(--dark-bg);
+}
+
+/* ─────────────────────────────────────────
+   PRODUCTS GRID
+   ───────────────────────────────────────── */
+.productsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 2rem;
+  animation: fadeIn 0.6s ease 0.2s backwards;
+}
+
+.productCard {
+  background: linear-gradient(135deg, rgba(30, 30, 35, 0.8) 0%, rgba(20, 20, 22, 0.9) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.productCard.delay0 {
+  animation: popIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+}
+
+.productCard.delay1 {
+  animation: popIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+}
+
+.productCard.delay2 {
+  animation: popIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+}
+
+.productCard:hover {
+  border-color: var(--primary);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), 0 0 20px rgba(201, 168, 76, 0.2);
+  z-index: 10;
+}
+
+.productImageWrapper {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.productImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.productCard:hover .productImage {
+  transform: scale(1.08);
+}
+
+.rankBadge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: var(--dark-bg);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 12px rgba(201, 168, 76, 0.3);
+}
+
+.productInfo {
+  padding: 1.5rem;
+}
+
+.productInfo h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.productPrice {
+  color: var(--primary);
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.productStats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.stockBar {
+  width: 100%;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.stockFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--primary-light));
+  border-radius: 3px;
+  animation: growWidth 0.8s ease;
+  box-shadow: 0 0 8px rgba(201, 168, 76, 0.4);
+}
+
+.stockText {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* ─────────────────────────────────────────
+   STATS GRID
+   ───────────────────────────────────────── */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.statBox {
+  background: linear-gradient(135deg, var(--card-bg) 0%, rgba(26, 26, 30, 0.6) 100%);
+  border: 1px solid var(--border);
+  padding: 2rem;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: all 0.4s ease;
+  animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.statBox:hover {
+  border-color: var(--primary);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(201, 168, 76, 0.1);
+}
+
+.statLabel {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.statValue {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1;
+  word-break: break-word;
+}
+
+.statDetail {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* ─────────────────────────────────────────
+   STATUS TIMELINE
+   ───────────────────────────────────────── */
+.statusTimeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.statusItem {
+  animation: slideInUp 0.6s ease backwards;
+}
+
+.statusHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.statusLabel {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.statusCount {
+  background: rgba(201, 168, 76, 0.1);
+  color: var(--primary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.statusBar {
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.statusBarFill {
+  height: 100%;
+  border-radius: 4px;
+  animation: growWidth 0.8s ease;
+  box-shadow: 0 0 12px currentColor;
+  opacity: 0.9;
+}
+
+/* ─────────────────────────────────────────
+   LOADING & ERROR
+   ───────────────────────────────────────── */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 2rem;
+  animation: fadeIn 0.5s ease;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.errorContainer {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  color: var(--danger);
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.retryBtn {
+  background: var(--danger);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+}
+
+.retryBtn:hover {
+  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* ─────────────────────────────────────────
+   ANIMATIONS
+   ───────────────────────────────────────── */
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideRight {
+  from {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  to {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes growWidth {
+  from {
+    width: 0;
+  }
+}
+
+/* ─────────────────────────────────────────
+   RESPONSIVE DESIGN
+   ───────────────────────────────────────── */
+
+/* Large Tablets & Small Desktops */
+@media (max-width: 1200px) {
+  .analytics {
+    padding: 1.75rem;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .headerContent h1 {
+    font-size: 2.2rem;
+  }
+
+  .kpiGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
+  .chartsRow {
+    grid-template-columns: 1fr;
+  }
+
+  .revenueCharts {
+    grid-template-columns: 1fr;
+  }
+
+  .productsGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+/* Tablets */
+@media (max-width: 768px) {
+  .analytics {
+    padding: 1rem;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+  }
+
+  .headerContent {
+    width: 100%;
+  }
+
+  .headerContent h1 {
+    font-size: 1.75rem;
+  }
+
+  .headerContent p {
+    font-size: 0.85rem;
+  }
+
+  .headerControls {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .reportBtn {
+    flex: 1;
+    min-width: 150px;
+    padding: 0.65rem 1rem;
+    font-size: 0.75rem;
+  }
+
+  .select {
+    flex: 1;
+    min-width: 130px;
+  }
+
+  .tabs {
+    gap: 0;
+    margin-bottom: 2rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-bottom-width: 1px;
+  }
+
+  .tab {
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+    min-width: fit-content;
+  }
+
+  .kpiGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .kpiCard {
+    padding: 1.5rem;
+    gap: 1.25rem;
+  }
+
+  .kpiIcon {
+    font-size: 2.5rem;
+  }
+
+  .kpiValue {
+    font-size: 1.5rem;
+  }
+
+  .chartCard {
+    padding: 1.25rem;
+  }
+
+  .chartsRow {
+    gap: 1.5rem;
+  }
+
+  .revenueCharts {
+    gap: 1.5rem;
+  }
+
+  .chartHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .chartHeader h3 {
+    font-size: 1.1rem;
+  }
+
+  .productsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+
+  .productCard {
+    border-radius: 12px;
+  }
+
+  .productImageWrapper {
+    height: 160px;
+  }
+
+  .productInfo {
+    padding: 1rem;
+  }
+
+  .productInfo h4 {
+    font-size: 0.85rem;
+  }
+
+  .productPrice {
+    font-size: 1rem;
+  }
+
+  .productStats {
+    font-size: 0.75rem;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+
+  .statBox {
+    padding: 1.5rem;
+  }
+
+  .statValue {
+    font-size: 1.5rem;
+  }
+
+  .statusTimeline {
+    gap: 1.25rem;
+  }
+
+  .statusBar {
+    height: 6px;
+  }
+}
+
+/* Mobile Phones */
+@media (max-width: 480px) {
+  .analytics {
+    padding: 0.75rem;
+  }
+
+  .header {
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .headerContent h1 {
+    font-size: 1.3rem;
+    letter-spacing: 0.08em;
+  }
+
+  .headerContent p {
+    font-size: 0.75rem;
+  }
+
+  .headerControls {
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .reportBtn {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.7rem;
+    gap: 0.25rem;
+  }
+
+  .reportIcon {
+    font-size: 0.9rem;
+  }
+
+  .select {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.8rem;
+    min-width: 110px;
+  }
+
+  .tabs {
+    gap: 0;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab {
+    padding: 0.6rem 0.75rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.02em;
+    min-width: fit-content;
+  }
+
+  .kpiGrid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+
+  .kpiCard {
+    flex-direction: column;
+    padding: 1rem;
+    gap: 0.75rem;
+    border-radius: 12px;
+  }
+
+  .kpiIcon {
+    font-size: 2rem;
+  }
+
+  .kpiValue {
+    font-size: 1.25rem;
+  }
+
+  .kpiLabel {
+    font-size: 0.7rem;
+  }
+
+  .kpiChange {
+    font-size: 0.7rem;
+  }
+
+  .chartCard {
+    padding: 0.9rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+  }
+
+  .chartHeader h3 {
+    font-size: 1rem;
+  }
+
+  .badge {
+    font-size: 0.65rem;
+    padding: 0.3rem 0.6rem;
+  }
+
+  .productsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .productImageWrapper {
+    height: 140px;
+  }
+
+  .productInfo {
+    padding: 0.75rem;
+  }
+
+  .productInfo h4 {
+    font-size: 0.75rem;
+  }
+
+  .productPrice {
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .productStats {
+    font-size: 0.65rem;
+    gap: 0.5rem;
+  }
+
+  .rankBadge {
+    font-size: 0.65rem;
+    padding: 0.3rem 0.5rem;
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+
+  .stockBar {
+    height: 4px;
+  }
+
+  .stockText {
+    font-size: 0.65rem;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+
+  .statBox {
+    padding: 1rem;
+    gap: 0.5rem;
+  }
+
+  .statLabel {
+    font-size: 0.7rem;
+  }
+
+  .statValue {
+    font-size: 1.25rem;
+  }
+
+  .statDetail {
+    font-size: 0.7rem;
+  }
+
+  .statusTimeline {
+    gap: 1rem;
+  }
+
+  .statusLabel {
+    font-size: 0.8rem;
+  }
+
+  .statusCount {
+    font-size: 0.7rem;
+  }
+}
+
+/* Extra Small */
+@media (max-width: 360px) {
+  .analytics {
+    padding: 0.5rem;
+  }
+
+  .headerContent h1 {
+    font-size: 1.1rem;
+  }
+
+  .tab {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.6rem;
+  }
+
+  .kpiCard {
+    padding: 0.75rem;
+  }
+
+  .productInfo h4 {
+    font-size: 0.7rem;
+  }
+
+  .chartCard {
+    padding: 0.75rem;
+  }
+}

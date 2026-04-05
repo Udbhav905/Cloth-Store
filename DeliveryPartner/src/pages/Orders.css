@@ -1,0 +1,255 @@
+.orders-page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 32px;
+}
+
+.page-header h1 {
+  font-size: 1.8rem;
+  margin-bottom: 8px;
+}
+
+.page-header p {
+  color: var(--gray);
+}
+
+.orders-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+
+.tab {
+  padding: 8px 20px;
+  background: transparent;
+  border: none;
+  color: var(--gray);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.tab.active {
+  color: var(--primary);
+  border-bottom: 2px solid var(--primary);
+}
+
+.orders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 20px;
+}
+
+.order-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.order-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(201, 168, 76, 0.5);
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid var(--border);
+}
+
+.order-number {
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.order-status {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.order-status.assigned {
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--warning);
+}
+
+.order-status.picked {
+  background: rgba(93, 173, 226, 0.2);
+  color: var(--info);
+}
+
+.order-status.delivered {
+  background: rgba(88, 214, 141, 0.2);
+  color: var(--success);
+}
+
+.order-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.info-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.label {
+  color: var(--gray);
+  min-width: 80px;
+  font-size: 0.85rem;
+}
+
+.customer-info, .address-info, .items-info {
+  font-size: 0.85rem;
+}
+
+.address-info p {
+  margin-left: 80px;
+  margin-bottom: 4px;
+  color: var(--light);
+}
+
+.amount {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.order-actions {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.action-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.action-btn.pickup {
+  background: rgba(93, 173, 226, 0.2);
+  color: var(--info);
+}
+
+.action-btn.deliver {
+  background: rgba(88, 214, 141, 0.2);
+  color: var(--success);
+}
+
+.action-btn.details {
+  background: rgba(201, 168, 76, 0.2);
+  color: var(--primary);
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: linear-gradient(135deg, var(--dark) 0%, var(--darker) 100%);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header button {
+  background: none;
+  border: none;
+  color: var(--gray);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.detail-section {
+  margin-bottom: 24px;
+}
+
+.detail-section h4 {
+  color: var(--primary);
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+
+.detail-section p {
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+}
+
+.empty-state h3 {
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  color: var(--gray);
+}

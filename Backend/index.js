@@ -31,6 +31,8 @@ import couponRoutes   from "./Routes/couponRoutes.js";
 import adminRoutes    from "./Routes/Adminroutes.js";
 import paymentRoutes  from "./Routes/paymentRoutes.js";
 import wishlistRoutes  from "./Routes/wishlistRoutes.js";
+import deliveryPartnerRoutes  from "./Routes/deliveryPartnerRoutes.js";
+import deliveryPartnerAuthRoutes  from "./Routes/deliveryPartnerAuthRoutes.js";
 import { errorHandler, notFound } from "./Middleware/errorMiddleware.js";
 
 
@@ -39,7 +41,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 const app        = express();
 
-/* ── Stripe webhook (must be before express.json) ── */
+
 app.use(
   "/api/payments/webhook",
   express.raw({ type: "application/json" }),
@@ -60,6 +62,7 @@ const ALLOWED_ORIGINS = [
   "http://localhost:5173",  /* user app */
   "http://localhost:5174",  /* admin app */
   "http://localhost:5175",  /* fallback if vite picks next port */
+  "http://localhost:5176",  /* fallback if vite picks next port */
   "http://localhost:3000",  /* backend itself */
 ];
 
@@ -92,9 +95,9 @@ app.use("/api/reviews",    reviewRoutes);
 app.use("/api/coupons",    couponRoutes);
 app.use("/api/admin",      adminRoutes);
 app.use("/api/payments",   paymentRoutes);
+app.use('/api/delivery-partners', deliveryPartnerRoutes);
 
-
-
+app.use('/api/delivery-partner', deliveryPartnerAuthRoutes)
 
 /* ── Health check ── */
 app.get("/api/health", (_, res) =>

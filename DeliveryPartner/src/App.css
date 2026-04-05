@@ -1,0 +1,59 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary: #c9a84c;
+  --primary-dark: #b8943a;
+  --secondary: #1a1a2e;
+  --dark: #0f0f13;
+  --darker: #0a0a0b;
+  --light: #f0ece4;
+  --gray: #6b6560;
+  --gray-light: #9b948e;
+  --success: #58d68d;
+  --danger: #ec7063;
+  --warning: #f59e0b;
+  --info: #5dade2;
+  --border: rgba(255, 255, 255, 0.07);
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, var(--dark) 0%, var(--darker) 100%);
+  color: var(--light);
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--border);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark);
+}
+
+button {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+input, select, textarea {
+  transition: all 0.3s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+}

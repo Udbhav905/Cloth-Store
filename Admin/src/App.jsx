@@ -4,11 +4,14 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Login      from "./Components/Login/Login";
 import Dashboard  from "./Components/Dashboard/Dashboard";
 import Categories from "./Components/Categories/Categories";
-import AppLayout  from "./Components/AppLayout/AppLayout";
+import Analytics from "./Components/Analytics/Analytics";
+
 import Products   from "./Components/Products/Products";
 import Orders     from "./Components/Order/Order";
 import { ADMIN_USER_KEY, ADMIN_TOKEN_KEY, clearAdminSession, getAdminToken } from "./utils/Adminapi";
 import "./App.css";
+import AppLayout from "./Components/Applayout/Applayout";
+import DeliveryPartner from "../src/Components/DeliveryPartner/DeliveryPartner";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -74,8 +77,8 @@ function App() {
           <Route path="/categories"  element={<Protected><Categories/></Protected>}/>
           <Route path="/products"    element={<Protected><Products/></Protected>}/>
           <Route path="/orders"      element={<Protected><Orders/></Protected>}/>
-          <Route path="/delivery-partners" element={<Protected><Soon label="Delivery Partners"/></Protected>}/>
-          <Route path="/analytics"   element={<Protected><Soon label="Analytics"/></Protected>}/>
+          <Route path="/delivery-partners" element={<Protected><DeliveryPartner /></Protected>}/>
+          <Route path="/analytics"   element={<Protected><Analytics/></Protected>}/>
           <Route path="/"            element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace/>}/>
           <Route path="*"            element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace/>}/>
         </Routes>

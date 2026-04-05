@@ -1,0 +1,147 @@
+.profile-page {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.profile-container {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  padding: 40px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.profile-avatar {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: var(--dark);
+}
+
+.profile-info h2 {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+}
+
+.profile-info .company {
+  color: var(--primary);
+  margin-bottom: 12px;
+}
+
+.contact-info {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.contact-info span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--gray);
+}
+
+.stats-section, .vehicle-section, .account-section {
+  padding: 30px 40px;
+  border-bottom: 1px solid var(--border);
+}
+
+.stats-section h3, .vehicle-section h3, .account-section h3 {
+  margin-bottom: 20px;
+  color: var(--primary);
+}
+
+.stats-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.stat-profile-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.3s ease;
+}
+
+.stat-profile-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(201, 168, 76, 0.5);
+}
+
+.stat-profile-card .stat-icon {
+  font-size: 1.8rem;
+}
+
+.stat-details h4 {
+  font-size: 1.2rem;
+  margin-bottom: 4px;
+}
+
+.stat-details p {
+  font-size: 0.75rem;
+  color: var(--gray);
+}
+
+.vehicle-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-row {
+  display: flex;
+  gap: 16px;
+}
+
+.detail-row .label {
+  width: 120px;
+  color: var(--gray);
+}
+
+.detail-row span:last-child {
+  color: var(--light);
+  font-weight: 500;
+}
+
+.status-badge-profile {
+  display: inline-block;
+  padding: 8px 20px;
+  border-radius: 30px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.status-badge-profile.active {
+  background: rgba(88, 214, 141, 0.2);
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+
+.note {
+  font-size: 0.75rem;
+  color: var(--gray);
+  font-style: italic;
+}

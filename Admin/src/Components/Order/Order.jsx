@@ -4,14 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { apiFetch, clearAdminSession } from "../../utils/AdminApi";
 import styles from "./Order.module.css";
 
-const DELIVERY_PARTNERS = [
-  { id:"dp1", name:"Rajan Kumar",    phone:"+91 98765 43210", vehicle:"Bike",  zone:"North Mumbai", rating:4.8, active:true  },
-  { id:"dp2", name:"Priya Sharma",   phone:"+91 87654 32109", vehicle:"Bike",  zone:"South Mumbai", rating:4.6, active:true  },
-  { id:"dp3", name:"Anil Mehta",     phone:"+91 76543 21098", vehicle:"Van",   zone:"Thane",        rating:4.9, active:true  },
-  { id:"dp4", name:"Sunita Verma",   phone:"+91 65432 10987", vehicle:"Bike",  zone:"Pune",         rating:4.5, active:false },
-  { id:"dp5", name:"Mohammed Rafiq", phone:"+91 54321 09876", vehicle:"Truck", zone:"Navi Mumbai",  rating:4.7, active:true  },
-];
-
 const STATUS_CONFIG = {
   pending:          { label:"Pending",          color:"#d4ac0d", bg:"rgba(212,172,13,0.12)",  icon:"⏳" },
   confirmed:        { label:"Confirmed",        color:"#5dade2", bg:"rgba(93,173,226,0.12)",  icon:"✓"  },
@@ -69,6 +61,10 @@ export default function Orders() {
   const [statusNote,    setStatusNote]    = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [toast,         setToast]         = useState(null);
+  
+  // NEW: State for delivery partners from API
+  const [deliveryPartners, setDeliveryPartners] = useState([]);
+  const [partnersLoading, setPartnersLoading] = useState(false);
 
   /* ── Auth fail → clear + redirect ── */
   const onAuthFail = useCallback((err) => {
@@ -81,6 +77,34 @@ export default function Orders() {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
   }, []);
+
+  /* ── Fetch delivery partners from API ── */
+  const fetchDeliveryPartners = useCallback(async () => {
+    setPartnersLoading(true);
+    try {
+      const data = await apiFetch('/delivery-partners?status=active', {}, onAuthFail);
+      // Transform API response to match the expected format
+      const partners = (data.data || []).map(partner => ({
+        id: partner._id,
+        name: partner.name,
+        phone: partner.phone,
+        vehicle: partner.vehicleType,
+        zone: `${partner.address.city}, ${partner.address.state}`,
+        rating: partner.rating || 4.5,
+        active: partner.status === 'active',
+        vehicleNumber: partner.vehicleNumber,
+        companyName: partner.companyName,
+        totalDeliveries: partner.totalDeliveries || 0
+      }));
+      setDeliveryPartners(partners);
+    } catch (e) {
+      console.error('Failed to fetch delivery partners:', e);
+      // Fallback to empty array if API fails
+      setDeliveryPartners([]);
+    } finally {
+      setPartnersLoading(false);
+    }
+  }, [onAuthFail]);
 
   /* ── Fetch orders ── */
   const fetchOrders = useCallback(async () => {
@@ -101,7 +125,10 @@ export default function Orders() {
     } finally { setLoading(false); }
   }, [page, filterStatus, filterPay, search, sortBy, onAuthFail]);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => { 
+    fetchOrders(); 
+    fetchDeliveryPartners(); // Fetch delivery partners when component mounts
+  }, [fetchOrders, fetchDeliveryPartners]);
 
   /* ── Fetch detail ── */
   const fetchDetail = useCallback(async (id) => {
@@ -130,25 +157,28 @@ export default function Orders() {
   }, [newStatus, statusModal, statusNote, selected, fetchOrders, onAuthFail, showToast]);
 
   /* ── Assign partner ── */
-  const handleAssign = useCallback(async (orderId, partner) => {
-    setActionLoading(true);
-    try {
-      await apiFetch(`/orders/admin/${orderId}/assign`,
-        { method:"PUT", body:JSON.stringify({
-          courierName:    partner.name,
-          trackingNumber: `TRK${Date.now().toString().slice(-8)}`,
-          orderStatus:    "shipped",
-          note:           `Assigned to ${partner.name} (${partner.zone})`,
-        })},
-        onAuthFail);
-      showToast(`Assigned to ${partner.name}`);
-      setAssignModal(null);
-      fetchOrders();
-      if (selected?._id === orderId) setSelected(null);
-    } catch (e) { if (e.status !== 401 && e.status !== 403) showToast(e.message, "error"); }
-    finally { setActionLoading(false); }
-  }, [selected, fetchOrders, onAuthFail, showToast]);
-
+  /* ── Assign partner ── */
+const handleAssign = useCallback(async (orderId, partner) => {
+  setActionLoading(true);
+  try {
+    await apiFetch(`/orders/admin/${orderId}/assign`,
+      { method:"PUT", body:JSON.stringify({
+        courierName:    partner.name,
+        trackingNumber: `TRK${Date.now().toString().slice(-8)}`,
+        orderStatus:    "shipped",
+        partnerId:      partner.id,  // ✅ IMPORTANT: Send partner ID
+        note:           `Assigned to ${partner.name} (${partner.zone}) - Vehicle: ${partner.vehicle} (${partner.vehicleNumber})`,
+      })},
+      onAuthFail);
+    showToast(`Assigned to ${partner.name}`);
+    setAssignModal(null);
+    fetchOrders();
+    if (selected?._id === orderId) setSelected(null);
+  } catch (e) { 
+    if (e.status !== 401 && e.status !== 403) showToast(e.message, "error"); 
+  }
+  finally { setActionLoading(false); }
+}, [selected, fetchOrders, onAuthFail, showToast]);
   /* ── Cancel ── */
   const handleCancel = useCallback(async () => {
     if (!cancelModal) return;
@@ -193,6 +223,9 @@ export default function Orders() {
     }
     return 18; // Default fallback
   };
+
+  // Filter active partners for assignment
+  const activePartners = deliveryPartners.filter(p => p.active);
 
   /* ════ RENDER ════ */
   return (
@@ -440,7 +473,7 @@ export default function Orders() {
                 </div>
               </section>
 
-              {/* Price Breakdown - FIXED with dynamic GST */}
+              {/* Price Breakdown */}
               <section className={styles.panelSection}>
                 <h3 className={styles.sectionTitle}>Price Breakdown</h3>
                 <div className={styles.priceTable}>
@@ -544,30 +577,48 @@ export default function Orders() {
         </>
       )}
 
-      {/* Modal — Assign */}
+      {/* Modal — Assign (UPDATED with dynamic partners) */}
       {assignModal && (
         <div className={styles.modalOverlay} onClick={() => setAssignModal(null)}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalHeader}><h3>Assign Delivery Partner</h3><button onClick={() => setAssignModal(null)}>✕</button></div>
-            <p className={styles.modalSubtitle}>Select an available delivery partner</p>
-            <div className={styles.partnerList}>
-              {DELIVERY_PARTNERS.map(p => (
-                <div key={p.id} className={`${styles.partnerCard} ${!p.active?styles.partnerInactive:""}`}>
-                  <div className={styles.partnerAvatar}>{p.name.split(" ").map(n=>n[0]).join("").slice(0,2)}</div>
-                  <div className={styles.partnerInfo}>
-                    <p className={styles.partnerName}>{p.name}</p>
-                    <p className={styles.partnerMeta}>{p.zone} · {p.vehicle}</p>
-                    <p className={styles.partnerPhone}>{p.phone}</p>
-                  </div>
-                  <div className={styles.partnerRight}>
-                    <span className={styles.partnerRating}>★ {p.rating}</span>
-                    <span className={`${styles.partnerStatus} ${p.active?styles.partnerActive:""}`}>{p.active?"Available":"Offline"}</span>
-                    <button className={styles.assignBtn} disabled={!p.active||actionLoading}
-                      onClick={() => handleAssign(assignModal, p)}>{actionLoading?"…":"Assign"}</button>
-                  </div>
-                </div>
-              ))}
+            <div className={styles.modalHeader}>
+              <h3>Assign Delivery Partner</h3>
+              <button onClick={() => setAssignModal(null)}>✕</button>
             </div>
+            <p className={styles.modalSubtitle}>
+              {partnersLoading ? "Loading partners..." : `${activePartners.length} active partner${activePartners.length !== 1 ? 's' : ''} available`}
+            </p>
+            {partnersLoading ? (
+              <div className={styles.loadState}><div className={styles.loader}/><span>Loading delivery partners...</span></div>
+            ) : activePartners.length === 0 ? (
+              <div className={styles.emptyState}>
+                <div className={styles.emptyIcon}>🚚</div>
+                <p>No active delivery partners found</p>
+                <span>Please add delivery partners in the Delivery Partner section</span>
+              </div>
+            ) : (
+              <div className={styles.partnerList}>
+                {activePartners.map(p => (
+                  <div key={p.id} className={styles.partnerCard}>
+                    <div className={styles.partnerAvatar}>{p.name.split(" ").map(n=>n[0]).join("").slice(0,2)}</div>
+                    <div className={styles.partnerInfo}>
+                      <p className={styles.partnerName}>{p.name}</p>
+                      <p className={styles.partnerMeta}>{p.zone} · {p.vehicle} ({p.vehicleNumber})</p>
+                      <p className={styles.partnerPhone}>{p.phone}</p>
+                      {p.companyName && <p className={styles.partnerCompany}>{p.companyName}</p>}
+                    </div>
+                    <div className={styles.partnerRight}>
+                      <span className={styles.partnerRating}>★ {p.rating}</span>
+                      <span className={styles.partnerDeliveries}>📦 {p.totalDeliveries}</span>
+                      <button className={styles.assignBtn} disabled={actionLoading}
+                        onClick={() => handleAssign(assignModal, p)}>
+                        {actionLoading ? "…" : "Assign"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
