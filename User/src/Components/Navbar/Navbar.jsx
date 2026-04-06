@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import useAuthStore from "../../store/Useauthstore";
 import useCartStore from "../../store/Usecartstore";
@@ -14,24 +14,31 @@ const getInitials = (name = "") =>
     .join("")
     .toUpperCase();
 
-
 export default function Navbar() {
   const navigate = useNavigate();
 
   const { user, isLoggedIn, logout, openAuthModal, fetchProfile } =
     useAuthStore();
   
-  // Get cart store state and actions - get the actual arrays, not functions
+  // Get cart store state and actions - using more specific selectors for better reactivity
   const cartItems = useCartStore((state) => state.items);
   const wishlistItems = useCartStore((state) => state.wishlist);
   const initialize = useCartStore((state) => state.initialize);
   const resetCart = useCartStore((state) => state.resetCart);
   const isInitialized = useCartStore((state) => state.isInitialized);
   const syncInProgress = useCartStore((state) => state.syncInProgress);
+  const addToCart = useCartStore((state) => state.addToCart); // For testing
 
-  // Compute counts from the actual items (these will update when items change)
-  const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const wishlistCount = wishlistItems.length;
+  // Compute counts with useMemo for performance
+  const cartItemCount = useMemo(() => {
+    const count = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+    console.log("📊 Cart count recalculated:", count);
+    return count;
+  }, [cartItems]); // Recalculates only when cartItems changes
+  
+  const wishlistCount = useMemo(() => {
+    return wishlistItems.length;
+  }, [wishlistItems]);
 
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -47,14 +54,24 @@ export default function Navbar() {
   const profileRef = useRef(null);
   const cursorRef = useRef(null);
 
+  // Debug: Log cart changes in real-time
+  useEffect(() => {
+    console.log("🛒 Cart updated in Navbar:");
+    console.log("  - Items array length:", cartItems.length);
+    console.log("  - Total item count:", cartItemCount);
+    console.log("  - Items details:", cartItems);
+  }, [cartItems, cartItemCount]);
+
   // Initialize cart and wishlist when user logs in
   useEffect(() => {
     const initStore = async () => {
       if (isLoggedIn) {
         if (!isInitialized) {
+          console.log("Initializing cart for logged in user...");
           await initialize();
         }
       } else {
+        console.log("User not logged in, resetting cart...");
         resetCart();
       }
     };
@@ -62,13 +79,6 @@ export default function Navbar() {
     initStore();
   }, [isLoggedIn, initialize, resetCart, isInitialized]);
 
-  // Debug: Log cart changes in real-time
-  useEffect(() => {
-    console.log("Cart updated - Items:", cartItems.length, "Count:", cartItemCount);
-  }, [cartItems, cartItemCount]);
-
-  // Rest of your existing code remains the same...
-  
   // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
@@ -291,6 +301,22 @@ export default function Navbar() {
 
   const activeCategory = categories[0] || null;
 
+  // Temporary test function
+  const testAddItem = async () => {
+    console.log("🧪 Test add clicked");
+    const result = await addToCart({
+      productId: "test123",
+      name: "Test Item",
+      price: 100,
+      discountedPrice: 100,
+      size: "M",
+      color: "Black",
+      image: "/test-image.jpg",
+      quantity: 1
+    });
+    console.log("Test add result:", result);
+  };
+
   return (
     <>
       <div className={styles.cursor} ref={cursorRef} />
@@ -480,12 +506,8 @@ export default function Navbar() {
                 <line x1="3" y1="6" x2="21" y2="6" />
                 <path d="M16 10a4 4 0 01-8 0" />
               </svg>
-              {!isInitialized || syncInProgress ? (
-                <span className={styles.badge}>0</span>
-              ) : (
-                cartItemCount > 0 && (
-                  <span className={styles.badge}>{cartItemCount}</span>
-                )
+              {cartItemCount > 0 && (
+                <span className={styles.badge}>{cartItemCount}</span>
               )}
             </Link>
 
@@ -734,6 +756,27 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+
+      {/* Temporary Test Button - Remove after testing */}
+      <button
+        onClick={testAddItem}
+        style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          zIndex: 9999,
+          backgroundColor: '#000',
+          color: '#fff',
+          padding: '10px 15px',
+          borderRadius: '8px',
+          border: 'none',
+          cursor: 'pointer',
+          fontSize: '12px',
+          fontWeight: 'bold'
+        }}
+      >
+        Test Add to Cart
+      </button>
     </>
   );
 }

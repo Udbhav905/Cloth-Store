@@ -1,3 +1,4 @@
+/* ================= PAGE LAYOUT ================= */
 .orders-page {
   max-width: 1400px;
   margin: 0 auto;
@@ -16,6 +17,7 @@
   color: var(--gray);
 }
 
+/* ================= TABS ================= */
 .orders-tabs {
   display: flex;
   gap: 12px;
@@ -31,7 +33,7 @@
   color: var(--gray);
   cursor: pointer;
   font-size: 0.9rem;
-  transition: all 0.3s ease;
+  transition: 0.3s;
 }
 
 .tab.active {
@@ -39,19 +41,21 @@
   border-bottom: 2px solid var(--primary);
 }
 
+/* ================= GRID ================= */
 .orders-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
   gap: 20px;
 }
 
+/* ================= ORDER CARD ================= */
 .order-card {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: 0.3s;
 }
 
 .order-card:hover {
@@ -59,10 +63,16 @@
   border-color: rgba(201, 168, 76, 0.5);
 }
 
-.order-header {
+.order-header,
+.order-actions,
+.modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+/* Header */
+.order-header {
   padding: 16px 20px;
   background: rgba(0, 0, 0, 0.3);
   border-bottom: 1px solid var(--border);
@@ -74,28 +84,32 @@
   color: var(--primary);
 }
 
-.order-status {
+/* Status */
+.order-status,
+.status-badge {
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 0.75rem;
   font-weight: 500;
 }
 
-.order-status.assigned {
+/* Status colors */
+.assigned {
   background: rgba(245, 158, 11, 0.2);
   color: var(--warning);
 }
 
-.order-status.picked {
+.picked {
   background: rgba(93, 173, 226, 0.2);
   color: var(--info);
 }
 
-.order-status.delivered {
+.delivered {
   background: rgba(88, 214, 141, 0.2);
   color: var(--success);
 }
 
+/* ================= BODY ================= */
 .order-body {
   padding: 20px;
   display: flex;
@@ -106,16 +120,17 @@
 .info-row {
   display: flex;
   gap: 8px;
-  margin-bottom: 8px;
 }
 
 .label {
-  color: var(--gray);
   min-width: 80px;
   font-size: 0.85rem;
+  color: var(--gray);
 }
 
-.customer-info, .address-info, .items-info {
+.customer-info,
+.address-info,
+.items-info {
   font-size: 0.85rem;
 }
 
@@ -130,61 +145,56 @@
   font-weight: 600;
 }
 
-.order-actions {
-  display: flex;
-  gap: 10px;
-  padding: 16px 20px;
-  border-top: 1px solid var(--border);
-}
-
-.action-btn {
+/* ================= BUTTONS ================= */
+.action-btn,
+.modal-action-btn {
   flex: 1;
   padding: 10px;
   border: none;
   border-radius: 8px;
+  cursor: pointer;
   font-size: 0.8rem;
   font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  transition: 0.3s;
 }
 
-.action-btn.pickup {
-  background: rgba(93, 173, 226, 0.2);
-  color: var(--info);
-}
-
-.action-btn.deliver {
-  background: rgba(88, 214, 141, 0.2);
-  color: var(--success);
-}
-
-.action-btn.details {
-  background: rgba(201, 168, 76, 0.2);
-  color: var(--primary);
-}
-
-.action-btn:hover {
+.action-btn:hover,
+.modal-action-btn:hover {
   transform: translateY(-2px);
   filter: brightness(1.1);
 }
 
+/* Button variants */
+.pickup {
+  background: rgba(93, 173, 226, 0.2);
+  color: var(--info);
+}
+
+.deliver {
+  background: rgba(88, 214, 141, 0.2);
+  color: var(--success);
+}
+
+.details {
+  background: rgba(201, 168, 76, 0.2);
+  color: var(--primary);
+}
+
+/* ================= MODAL ================= */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(5px);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   z-index: 1000;
   padding: 20px;
 }
 
 .modal-content {
-  background: linear-gradient(135deg, var(--dark) 0%, var(--darker) 100%);
+  background: linear-gradient(135deg, var(--dark), var(--darker));
   border: 1px solid var(--border);
   border-radius: 16px;
   max-width: 600px;
@@ -194,9 +204,6 @@
 }
 
 .modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   padding: 20px;
   border-bottom: 1px solid var(--border);
 }
@@ -213,6 +220,7 @@
   padding: 20px;
 }
 
+/* ================= DETAILS ================= */
 .detail-section {
   margin-bottom: 24px;
 }
@@ -224,19 +232,23 @@
 }
 
 .detail-section p {
-  margin-bottom: 8px;
   font-size: 0.85rem;
+  margin-bottom: 8px;
 }
 
+/* merged duplicate */
 .detail-item {
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
+  align-items: center;
+  padding: 10px 0;
   border-bottom: 1px solid var(--border);
   font-size: 0.85rem;
 }
 
-.empty-state {
+/* ================= EMPTY / LOADING ================= */
+.empty-state,
+.loading-state {
   text-align: center;
   padding: 60px 20px;
 }
@@ -246,10 +258,125 @@
   margin-bottom: 16px;
 }
 
-.empty-state h3 {
-  margin-bottom: 8px;
-}
-
 .empty-state p {
   color: var(--gray);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #e67e22;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ================= STATS ================= */
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 20px;
+  border-radius: 12px;
+  background: white;
+  border: 1px solid #eee;
+}
+
+.stat-info h3 {
+  font-size: 28px;
+  margin: 0;
+}
+
+.stat-info p {
+  font-size: 14px;
+  color: #666;
+}
+
+/* ================= COMPLETED ================= */
+.completed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.completed-card {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 15px;
+  border-radius: 10px;
+  background: #f8f9fa;
+}
+
+.completed-details {
+  display: flex;
+  gap: 12px;
+  font-size: 14px;
+  color: #666;
+}
+
+/* ================= ITEMS ================= */
+.items-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.item-name {
+  font-weight: 500;
+}
+
+.item-meta {
+  font-size: 12px;
+  color: #666;
+}
+
+.item-pricing {
+  text-align: right;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+.summary-row.total {
+  font-weight: bold;
+  font-size: 18px;
+  border-top: 1px solid #eee;
+  margin-top: 10px;
+}
+
+/* ================= BADGES ================= */
+.badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #e67e22;
+  color: white;
+}
+
+.badge.completed {
+  background: #27ae60;
+}
+
+/* ================= DISABLED ================= */
+.modal-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

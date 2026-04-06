@@ -1,6 +1,7 @@
 import Order from "../model/Order.js";
 import Cart from "../model/Cart.js";
 import Product from "../model/Product.js";
+import DeliveryPartner from "../model/DeliveryPartner.js";
 
 /* ═══════════════════════════════════════════════════════════
    CUSTOMER CONTROLLERS  (unchanged from original)
@@ -310,8 +311,6 @@ export const adminGetAllOrders = async (req, res) => {
     /* ── Search: order number, phone, customer name ── */
     if (req.query.search) {
       const s = req.query.search.trim();
-      // Match against orderNumber directly, or phone in shippingAddress
-      // We also do a population-based name search via $or on populated fields below
       query.$or = [
         { orderNumber: { $regex: s, $options: "i" } },
         { "shippingAddress.phone": { $regex: s, $options: "i" } },
@@ -459,40 +458,45 @@ export const adminUpdateStatus = async (req, res) => {
   }
 };
 
-// @desc    Assign delivery partner to order
+// @desc    ✅ FIXED: Assign delivery partner to order
 // @route   PUT /api/orders/admin/:id/assign
 // @access  Private/Admin
 export const adminAssignDelivery = async (req, res) => {
   try {
-    const { courierName, trackingNumber, orderStatus, note, estimatedDelivery } = req.body;
+    const {
+      courierName,
+      trackingNumber,
+      deliveryPartnerId,   // ✅ NEW: Accept partner ID
+      deliveryPartnerName, // ✅ NEW: Accept partner name
+      estimatedDelivery,
+      note
+    } = req.body;
 
-    if (!courierName)
-      return res.status(400).json({ message: "courierName is required" });
+    if (!courierName || !deliveryPartnerId)
+      return res.status(400).json({ message: "courierName and deliveryPartnerId are required" });
 
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found" });
 
-    order.courierName    = courierName;
-    order.trackingNumber = trackingNumber || `TRK${Date.now().toString().slice(-8)}`;
+    // ✅ FIXED: Save delivery partner info to order
+    order.deliveryPartnerId   = deliveryPartnerId;
+    order.deliveryPartnerName = deliveryPartnerName || courierName;
+    order.courierName         = courierName;
+    order.trackingNumber      = trackingNumber || `TRK${Date.now().toString().slice(-8)}`;
+    order.assignedAt          = new Date();
 
     if (estimatedDelivery) order.estimatedDelivery = new Date(estimatedDelivery);
 
-    // Advance status to shipped if not already further along
-    const advanceStatuses = ["pending", "confirmed", "processing"];
-    if (orderStatus) {
-      order.orderStatus = orderStatus;
-    } else if (advanceStatuses.includes(order.orderStatus)) {
-      order.orderStatus = "shipped";
-    }
-
+    // Keep existing status (do NOT auto-advance to shipped)
     order.statusHistory.push({
       status:    order.orderStatus,
-      note:      note || `Assigned to ${courierName} · Tracking: ${order.trackingNumber}`,
+      note:      note || `Assigned to ${courierName} (${deliveryPartnerName}) · Tracking: ${order.trackingNumber}`,
       changedAt: new Date(),
       changedBy: req.user._id,
     });
 
     await order.save();
+    
     const updated = await Order.findById(order._id)
       .populate("userId", "name email mobileNo")
       .lean();
@@ -501,65 +505,6 @@ export const adminAssignDelivery = async (req, res) => {
   } catch (error) {
     console.error("adminAssignDelivery error:", error);
     res.status(500).json({ message: error.message });
-  }
-};
-// @desc    Assign delivery partner to order
-// @route   PUT /api/orders/admin/:orderId/assign
-// @access  Private/Admin
-export const assignDeliveryPartner = async (req, res) => {
-  try {
-    const { orderId } = req.params;
-    const { courierName, trackingNumber, orderStatus, note, partnerId } = req.body;
-
-    // Find the order
-    const order = await Order.findById(orderId);
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: 'Order not found'
-      });
-    }
-
-    // Update order
-    order.courierName = courierName;
-    order.trackingNumber = trackingNumber;
-    order.orderStatus = orderStatus || 'shipped';
-    
-    // Add to status history
-    order.statusHistory.push({
-      status: orderStatus || 'shipped',
-      note: note || `Assigned to ${courierName}`,
-      changedAt: new Date()
-    });
-
-    await order.save();
-
-    // ✅ IMPORTANT: Update the delivery partner's assignedOrders
-    if (partnerId) {
-      const deliveryPartner = await DeliveryPartner.findById(partnerId);
-      if (deliveryPartner) {
-        // Add order to partner's assignedOrders
-        deliveryPartner.assignedOrders.push({
-          orderId: order._id,
-          assignedAt: new Date(),
-          status: 'assigned'
-        });
-        await deliveryPartner.save();
-      }
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Delivery partner assigned successfully',
-      data: order
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
   }
 };
 

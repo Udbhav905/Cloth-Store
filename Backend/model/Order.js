@@ -105,10 +105,23 @@ const orderSchema = new mongoose.Schema({
     default: "pending"
   },
 
+  // ✅ NEW: Store delivery partner ID (for proper linking)
+  deliveryPartnerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "DeliveryPartner",
+    default: null
+  },
+
+  // ✅ NEW: Store delivery partner name (for quick display)
+  deliveryPartnerName: String,
+
   trackingNumber:    String,
   courierName:       String,
   estimatedDelivery: Date,
   deliveredAt:       Date,
+
+  // ✅ NEW: Track assignment time
+  assignedAt: Date,
 
   statusHistory: [{
     status:    String,
@@ -128,17 +141,7 @@ const orderSchema = new mongoose.Schema({
 
 
 /* ─────────────────────────────────────────────
-   Auto-generate orderNumber — FIXED
-
-   Original bug: async pre-save with no try/catch.
-   If this.constructor.findOne() throws (e.g. DB hiccup),
-   next() is never called → "next is not a function"
-   error bubbles up from kareem middleware runner.
-
-   Fix: wrap entire body in try/catch, always call next()
-───────────────────────────────────────────── */
-/* ─────────────────────────────────────────────
-   FIXED: Auto-generate orderNumber - Async function without next()
+   Auto-generate orderNumber with proper error handling
 ───────────────────────────────────────────── */
 orderSchema.pre("save", async function() {
   // Only generate for new documents
@@ -175,5 +178,7 @@ orderSchema.index({ userId: 1, createdAt: -1 });
 orderSchema.index({ orderStatus: 1 });
 orderSchema.index({ paymentStatus: 1 });
 orderSchema.index({ createdAt: -1 });
+// ✅ NEW: Index for delivery partner orders
+orderSchema.index({ deliveryPartnerId: 1, createdAt: -1 });
 
 export default mongoose.model("Order", orderSchema);

@@ -1,28 +1,3 @@
-/* ═══════════════════════════════════════════════════════════
-   store/Useauthstore.js  — USER SIDE ONLY
-
-   THE ROOT PROBLEM:
-   Both apps run on localhost so they share:
-     1. localStorage  (fixed with namespaced keys)
-     2. HTTP cookies  (same domain = same cookie jar)
-
-   The cookie "token" set by the backend is sent automatically
-   on EVERY request to localhost:3000, regardless of which
-   port (5173 or 5174) made the request. So when the user app
-   calls fetchProfile() on mount, if the admin was last logged
-   in, the cookie holds the ADMIN token → backend returns admin
-   user → our guard sees admin role → wipes user store.
-
-   FIX:
-   1. NEVER rely on cookies for auth — always send the stored
-      token explicitly via Authorization: Bearer header.
-   2. fetchProfile() sends the user's OWN token from the store,
-      not the cookie. If there's no token in the store, skip.
-   3. If the server returns an admin user for our token, that
-      means someone stored an admin token here — clear it.
-   4. The user store NEVER calls localStorage directly — only
-      Zustand's set() — so it can never accidentally wipe admin keys.
-═══════════════════════════════════════════════════════════ */
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import useCartStore from "./Usecartstore";
