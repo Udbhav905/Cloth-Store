@@ -65,10 +65,3 @@ backend/
 
 
 ----------------------------------------------------
-{
-"name": "Admin",
-  "email": "admin@clothstore.com",
-  "mobileNo": "9999999999",
-  "password": "Admin@123",
-  "role":"admin"
-}
