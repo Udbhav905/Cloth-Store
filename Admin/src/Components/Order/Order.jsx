@@ -114,11 +114,13 @@ export default function Orders() {
       if (e.status !== 401 && e.status !== 403) setError(e.message);
     } finally { setLoading(false); }
   }, [page, filterStatus, filterPay, search, sortBy, onAuthFail]);
-
-  useEffect(() => { 
-    fetchOrders(); 
-    fetchDeliveryPartners();
-  }, [fetchOrders, fetchDeliveryPartners]);
+useEffect(() => {
+  const interval = setInterval(() => {
+    fetchOrders();
+  }, 30000); // Refresh every 30 seconds
+  
+  return () => clearInterval(interval);
+}, [fetchOrders]);
 
   const fetchDetail = useCallback(async (id) => {
     try {
@@ -130,39 +132,72 @@ export default function Orders() {
   }, [onAuthFail, showToast]);
 
   // ✅ FIXED: Assign delivery partner WITHOUT changing orderStatus (keep current status)
-  const handleAssign = useCallback(async (orderId, partner) => {
-    setActionLoading(true);
-    try {
-      // Get the order first to get order number
-      const orderData = await apiFetch(`/orders/admin/${orderId}`, {}, onAuthFail);
-      const order = orderData.order || orderData;
+  // const handleAssign = useCallback(async (orderId, partner) => {
+  //   setActionLoading(true);
+  //   try {
+  //     // Get the order first to get order number
+  //     const orderData = await apiFetch(`/orders/admin/${orderId}`, {}, onAuthFail);
+  //     const order = orderData.order || orderData;
       
-      // IMPORTANT: Do NOT change orderStatus - only assign delivery partner
-      const response = await apiFetch(`/orders/admin/${orderId}/assign`,
-        { method:"PUT", body:JSON.stringify({
-          courierName: partner.name,
-          trackingNumber: `TRK${Date.now().toString().slice(-8)}`,
-          deliveryPartnerId: partner.id,  // Store partner ID
-          deliveryPartnerName: partner.name,  // Store partner name
-          partnerId: partner.id,  // For backward compatibility
-          partnerName: partner.name,
-          note: `Assigned to ${partner.name} (${partner.zone}) - Vehicle: ${partner.vehicle} (${partner.vehicleNumber})`,
-          assignedAt: new Date().toISOString()
-          // DO NOT include orderStatus here - let it remain as is
-        })},
-        onAuthFail);
+  //     // IMPORTANT: Do NOT change orderStatus - only assign delivery partner
+  //     const response = await apiFetch(`/orders/admin/${orderId}/assign`,
+  //       { method:"PUT", body:JSON.stringify({
+  //         courierName: partner.name,
+  //         trackingNumber: `TRK${Date.now().toString().slice(-8)}`,
+  //         deliveryPartnerId: partner.id,  // Store partner ID
+  //         deliveryPartnerName: partner.name,  // Store partner name
+  //         partnerId: partner.id,  // For backward compatibility
+  //         partnerName: partner.name,
+  //         note: `Assigned to ${partner.name} (${partner.zone}) - Vehicle: ${partner.vehicle} (${partner.vehicleNumber})`,
+  //         assignedAt: new Date().toISOString()
+  //         // DO NOT include orderStatus here - let it remain as is
+  //       })},
+  //       onAuthFail);
       
-      console.log("Assignment response:", response);
-      showToast(`Order ${order.orderNumber} assigned to ${partner.name}`);
-      setAssignModal(null);
-      fetchOrders(); // Refresh orders list
-      if (selected?._id === orderId) setSelected(null);
-    } catch (e) { 
-      console.error("Assignment error:", e);
-      if (e.status !== 401 && e.status !== 403) showToast(e.message, "error"); 
-    }
-    finally { setActionLoading(false); }
-  }, [selected, fetchOrders, onAuthFail, showToast]);
+  //     console.log("Assignment response:", response);
+  //     showToast(`Order ${order.orderNumber} assigned to ${partner.name}`);
+  //     setAssignModal(null);
+  //     fetchOrders(); // Refresh orders list
+  //     if (selected?._id === orderId) setSelected(null);
+  //   } catch (e) { 
+  //     console.error("Assignment error:", e);
+  //     if (e.status !== 401 && e.status !== 403) showToast(e.message, "error"); 
+  //   }
+  //   finally { setActionLoading(false); }
+  // }, [selected, fetchOrders, onAuthFail, showToast]);
+  // ✅ FIXED: Assign delivery partner with partner ID
+const handleAssign = useCallback(async (orderId, partner) => {
+  setActionLoading(true);
+  try {
+    // Get the order first to get order number
+    const orderData = await apiFetch(`/orders/admin/${orderId}`, {}, onAuthFail);
+    const order = orderData.order || orderData;
+    
+    // IMPORTANT: Include partnerId in the request
+    const response = await apiFetch(`/orders/admin/${orderId}/assign`,
+      { method:"PUT", body:JSON.stringify({
+        courierName: partner.name,
+        trackingNumber: `TRK${Date.now().toString().slice(-8)}`,
+        deliveryPartnerId: partner.id,     // ✅ Send partner ID
+        partnerId: partner.id,              // ✅ For backward compatibility
+        deliveryPartnerName: partner.name,  // ✅ Send partner name
+        partnerName: partner.name,          // ✅ For backward compatibility
+        note: `Assigned to ${partner.name} (${partner.zone}) - Vehicle: ${partner.vehicle} (${partner.vehicleNumber})`,
+        assignedAt: new Date().toISOString()
+      })},
+      onAuthFail);
+    
+    console.log("Assignment response:", response);
+    showToast(`Order ${order.orderNumber} assigned to ${partner.name}`);
+    setAssignModal(null);
+    fetchOrders(); // Refresh orders list
+    if (selected?._id === orderId) setSelected(null);
+  } catch (e) { 
+    console.error("Assignment error:", e);
+    if (e.status !== 401 && e.status !== 403) showToast(e.message, "error"); 
+  }
+  finally { setActionLoading(false); }
+}, [selected, fetchOrders, onAuthFail, showToast]);
 
   const handleNote = useCallback(async () => {
     if (!noteModal || !adminNote.trim()) return;

@@ -4,12 +4,23 @@ import toast from 'react-hot-toast';
 import API_BASE_URL from '../config/api';
 import './Orders.css';
 
+const STATUS_OPTIONS = [
+  { value: 'assigned', label: 'Ready for Pickup', icon: '📋' },
+  { value: 'picked', label: 'Out for Delivery', icon: '📦' },
+  { value: 'delivered', label: 'Delivered', icon: '✅' }
+];
+
+const getStatusDetails = (statusValue) => {
+  return STATUS_OPTIONS.find(opt => opt.value === statusValue) || { label: statusValue || 'Assigned', icon: '📋' };
+};
+
 const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [updating, setUpdating] = useState(false);
   const [partnerData, setPartnerData] = useState(null);
+  const [openDropdownId, setOpenDropdownId] = useState(null);
 
   const getAuthConfig = () => ({
     headers: { Authorization: `Bearer ${localStorage.getItem('partnerToken')}` }
@@ -45,10 +56,26 @@ const Orders = () => {
         ordersList = response.data;
       }
       
-      console.log("Processed orders:", ordersList);
-      setOrders(ordersList);
+      // Map status to delivery partner statuses if needed
+      const mappedOrders = ordersList.map(order => {
+        // If order has status like 'processing', map to 'assigned' for delivery partner
+        let deliveryStatus = order.status;
+        if (order.status === 'processing' || order.status === 'confirmed' || order.status === 'pending') {
+          deliveryStatus = 'assigned';
+        } else if (order.status === 'shipped' || order.status === 'out_for_delivery') {
+          deliveryStatus = 'picked';
+        }
+        
+        return {
+          ...order,
+          status: deliveryStatus
+        };
+      });
       
-      if (ordersList.length === 0) {
+      console.log("Processed orders:", mappedOrders);
+      setOrders(mappedOrders);
+      
+      if (mappedOrders.length === 0) {
         console.log("No orders found for this delivery partner");
       }
     } catch (error) {
@@ -67,36 +94,33 @@ const Orders = () => {
     }
   };
 
-  // ✅ FIXED: Use only valid status values from backend schema
+  // Update order status (for delivery partner)
   const updateOrderStatus = async (orderId, status) => {
     setUpdating(true);
     try {
-      // Map status to valid backend values
-      let validStatus = status;
+      // Map delivery status to actual order status if needed
+      let actualStatus = status;
+      if (status === 'assigned') actualStatus = 'processing';
+      if (status === 'picked') actualStatus = 'shipped';
       
-      // Only use status values that exist in your backend
-      // Based on your error, valid statuses are: pending, confirmed, processing, shipped, out_for_delivery, delivered, cancelled, returned, refunded
-      if (status === 'assigned') {
-        validStatus = 'processing'; // Map 'assigned' to 'processing' if needed
-      }
-      
-      const response = await axios.put(`${API_BASE_URL}/api/delivery-partner/orders/${orderId}/status`, 
-        { status: validStatus }, 
+      const response = await axios.put(
+        `${API_BASE_URL}/api/delivery-partner/orders/${orderId}/status`, 
+        { status: actualStatus }, 
         getAuthConfig()
       );
       
       console.log("Update response:", response.data);
       
       const statusMessages = {
-        processing: 'Order accepted! Status updated to Processing',
-        shipped: 'Order marked as Shipped!',
-        out_for_delivery: 'Order is Out for Delivery!',
-        delivered: 'Order marked as Delivered! 🎉'
+        assigned: 'Order accepted!',
+        picked: 'Order marked as picked up!',
+        delivered: 'Order marked as delivered! 🎉'
       };
       toast.success(statusMessages[status] || `Order status updated to ${status}`);
       
       fetchOrders();
       setSelectedOrder(null);
+      setOpenDropdownId(null);
     } catch (error) {
       console.error('Update status error:', error);
       const errorMsg = error.response?.data?.message || 'Failed to update status';
@@ -105,6 +129,16 @@ const Orders = () => {
       setUpdating(false);
     }
   };
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.custom-select-container')) {
+        setOpenDropdownId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('partnerToken');
@@ -118,52 +152,69 @@ const Orders = () => {
     fetchOrders();
   }, []);
 
-  const getStatusIcon = (status) => {
-    switch(status) {
-      case 'pending': return '⏳';
-      case 'confirmed': return '✓';
-      case 'processing': return '⚙';
-      case 'shipped': return '📦';
-      case 'out_for_delivery': return '🚚';
-      case 'delivered': return '✅';
-      case 'cancelled': return '✕';
-      default: return '📋';
-    }
-  };
-
-  const getStatusLabel = (status) => {
-    switch(status) {
-      case 'pending': return 'Pending';
-      case 'confirmed': return 'Confirmed';
-      case 'processing': return 'Processing';
-      case 'shipped': return 'Shipped';
-      case 'out_for_delivery': return 'Out for Delivery';
-      case 'delivered': return 'Delivered';
-      case 'cancelled': return 'Cancelled';
-      default: return status || 'Unknown';
-    }
-  };
-
-  // Define valid status flow based on your backend
-  const getNextAction = (status) => {
-    switch(status) {
-      case 'pending':
-        return { action: 'confirmed', label: '✓ Confirm Order', buttonClass: 'confirm' };
-      case 'confirmed':
-        return { action: 'processing', label: '⚙ Start Processing', buttonClass: 'process' };
-      case 'processing':
-        return { action: 'shipped', label: '📦 Mark as Shipped', buttonClass: 'ship' };
-      case 'shipped':
-        return { action: 'out_for_delivery', label: '🚚 Out for Delivery', buttonClass: 'outfordelivery' };
-      case 'out_for_delivery':
-        return { action: 'delivered', label: '✅ Mark as Delivered', buttonClass: 'deliver' };
-      default:
-        return null;
-    }
-  };
-
-  const pendingOrders = orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled');
+  const pendingOrders = orders.filter(o => o.status !== 'delivered');
   const completedOrders = orders.filter(o => o.status === 'delivered');
+
+  const handleStatusSelect = (orderId, newStatus) => {
+    updateOrderStatus(orderId, newStatus);
+    setOpenDropdownId(null);
+  };
+
+  const renderStatusDropdown = (order, isModal = false) => {
+    const currentStatus = getStatusDetails(order.status);
+    const isOpen = openDropdownId === (isModal ? `modal-${order._id}` : order._id);
+    
+    // Get available next statuses based on current status
+    const getAvailableStatuses = () => {
+      switch(order.status) {
+        case 'assigned':
+          return STATUS_OPTIONS.filter(opt => opt.value === 'picked' || opt.value === 'delivered');
+        case 'picked':
+          return STATUS_OPTIONS.filter(opt => opt.value === 'delivered');
+        case 'delivered':
+          return [];
+        default:
+          return STATUS_OPTIONS;
+      }
+    };
+    
+    const availableStatuses = getAvailableStatuses();
+    
+    return (
+      <div className={`custom-select-container ${isOpen ? 'active' : ''}`}>
+        <button 
+          className={`select-trigger status-btn-${order.status}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpenDropdownId(isOpen ? null : (isModal ? `modal-${order._id}` : order._id));
+          }}
+          disabled={updating || order.status === 'delivered'}
+        >
+          <span className="select-icon">{currentStatus.icon}</span>
+          <span className="select-label">{currentStatus.label}</span>
+          {order.status !== 'delivered' && <span className={`select-arrow ${isOpen ? 'up' : 'down'}`}>▼</span>}
+        </button>
+        
+        {isOpen && order.status !== 'delivered' && (
+          <div className="select-dropdown-menu">
+            {availableStatuses.map((option) => (
+              <button
+                key={option.value}
+                className={`select-option ${order.status === option.value ? 'selected' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleStatusSelect(order._id, option.value);
+                }}
+              >
+                <span className="option-icon">{option.icon}</span>
+                <span className="option-label">{option.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="orders-page">
@@ -227,13 +278,12 @@ const Orders = () => {
       ) : (
         <div className="orders-grid">
           {pendingOrders.map((order) => {
-            const nextAction = getNextAction(order.status);
             return (
               <div key={order._id} className="order-card">
                 <div className="order-header">
                   <div className="order-number">{order.orderNumber}</div>
-                  <div className={`order-status ${order.status}`}>
-                    {getStatusIcon(order.status)} {getStatusLabel(order.status)}
+                  <div className="order-status-wrapper">
+                    {renderStatusDropdown(order)}
                   </div>
                 </div>
                 
@@ -242,11 +292,11 @@ const Orders = () => {
                     <h4>Customer Details</h4>
                     <div className="info-row">
                       <span className="label">Name:</span>
-                      <span>{order.customerName || order.userId?.name || "—"}</span>
+                      <span>{order.customerName || "—"}</span>
                     </div>
                     <div className="info-row">
                       <span className="label">Phone:</span>
-                      <span>{order.customerPhone || order.shippingAddress?.phone || "—"}</span>
+                      <span>{order.customerPhone || "—"}</span>
                     </div>
                   </div>
 
@@ -281,20 +331,11 @@ const Orders = () => {
                 </div>
 
                 <div className="order-actions">
-                  {nextAction && (
-                    <button 
-                      className={`action-btn ${nextAction.buttonClass}`}
-                      onClick={() => updateOrderStatus(order._id, nextAction.action)}
-                      disabled={updating}
-                    >
-                      {nextAction.label}
-                    </button>
-                  )}
                   <button 
-                    className="action-btn details"
+                    className="action-btn details full-width"
                     onClick={() => setSelectedOrder(order)}
                   >
-                    View Details
+                    View Complete Details
                   </button>
                 </div>
               </div>
@@ -317,7 +358,7 @@ const Orders = () => {
                   <span className="delivered-badge">✅ Delivered</span>
                 </div>
                 <div className="completed-details">
-                  <span>{order.customerName || order.userId?.name}</span>
+                  <span>{order.customerName}</span>
                   <span>•</span>
                   <span>{order.shippingAddress?.city}</span>
                   <span>•</span>
@@ -347,18 +388,17 @@ const Orders = () => {
               <div className="detail-section">
                 <h4>Order Information</h4>
                 <p><strong>Order Number:</strong> {selectedOrder.orderNumber}</p>
-                <p><strong>Status:</strong> 
-                  <span className={`status-badge ${selectedOrder.status}`}>
-                    {getStatusIcon(selectedOrder.status)} {getStatusLabel(selectedOrder.status)}
-                  </span>
-                </p>
+                <p><strong>Status:</strong></p>
+                <div className="modal-status-selector">
+                  {renderStatusDropdown(selectedOrder, true)}
+                </div>
                 <p><strong>Assigned At:</strong> {selectedOrder.assignedAt ? new Date(selectedOrder.assignedAt).toLocaleString() : "Not specified"}</p>
               </div>
 
               <div className="detail-section">
                 <h4>Customer Information</h4>
-                <p><strong>Name:</strong> {selectedOrder.customerName || selectedOrder.userId?.name || "—"}</p>
-                <p><strong>Phone:</strong> {selectedOrder.customerPhone || selectedOrder.shippingAddress?.phone || "—"}</p>
+                <p><strong>Name:</strong> {selectedOrder.customerName || "—"}</p>
+                <p><strong>Phone:</strong> {selectedOrder.customerPhone || "—"}</p>
               </div>
 
               <div className="detail-section">
@@ -377,8 +417,8 @@ const Orders = () => {
                       <div className="item-info">
                         <span className="item-name">{item.productName || item.name}</span>
                         <span className="item-meta">
-                          {item.size && `Size: ${item.size}`}
-                          {item.color && ` • Color: ${item.color}`}
+                          {item.variant?.size && `Size: ${item.variant.size}`}
+                          {item.variant?.color && ` • Color: ${item.variant.color}`}
                         </span>
                       </div>
                       <div className="item-pricing">
@@ -407,71 +447,6 @@ const Orders = () => {
                   <span>₹{(selectedOrder.totalAmount || 0).toLocaleString()}</span>
                 </div>
               </div>
-
-              {selectedOrder.status !== 'delivered' && selectedOrder.status !== 'cancelled' && (
-                <div className="modal-actions">
-                  {selectedOrder.status === 'pending' && (
-                    <button 
-                      className="modal-action-btn confirm"
-                      onClick={() => {
-                        updateOrderStatus(selectedOrder._id, 'confirmed');
-                        setSelectedOrder(null);
-                      }}
-                      disabled={updating}
-                    >
-                      ✓ Confirm Order
-                    </button>
-                  )}
-                  {selectedOrder.status === 'confirmed' && (
-                    <button 
-                      className="modal-action-btn process"
-                      onClick={() => {
-                        updateOrderStatus(selectedOrder._id, 'processing');
-                        setSelectedOrder(null);
-                      }}
-                      disabled={updating}
-                    >
-                      ⚙ Start Processing
-                    </button>
-                  )}
-                  {selectedOrder.status === 'processing' && (
-                    <button 
-                      className="modal-action-btn ship"
-                      onClick={() => {
-                        updateOrderStatus(selectedOrder._id, 'shipped');
-                        setSelectedOrder(null);
-                      }}
-                      disabled={updating}
-                    >
-                      📦 Mark as Shipped
-                    </button>
-                  )}
-                  {selectedOrder.status === 'shipped' && (
-                    <button 
-                      className="modal-action-btn outfordelivery"
-                      onClick={() => {
-                        updateOrderStatus(selectedOrder._id, 'out_for_delivery');
-                        setSelectedOrder(null);
-                      }}
-                      disabled={updating}
-                    >
-                      🚚 Out for Delivery
-                    </button>
-                  )}
-                  {selectedOrder.status === 'out_for_delivery' && (
-                    <button 
-                      className="modal-action-btn deliver"
-                      onClick={() => {
-                        updateOrderStatus(selectedOrder._id, 'delivered');
-                        setSelectedOrder(null);
-                      }}
-                      disabled={updating}
-                    >
-                      ✅ Mark as Delivered
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
           </div>
         </div>

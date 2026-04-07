@@ -758,7 +758,7 @@ export default function Navbar() {
       </div>
 
       {/* Temporary Test Button - Remove after testing */}
-      <button
+      {/* <button
         onClick={testAddItem}
         style={{
           position: 'fixed',
@@ -776,7 +776,7 @@ export default function Navbar() {
         }}
       >
         Test Add to Cart
-      </button>
+      </button> */}
     </>
   );
 }
