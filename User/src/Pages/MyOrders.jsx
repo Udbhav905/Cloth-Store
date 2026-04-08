@@ -5,11 +5,15 @@ import styles from "./styles/MyOrders.module.css";
 
 const API = "http://localhost:3000/api";
 
-
 /* ─── helpers ──────────────────────────────────────────── */
 function authHeader() {
-  const t = useAuthStore.getState()?.accessToken || localStorage.getItem("accessToken") || "";
-  return t ? { Authorization: `Bearer ${t}` } : {};
+  const userToken = localStorage.getItem('userToken');
+  const accessToken = useAuthStore.getState()?.accessToken;
+  const token = userToken || accessToken;
+  
+  console.log("Using token for API call:", token ? `${token.substring(0, 20)}...` : "No token");
+  
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 async function apiFetch(path, opts = {}) {
@@ -156,46 +160,35 @@ function OrderDrawer({ order, onClose, onCancel }) {
     };
     document.addEventListener("keydown", handleKey);
     
-    // Get Lenis instance and store original state
     const lenis = window.lenis;
     lenisRef.current = lenis;
     
-    // Disable body scroll
     document.body.style.overflow = "hidden";
     document.body.classList.add("drawer-open");
     
-    // Pause Lenis completely
     if (lenis && typeof lenis.stop === 'function') {
       lenis.stop();
     }
     
     return () => {
       document.removeEventListener("keydown", handleKey);
-      
-      // Re-enable body scroll
       document.body.style.overflow = "";
       document.body.classList.remove("drawer-open");
-      
-      // Resume Lenis
       if (lenisRef.current && typeof lenisRef.current.start === 'function') {
         lenisRef.current.start();
       }
     };
   }, [onClose]);
 
-  // Allow scroll within drawer body itself
   useEffect(() => {
     const drawerBody = drawerBodyRef.current;
     if (!drawerBody) return;
 
     const handleWheel = (e) => {
-      // Allow wheel events to scroll the drawer content
-      // Don't preventDefault, let it naturally scroll
       e.stopPropagation();
     };
 
     const handleTouchMove = (e) => {
-      // Allow touch to scroll the drawer
       e.stopPropagation();
     };
 
@@ -334,6 +327,7 @@ function OrderDrawer({ order, onClose, onCancel }) {
               <section className={styles.drawerSection}>
                 <h3 className={styles.drawerSectionTitle}>Delivery Address</h3>
                 <div className={styles.addrBlock}>
+                  {order.shippingAddress.name && <p><strong>{order.shippingAddress.name}</strong></p>}
                   <p>{order.shippingAddress.address1}</p>
                   {order.shippingAddress.address2 && <p>{order.shippingAddress.address2}</p>}
                   <p>
@@ -546,7 +540,7 @@ function Skeleton() {
 ════════════════════════════════════════════════════════════ */
 export default function MyOrders() {
   const navigate = useNavigate();
-  const { user, isLoggedIn } = useAuthStore();
+  const { user, isLoggedIn, accessToken } = useAuthStore();
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -577,29 +571,50 @@ export default function MyOrders() {
     }
   }, [showToast]);
 
+  // ✅ FIXED: Check authentication and fetch orders
   useEffect(() => {
-    if (!user || !isLoggedIn) {
-      navigate("/login");
-      return;
-    }
+    const checkAuthAndFetch = async () => {
+      // Check if user is logged in
+      if (!user || !isLoggedIn) {
+        console.log("User not logged in, redirecting to login");
+        navigate("/login");
+        return;
+      }
 
-    const fetchOrders = async () => {
+      console.log("User is logged in:", user.email, "Role:", user.role);
+      
+      // Check if token exists
+      const token = localStorage.getItem('userToken') || accessToken;
+      if (!token) {
+        console.log("No token found, redirecting to login");
+        navigate("/login");
+        return;
+      }
+
       setLoading(true);
       setError("");
+      
       try {
+        console.log("Fetching orders for user:", user._id);
         const data = await apiFetch("/orders/my-orders");
+        console.log("Orders response:", data);
+        
         const ordersList = Array.isArray(data) ? data : data.orders || data.data || [];
+        console.log(`Found ${ordersList.length} orders`);
         setOrders(ordersList);
       } catch (err) {
         console.error("Error fetching orders:", err);
         setError(err.message);
+        if (err.message.includes("401") || err.message.includes("unauthorized")) {
+          navigate("/login");
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    fetchOrders();
-  }, [user, isLoggedIn, navigate]);
+    checkAuthAndFetch();
+  }, [user, isLoggedIn, accessToken, navigate]);
 
   const displayed = useMemo(() => filterOrders(orders, tab), [orders, tab]);
 
