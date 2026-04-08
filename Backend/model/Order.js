@@ -48,7 +48,8 @@ const orderSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: true
+    required: true,
+    index: true  // ✅ ADDED: Index for faster user order queries
   },
 
   items: [orderItemSchema],
@@ -60,6 +61,7 @@ const orderSchema = new mongoose.Schema({
   totalAmount:    { type: Number, required: true },
 
   shippingAddress: {
+    name: String,      // ✅ ADDED: Customer name in shipping address
     address1: String,
     address2: String,
     landmark: String,
@@ -102,17 +104,17 @@ const orderSchema = new mongoose.Schema({
       "pending", "confirmed", "processing", "shipped",
       "out_for_delivery", "delivered", "cancelled", "returned", "refunded"
     ],
-    default: "pending"
+    default: "pending",
+    index: true   // ✅ ADDED: Index for status filtering
   },
 
-  // ✅ NEW: Store delivery partner ID (for proper linking)
   deliveryPartnerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "DeliveryPartner",
-    default: null
+    default: null,
+    index: true   // ✅ ADDED: Index for partner queries
   },
 
-  // ✅ NEW: Store delivery partner name (for quick display)
   deliveryPartnerName: String,
 
   trackingNumber:    String,
@@ -120,7 +122,6 @@ const orderSchema = new mongoose.Schema({
   estimatedDelivery: Date,
   deliveredAt:       Date,
 
-  // ✅ NEW: Track assignment time
   assignedAt: Date,
 
   statusHistory: [{
@@ -144,7 +145,6 @@ const orderSchema = new mongoose.Schema({
    Auto-generate orderNumber with proper error handling
 ───────────────────────────────────────────── */
 orderSchema.pre("save", async function() {
-  // Only generate for new documents
   if (!this.isNew || this.orderNumber) {
     return;
   }
@@ -178,7 +178,6 @@ orderSchema.index({ userId: 1, createdAt: -1 });
 orderSchema.index({ orderStatus: 1 });
 orderSchema.index({ paymentStatus: 1 });
 orderSchema.index({ createdAt: -1 });
-// ✅ NEW: Index for delivery partner orders
 orderSchema.index({ deliveryPartnerId: 1, createdAt: -1 });
 
 export default mongoose.model("Order", orderSchema);

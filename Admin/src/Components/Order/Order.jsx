@@ -1,5 +1,5 @@
-/* Components/Order/Order.jsx - Admin Panel */
-import React, { useState, useEffect, useCallback } from "react";
+/* Components/Order/Order.jsx - Admin Panel (Optimized) */
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch, clearAdminSession } from "../../utils/AdminApi";
 import styles from "./Order.module.css";
@@ -57,9 +57,14 @@ export default function Orders() {
   const [adminNote, setAdminNote] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
   
   const [deliveryPartners, setDeliveryPartners] = useState([]);
   const [partnersLoading, setPartnersLoading] = useState(false);
+
+  // Refs for optimization
+  const searchTimeoutRef = useRef(null);
+  const isInitialMount = useRef(true);
 
   const onAuthFail = useCallback((err) => {
     clearAdminSession();
@@ -75,7 +80,7 @@ export default function Orders() {
   const fetchDeliveryPartners = useCallback(async () => {
     setPartnersLoading(true);
     try {
-      const data = await apiFetch('/delivery-partners?status=active', {}, onAuthFail);
+      const data = await apiFetch('/delivery-partners?status=active&limit=100', {}, onAuthFail);
       const partners = (data.data || []).map(partner => ({
         id: partner._id,
         name: partner.name,
@@ -98,13 +103,16 @@ export default function Orders() {
   }, [onAuthFail]);
 
   const fetchOrders = useCallback(async () => {
-    setLoading(true); setError("");
+    setLoading(true); 
+    setError("");
     try {
       const params = new URLSearchParams({
-        page, limit:15, sort:sortBy,
+        page, 
+        limit: 15, 
+        sort: sortBy,
         ...(filterStatus !== "all" && { status: filterStatus }),
-        ...(filterPay    !== "all" && { paymentStatus: filterPay }),
-        ...(search.trim()          && { search: search.trim() }),
+        ...(filterPay !== "all" && { paymentStatus: filterPay }),
+        ...(search.trim() && { search: search.trim() }),
       });
       const data = await apiFetch(`/orders/admin/all?${params}`, {}, onAuthFail);
       setOrders(data.orders || []);
@@ -112,15 +120,64 @@ export default function Orders() {
       setStats(data.stats || null);
     } catch (e) {
       if (e.status !== 401 && e.status !== 403) setError(e.message);
-    } finally { setLoading(false); }
+    } finally { 
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [page, filterStatus, filterPay, search, sortBy, onAuthFail]);
-useEffect(() => {
-  const interval = setInterval(() => {
+
+  // Debounced search handler
+  const handleSearchChange = useCallback((e) => {
+    const value = e.target.value;
+    setSearch(value);
+    setPage(1);
+    
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      fetchOrders();
+    }, 500);
+  }, [fetchOrders]);
+
+  // Manual refresh handler
+  const handleManualRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchOrders();
+  }, [fetchOrders]);
+
+  // Fetch delivery partners only once on mount
+  useEffect(() => {
+    fetchDeliveryPartners();
+  }, [fetchDeliveryPartners]);
+
+  // Fetch orders when dependencies change (with debounce for search)
+  useEffect(() => {
+    // Skip initial mount to prevent double fetch
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      fetchOrders();
+      return;
+    }
+    
+    // For search, debounce is handled in handleSearchChange
+    // For other filters, fetch immediately
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
     fetchOrders();
-  }, 30000); // Refresh every 30 seconds
-  
-  return () => clearInterval(interval);
-}, [fetchOrders]);
+  }, [fetchOrders, page, filterStatus, filterPay, sortBy]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const fetchDetail = useCallback(async (id) => {
     try {
@@ -131,73 +188,36 @@ useEffect(() => {
     }
   }, [onAuthFail, showToast]);
 
-  // ✅ FIXED: Assign delivery partner WITHOUT changing orderStatus (keep current status)
-  // const handleAssign = useCallback(async (orderId, partner) => {
-  //   setActionLoading(true);
-  //   try {
-  //     // Get the order first to get order number
-  //     const orderData = await apiFetch(`/orders/admin/${orderId}`, {}, onAuthFail);
-  //     const order = orderData.order || orderData;
+  const handleAssign = useCallback(async (orderId, partner) => {
+    setActionLoading(true);
+    try {
+      const orderData = await apiFetch(`/orders/admin/${orderId}`, {}, onAuthFail);
+      const order = orderData.order || orderData;
       
-  //     // IMPORTANT: Do NOT change orderStatus - only assign delivery partner
-  //     const response = await apiFetch(`/orders/admin/${orderId}/assign`,
-  //       { method:"PUT", body:JSON.stringify({
-  //         courierName: partner.name,
-  //         trackingNumber: `TRK${Date.now().toString().slice(-8)}`,
-  //         deliveryPartnerId: partner.id,  // Store partner ID
-  //         deliveryPartnerName: partner.name,  // Store partner name
-  //         partnerId: partner.id,  // For backward compatibility
-  //         partnerName: partner.name,
-  //         note: `Assigned to ${partner.name} (${partner.zone}) - Vehicle: ${partner.vehicle} (${partner.vehicleNumber})`,
-  //         assignedAt: new Date().toISOString()
-  //         // DO NOT include orderStatus here - let it remain as is
-  //       })},
-  //       onAuthFail);
+      const response = await apiFetch(`/orders/admin/${orderId}/assign`,
+        { method:"PUT", body:JSON.stringify({
+          courierName: partner.name,
+          trackingNumber: `TRK${Date.now().toString().slice(-8)}`,
+          deliveryPartnerId: partner.id,
+          partnerId: partner.id,
+          deliveryPartnerName: partner.name,
+          partnerName: partner.name,
+          note: `Assigned to ${partner.name} (${partner.zone}) - Vehicle: ${partner.vehicle} (${partner.vehicleNumber})`,
+          assignedAt: new Date().toISOString()
+        })},
+        onAuthFail);
       
-  //     console.log("Assignment response:", response);
-  //     showToast(`Order ${order.orderNumber} assigned to ${partner.name}`);
-  //     setAssignModal(null);
-  //     fetchOrders(); // Refresh orders list
-  //     if (selected?._id === orderId) setSelected(null);
-  //   } catch (e) { 
-  //     console.error("Assignment error:", e);
-  //     if (e.status !== 401 && e.status !== 403) showToast(e.message, "error"); 
-  //   }
-  //   finally { setActionLoading(false); }
-  // }, [selected, fetchOrders, onAuthFail, showToast]);
-  // ✅ FIXED: Assign delivery partner with partner ID
-const handleAssign = useCallback(async (orderId, partner) => {
-  setActionLoading(true);
-  try {
-    // Get the order first to get order number
-    const orderData = await apiFetch(`/orders/admin/${orderId}`, {}, onAuthFail);
-    const order = orderData.order || orderData;
-    
-    // IMPORTANT: Include partnerId in the request
-    const response = await apiFetch(`/orders/admin/${orderId}/assign`,
-      { method:"PUT", body:JSON.stringify({
-        courierName: partner.name,
-        trackingNumber: `TRK${Date.now().toString().slice(-8)}`,
-        deliveryPartnerId: partner.id,     // ✅ Send partner ID
-        partnerId: partner.id,              // ✅ For backward compatibility
-        deliveryPartnerName: partner.name,  // ✅ Send partner name
-        partnerName: partner.name,          // ✅ For backward compatibility
-        note: `Assigned to ${partner.name} (${partner.zone}) - Vehicle: ${partner.vehicle} (${partner.vehicleNumber})`,
-        assignedAt: new Date().toISOString()
-      })},
-      onAuthFail);
-    
-    console.log("Assignment response:", response);
-    showToast(`Order ${order.orderNumber} assigned to ${partner.name}`);
-    setAssignModal(null);
-    fetchOrders(); // Refresh orders list
-    if (selected?._id === orderId) setSelected(null);
-  } catch (e) { 
-    console.error("Assignment error:", e);
-    if (e.status !== 401 && e.status !== 403) showToast(e.message, "error"); 
-  }
-  finally { setActionLoading(false); }
-}, [selected, fetchOrders, onAuthFail, showToast]);
+      console.log("Assignment response:", response);
+      showToast(`Order ${order.orderNumber} assigned to ${partner.name}`);
+      setAssignModal(null);
+      fetchOrders();
+      if (selected?._id === orderId) setSelected(null);
+    } catch (e) { 
+      console.error("Assignment error:", e);
+      if (e.status !== 401 && e.status !== 403) showToast(e.message, "error"); 
+    }
+    finally { setActionLoading(false); }
+  }, [selected, fetchOrders, onAuthFail, showToast]);
 
   const handleNote = useCallback(async () => {
     if (!noteModal || !adminNote.trim()) return;
@@ -209,7 +229,9 @@ const handleAssign = useCallback(async (orderId, partner) => {
       showToast("Note saved");
       setNoteModal(null); setAdminNote("");
       fetchOrders();
-    } catch (e) { if (e.status !== 401 && e.status !== 403) showToast(e.message, "error"); }
+    } catch (e) { 
+      if (e.status !== 401 && e.status !== 403) showToast(e.message, "error"); 
+    }
     finally { setActionLoading(false); }
   }, [noteModal, adminNote, fetchOrders, onAuthFail, showToast]);
 
@@ -233,7 +255,12 @@ const handleAssign = useCallback(async (orderId, partner) => {
           <h1 className={styles.pageTitle}>Order Management</h1>
           <p className={styles.pageSubtitle}>View orders and assign to delivery partners</p>
         </div>
-        <button className={styles.refreshBtn} onClick={fetchOrders} title="Refresh">
+        <button 
+          className={`${styles.refreshBtn} ${refreshing ? styles.refreshing : ''}`} 
+          onClick={handleManualRefresh} 
+          title="Refresh"
+          disabled={refreshing}
+        >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
             <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
@@ -266,9 +293,17 @@ const handleAssign = useCallback(async (orderId, partner) => {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
-          <input className={styles.searchInput} placeholder="Order #, customer, phone…"
-            value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}/>
-          {search && <button className={styles.clearSearch} onClick={() => setSearch("")}>✕</button>}
+          <input 
+            className={styles.searchInput} 
+            placeholder="Order #, customer, phone…"
+            value={search} 
+            onChange={handleSearchChange}
+          />
+          {search && <button className={styles.clearSearch} onClick={() => {
+            setSearch("");
+            setPage(1);
+            fetchOrders();
+          }}>✕</button>}
         </div>
         <div className={styles.filterGroup}>
           <select className={styles.select} value={filterStatus}
@@ -338,19 +373,19 @@ const handleAssign = useCallback(async (orderId, partner) => {
                         {order.orderNumber}
                       </button>
                     </td>
-                    <td>
+                     <td>
                       <div className={styles.customerCell}>
                         <span className={styles.customerName}>{order.userId?.name || order.customerName ||"—"}</span>
                         <span className={styles.customerPhone}>{order.shippingAddress?.phone || order.customerPhone}</span>
                       </div>
                     </td>
-                    <td><span className={styles.itemCount}>{order.items?.length} item{order.items?.length!==1?"s":""}</span></td>
-                    <td><span className={styles.amount}>{fmt(order.totalAmount)}</span></td>
-                    <td><span className={styles.payBadge} style={{color:pc.color,borderColor:`${pc.color}44`}}>{pc.label}</span></td>
-                    <td><span className={styles.statusBadge} style={{color:sc.color,background:sc.bg}}>{sc.icon} {sc.label}</span></td>
-                    <td><span className={styles.courierCell}>{partnerName}</span></td>
-                    <td><span className={styles.dateCell}>{timeAgo(order.createdAt)}</span></td>
-                    <td>
+                     <td><span className={styles.itemCount}>{order.items?.length} item{order.items?.length!==1?"s":""}</span></td>
+                     <td><span className={styles.amount}>{fmt(order.totalAmount)}</span></td>
+                     <td><span className={styles.payBadge} style={{color:pc.color,borderColor:`${pc.color}44`}}>{pc.label}</span></td>
+                     <td><span className={styles.statusBadge} style={{color:sc.color,background:sc.bg}}>{sc.icon} {sc.label}</span></td>
+                     <td><span className={styles.courierCell}>{partnerName}</span></td>
+                     <td><span className={styles.dateCell}>{timeAgo(order.createdAt)}</span></td>
+                     <td>
                       <div className={styles.actionBtns}>
                         <button className={styles.actionBtn} title="View" onClick={() => fetchDetail(order._id)}>
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -375,8 +410,8 @@ const handleAssign = useCallback(async (orderId, partner) => {
                           </svg>
                         </button>
                       </div>
-                    </td>
-                  </tr>
+                     </td>
+                   </tr>
                 );
               })}
             </tbody>

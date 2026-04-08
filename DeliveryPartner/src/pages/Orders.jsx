@@ -38,97 +38,175 @@ const Orders = () => {
     return null;
   };
 
-  const fetchOrders = async () => {
-    setLoading(true);
-    try {
-      const partner = getPartnerInfo();
-      console.log("Partner info:", partner);
+  // const fetchOrders = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const partner = getPartnerInfo();
+  //     console.log("Partner info:", partner);
       
-      const response = await axios.get(`${API_BASE_URL}/api/delivery-partner/orders`, getAuthConfig());
-      console.log("Orders response:", response.data);
+  //     const response = await axios.get(`${API_BASE_URL}/api/delivery-partner/orders`, getAuthConfig());
+  //     console.log("Orders response:", response.data);
       
-      let ordersList = [];
-      if (response.data.data) {
-        ordersList = response.data.data;
-      } else if (response.data.orders) {
-        ordersList = response.data.orders;
-      } else if (Array.isArray(response.data)) {
-        ordersList = response.data;
-      }
+  //     let ordersList = [];
+  //     if (response.data.data) {
+  //       ordersList = response.data.data;
+  //     } else if (response.data.orders) {
+  //       ordersList = response.data.orders;
+  //     } else if (Array.isArray(response.data)) {
+  //       ordersList = response.data;
+  //     }
       
-      // Map status to delivery partner statuses if needed
-      const mappedOrders = ordersList.map(order => {
-        // If order has status like 'processing', map to 'assigned' for delivery partner
-        let deliveryStatus = order.status;
-        if (order.status === 'processing' || order.status === 'confirmed' || order.status === 'pending') {
-          deliveryStatus = 'assigned';
-        } else if (order.status === 'shipped' || order.status === 'out_for_delivery') {
-          deliveryStatus = 'picked';
-        }
+  //     // Map status to delivery partner statuses if needed
+  //     const mappedOrders = ordersList.map(order => {
+  //       // If order has status like 'processing', map to 'assigned' for delivery partner
+  //       let deliveryStatus = order.status;
+  //       if (order.status === 'processing' || order.status === 'confirmed' || order.status === 'pending') {
+  //         deliveryStatus = 'assigned';
+  //       } else if (order.status === 'shipped' || order.status === 'out_for_delivery') {
+  //         deliveryStatus = 'picked';
+  //       }
         
-        return {
-          ...order,
-          status: deliveryStatus
-        };
-      });
+  //       return {
+  //         ...order,
+  //         status: deliveryStatus
+  //       };
+  //     });
       
-      console.log("Processed orders:", mappedOrders);
-      setOrders(mappedOrders);
+  //     console.log("Processed orders:", mappedOrders);
+  //     setOrders(mappedOrders);
       
-      if (mappedOrders.length === 0) {
-        console.log("No orders found for this delivery partner");
-      }
-    } catch (error) {
-      console.error('Fetch orders error:', error);
-      console.error('Error details:', error.response?.data);
-      if (error.response?.status === 401) {
-        toast.error('Session expired. Please login again.');
-        localStorage.removeItem('partnerToken');
-        localStorage.removeItem('partnerData');
-        window.location.href = '/login';
-      } else {
-        toast.error(error.response?.data?.message || 'Failed to fetch orders');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     if (mappedOrders.length === 0) {
+  //       console.log("No orders found for this delivery partner");
+  //     }
+  //   } catch (error) {
+  //     console.error('Fetch orders error:', error);
+  //     console.error('Error details:', error.response?.data);
+  //     if (error.response?.status === 401) {
+  //       toast.error('Session expired. Please login again.');
+  //       localStorage.removeItem('partnerToken');
+  //       localStorage.removeItem('partnerData');
+  //       window.location.href = '/login';
+  //     } else {
+  //       toast.error(error.response?.data?.message || 'Failed to fetch orders');
+  //     }
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   // Update order status (for delivery partner)
-  const updateOrderStatus = async (orderId, status) => {
-    setUpdating(true);
-    try {
-      // Map delivery status to actual order status if needed
-      let actualStatus = status;
-      if (status === 'assigned') actualStatus = 'processing';
-      if (status === 'picked') actualStatus = 'shipped';
+  // const updateOrderStatus = async (orderId, status) => {
+  //   setUpdating(true);
+  //   try {
+  //     // Map delivery status to actual order status if needed
+  //     let actualStatus = status;
+  //     if (status === 'assigned') actualStatus = 'processing';
+  //     if (status === 'picked') actualStatus = 'shipped';
       
-      const response = await axios.put(
-        `${API_BASE_URL}/api/delivery-partner/orders/${orderId}/status`, 
-        { status: actualStatus }, 
-        getAuthConfig()
-      );
+  //     const response = await axios.put(
+  //       `${API_BASE_URL}/api/delivery-partner/orders/${orderId}/status`, 
+  //       { status: actualStatus }, 
+  //       getAuthConfig()
+  //     );
       
-      console.log("Update response:", response.data);
+  //     console.log("Update response:", response.data);
       
-      const statusMessages = {
-        assigned: 'Order accepted!',
-        picked: 'Order marked as picked up!',
-        delivered: 'Order marked as delivered! 🎉'
-      };
-      toast.success(statusMessages[status] || `Order status updated to ${status}`);
+  //     const statusMessages = {
+  //       assigned: 'Order accepted!',
+  //       picked: 'Order marked as picked up!',
+  //       delivered: 'Order marked as delivered! 🎉'
+  //     };
+  //     toast.success(statusMessages[status] || `Order status updated to ${status}`);
       
-      fetchOrders();
-      setSelectedOrder(null);
-      setOpenDropdownId(null);
-    } catch (error) {
-      console.error('Update status error:', error);
-      const errorMsg = error.response?.data?.message || 'Failed to update status';
-      toast.error(errorMsg);
-    } finally {
-      setUpdating(false);
+  //     fetchOrders();
+  //     setSelectedOrder(null);
+  //     setOpenDropdownId(null);
+  //   } catch (error) {
+  //     console.error('Update status error:', error);
+  //     const errorMsg = error.response?.data?.message || 'Failed to update status';
+  //     toast.error(errorMsg);
+  //   } finally {
+  //     setUpdating(false);
+  //   }
+  // };
+  // Update order status (for delivery partner) - FIXED
+const fetchOrders = async () => {
+  setLoading(true);
+  try {
+    const partner = getPartnerInfo();
+    console.log("Partner info:", partner);
+    
+    const response = await axios.get(`${API_BASE_URL}/api/delivery-partner/orders`, getAuthConfig());
+    console.log("Orders response:", response.data);
+    
+    let ordersList = [];
+    if (response.data.data) {
+      ordersList = response.data.data;
+    } else if (response.data.orders) {
+      ordersList = response.data.orders;
+    } else if (Array.isArray(response.data)) {
+      ordersList = response.data;
     }
-  };
+    
+    // Don't map statuses - use the status from backend directly
+    // The backend should return the correct delivery partner status
+    const processedOrders = ordersList.map(order => {
+      console.log(`Order ${order.orderNumber} has status:`, order.status);
+      return order;
+    });
+    
+    console.log("Processed orders:", processedOrders);
+    setOrders(processedOrders);
+    
+    if (processedOrders.length === 0) {
+      console.log("No orders found for this delivery partner");
+    }
+  } catch (error) {
+    console.error('Fetch orders error:', error);
+    console.error('Error details:', error.response?.data);
+    if (error.response?.status === 401) {
+      toast.error('Session expired. Please login again.');
+      localStorage.removeItem('partnerToken');
+      localStorage.removeItem('partnerData');
+      window.location.href = '/login';
+    } else {
+      toast.error(error.response?.data?.message || 'Failed to fetch orders');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+  const updateOrderStatus = async (orderId, status) => {
+  setUpdating(true);
+  try {
+    // Send the status directly - backend will handle the mapping
+    const response = await axios.put(
+      `${API_BASE_URL}/api/delivery-partner/orders/${orderId}/status`, 
+      { status: status },  // Send 'assigned', 'picked', or 'delivered'
+      getAuthConfig()
+    );
+    
+    console.log("Update response:", response.data);
+    
+    const statusMessages = {
+      assigned: 'Order accepted!',
+      picked: 'Order marked as picked up!',
+      delivered: 'Order marked as delivered! 🎉'
+    };
+    toast.success(statusMessages[status] || `Order status updated to ${status}`);
+    
+    // Refresh orders to show updated status
+    await fetchOrders();
+    setSelectedOrder(null);
+    setOpenDropdownId(null);
+  } catch (error) {
+    console.error('Update status error:', error);
+    const errorMsg = error.response?.data?.message || 'Failed to update status';
+    toast.error(errorMsg);
+  } finally {
+    setUpdating(false);
+  }
+};
 
   useEffect(() => {
     const handleClickOutside = (e) => {

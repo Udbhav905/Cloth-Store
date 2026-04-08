@@ -4,7 +4,7 @@ import Product from "../model/Product.js";
 import DeliveryPartner from "../model/DeliveryPartner.js";
 
 /* ═══════════════════════════════════════════════════════════
-   CUSTOMER CONTROLLERS  (unchanged from original)
+   CUSTOMER CONTROLLERS
 ═══════════════════════════════════════════════════════════ */
 
 // @desc    Create new order
@@ -28,6 +28,14 @@ export const createOrder = async (req, res) => {
       customerNotes,
       paymentDetails,
     } = req.body;
+
+    console.log("=== ORDER CREATION DEBUG ===");
+    console.log("User from token:", {
+      id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role
+    });
 
     if (!items || !items.length)
       return res.status(400).json({ message: "Order items are required" });
@@ -62,28 +70,37 @@ export const createOrder = async (req, res) => {
       image:      item.image || "",
     }));
 
+    // ✅ FIXED: Add name to shipping address if not present
+    const enrichedShippingAddress = {
+      name: req.user.name,  // Add user's name to shipping address
+      ...shippingAddress
+    };
+
     const order = await Order.create({
-      userId:         req.user._id,
-      items:          processedItems,
-      subtotal:       calculatedSubtotal,
-      discount:       discount || 0,
+      userId: req.user._id,
+      items: processedItems,
+      subtotal: calculatedSubtotal,
+      discount: discount || 0,
       shippingCharge: shippingCharge || (calculatedSubtotal > 500 ? 0 : 50),
-      tax:            tax || calculatedSubtotal * 0.18,
-      totalAmount:    calculatedTotal,
-      shippingAddress,
-      billingAddress: billingAddress || shippingAddress,
-      paymentMethod:  paymentMethod  || "cod",
-      paymentStatus:  paymentStatus  || "pending",
-      orderStatus:    orderStatus    || "pending",
+      tax: tax || calculatedSubtotal * 0.18,
+      totalAmount: calculatedTotal,
+      shippingAddress: enrichedShippingAddress,
+      billingAddress: billingAddress || enrichedShippingAddress,
+      paymentMethod: paymentMethod || "cod",
+      paymentStatus: paymentStatus || "pending",
+      orderStatus: orderStatus || "pending",
       paymentDetails: paymentDetails || {},
-      customerNotes:  customerNotes  || "",
+      customerNotes: customerNotes || "",
       statusHistory: [{
-        status:    orderStatus || "pending",
-        note:      "Order created",
+        status: orderStatus || "pending",
+        note: "Order created",
         changedAt: new Date(),
         changedBy: req.user._id,
       }],
     });
+
+    console.log(`✅ Order created for user: ${req.user.email} (${req.user.name})`);
+    console.log(`Order ID: ${order._id}, Order Number: ${order.orderNumber}`);
 
     // Reduce product stock
     for (const item of processedItems) {
@@ -99,7 +116,7 @@ export const createOrder = async (req, res) => {
       }
     }
 
-    // Clear cart (skip for buy-now flows)
+    // Clear cart
     if (paymentMethod === "cod" || !req.body.fromBuyNow) {
       await Cart.findOneAndUpdate(
         { userId: req.user._id },
@@ -107,7 +124,9 @@ export const createOrder = async (req, res) => {
       );
     }
 
-    res.status(201).json(order);
+    // ✅ FIXED: Return the populated order for immediate display
+    const populatedOrder = await Order.findById(order._id).populate("userId", "name email mobileNo");
+    res.status(201).json(populatedOrder);
   } catch (error) {
     console.error("Order creation error:", error);
     res.status(500).json({ message: error.message });
@@ -142,14 +161,26 @@ export const getOrders = async (req, res) => {
   }
 };
 
-// @desc    Get my orders
+// @desc    Get my orders - ✅ FIXED to properly return orders
 // @route   GET /api/orders/my-orders
 // @access  Private
 export const getMyOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    console.log(`Fetching orders for user: ${req.user._id} (${req.user.email})`);
+    
+    const orders = await Order.find({ userId: req.user._id })
+      .sort({ createdAt: -1 })
+      .populate("items.productId", "name mainImage slug");
+    
+    console.log(`Found ${orders.length} orders for user ${req.user.email}`);
+    
+    if (orders.length === 0) {
+      return res.json([]);
+    }
+    
     res.json(orders);
   } catch (error) {
+    console.error("getMyOrders error:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -159,7 +190,10 @@ export const getMyOrders = async (req, res) => {
 // @access  Private
 export const getOrderById = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id).populate("userId", "name email mobileNo");
+    const order = await Order.findById(req.params.id)
+      .populate("userId", "name email mobileNo")
+      .populate("statusHistory.changedBy", "name");
+    
     if (!order) return res.status(404).json({ message: "Order not found" });
 
     if (order.userId._id.toString() !== req.user._id.toString() && req.user.role !== "admin")
@@ -287,19 +321,19 @@ export const cancelOrder = async (req, res) => {
 };
 
 /* ═══════════════════════════════════════════════════════════
-   ADMIN CONTROLLERS  (new — required by admin Orders page)
+   ADMIN CONTROLLERS
 ═══════════════════════════════════════════════════════════ */
 
 // @desc    Get all orders with stats, search, pagination
 // @route   GET /api/orders/admin/all
 // @access  Private/Admin
 export const adminGetAllOrders = async (req, res) => {
+  const startTime = Date.now();
   try {
-    const page  = parseInt(req.query.page)  || 1;
+    const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 15;
-    const skip  = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
-    /* ── Build filter query ── */
     const query = {};
 
     if (req.query.status && req.query.status !== "all")
@@ -308,26 +342,25 @@ export const adminGetAllOrders = async (req, res) => {
     if (req.query.paymentStatus && req.query.paymentStatus !== "all")
       query.paymentStatus = req.query.paymentStatus;
 
-    /* ── Search: order number, phone, customer name ── */
     if (req.query.search) {
       const s = req.query.search.trim();
       query.$or = [
         { orderNumber: { $regex: s, $options: "i" } },
         { "shippingAddress.phone": { $regex: s, $options: "i" } },
+        { "shippingAddress.name": { $regex: s, $options: "i" } },  // ✅ ADDED: search by customer name
       ];
     }
 
-    /* ── Sort ── */
     const sortMap = {
-      newest:      { createdAt: -1 },
-      oldest:      { createdAt:  1 },
+      newest: { createdAt: -1 },
+      oldest: { createdAt: 1 },
       amount_desc: { totalAmount: -1 },
-      amount_asc:  { totalAmount:  1 },
+      amount_asc: { totalAmount: 1 },
     };
     const sort = sortMap[req.query.sort] || { createdAt: -1 };
 
-    /* ── Execute in parallel ── */
-    const [orders, total, statsRaw] = await Promise.all([
+    // ✅ FIXED: Properly populate userId to get customer name
+    const [orders, total] = await Promise.all([
       Order.find(query)
         .populate("userId", "name email mobileNo")
         .skip(skip)
@@ -335,40 +368,41 @@ export const adminGetAllOrders = async (req, res) => {
         .sort(sort)
         .lean(),
       Order.countDocuments(query),
-
-      // Aggregate stats (always across ALL orders, no filter)
-      Order.aggregate([
-        {
-          $facet: {
-            byStatus: [
-              { $group: { _id: "$orderStatus", count: { $sum: 1 } } },
-            ],
-            revenue: [
-              { $match: { paymentStatus: "paid" } },
-              { $group: { _id: null, total: { $sum: "$totalAmount" } } },
-            ],
-            totalAll: [{ $count: "n" }],
-          },
-        },
-      ]),
     ]);
 
-    /* ── Shape stats ── */
+    // Get stats
+    const [statusCounts, revenueData] = await Promise.all([
+      Order.aggregate([
+        { $match: {} },
+        { $group: { _id: "$orderStatus", count: { $sum: 1 } } },
+        { $limit: 20 }
+      ]),
+      Order.aggregate([
+        { $match: { paymentStatus: "paid", orderStatus: { $nin: ["cancelled", "returned", "refunded"] } } },
+        { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+        { $limit: 1 }
+      ])
+    ]);
+
     const byStatus = {};
-    (statsRaw[0]?.byStatus || []).forEach((s) => { byStatus[s._id] = s.count; });
+    statusCounts.forEach(s => { byStatus[s._id] = s.count; });
+    
     const stats = {
-      total:     statsRaw[0]?.totalAll?.[0]?.n || 0,
-      pending:   byStatus.pending   || 0,
+      total: total,
+      pending: byStatus.pending || 0,
       confirmed: byStatus.confirmed || 0,
-      processing:byStatus.processing|| 0,
-      shipped:   byStatus.shipped   || 0,
+      processing: byStatus.processing || 0,
+      shipped: byStatus.shipped || 0,
       out_for_delivery: byStatus.out_for_delivery || 0,
       delivered: byStatus.delivered || 0,
       cancelled: byStatus.cancelled || 0,
-      returned:  byStatus.returned  || 0,
-      refunded:  byStatus.refunded  || 0,
-      revenue:   statsRaw[0]?.revenue?.[0]?.total || 0,
+      returned: byStatus.returned || 0,
+      refunded: byStatus.refunded || 0,
+      revenue: revenueData[0]?.total || 0,
     };
+
+    const endTime = Date.now();
+    console.log(`✅ Orders fetched in ${endTime - startTime}ms`);
 
     res.json({
       orders,
@@ -383,7 +417,7 @@ export const adminGetAllOrders = async (req, res) => {
   }
 };
 
-// @desc    Get single order detail (admin — always allowed)
+// @desc    Get single order detail (admin)
 // @route   GET /api/orders/admin/:id
 // @access  Private/Admin
 export const adminGetOrderById = async (req, res) => {
@@ -402,7 +436,7 @@ export const adminGetOrderById = async (req, res) => {
   }
 };
 
-// @desc    Update order status (admin panel — richer response)
+// @desc    Update order status (admin panel)
 // @route   PUT /api/orders/admin/:id/status
 // @access  Private/Admin
 export const adminUpdateStatus = async (req, res) => {
@@ -418,9 +452,22 @@ export const adminUpdateStatus = async (req, res) => {
     const prev = order.orderStatus;
     order.orderStatus = orderStatus;
 
+    // ✅ Auto-update payment for COD orders when marked as delivered
+    if (orderStatus === "delivered" && order.paymentMethod === "cod") {
+      console.log(`💰 Admin: COD Order ${order.orderNumber} marked as delivered - Updating payment to PAID`);
+      order.paymentStatus = "paid";
+      
+      order.paymentDetails = {
+        ...order.paymentDetails,
+        transactionId: `COD-${order.orderNumber}-${Date.now()}`,
+        paymentId: `COD-${order.orderNumber}`,
+        paidAt: new Date()
+      };
+    }
+
     order.statusHistory.push({
-      status:    orderStatus,
-      note:      note || `Status changed from ${prev} to ${orderStatus}`,
+      status: orderStatus,
+      note: note || `Status changed from ${prev} to ${orderStatus}`,
       changedAt: new Date(),
       changedBy: req.user._id,
     });
@@ -429,7 +476,6 @@ export const adminUpdateStatus = async (req, res) => {
 
     if (orderStatus === "cancelled") {
       order.cancelledAt = new Date();
-      // Restore stock
       for (const item of order.items) {
         try {
           const product = await Product.findById(item.productId);
@@ -458,56 +504,7 @@ export const adminUpdateStatus = async (req, res) => {
   }
 };
 
-// @desc    ✅ FIXED: Assign delivery partner to order
-// @route   PUT /api/orders/admin/:id/assign
-// @access  Private/Admin
-// export const adminAssignDelivery = async (req, res) => {
-//   try {
-//     const {
-//       courierName,
-//       trackingNumber,
-//       deliveryPartnerId,   // ✅ NEW: Accept partner ID
-//       deliveryPartnerName, // ✅ NEW: Accept partner name
-//       estimatedDelivery,
-//       note
-//     } = req.body;
-
-//     if (!courierName || !deliveryPartnerId)
-//       return res.status(400).json({ message: "courierName and deliveryPartnerId are required" });
-
-//     const order = await Order.findById(req.params.id);
-//     if (!order) return res.status(404).json({ message: "Order not found" });
-
-//     // ✅ FIXED: Save delivery partner info to order
-//     order.deliveryPartnerId   = deliveryPartnerId;
-//     order.deliveryPartnerName = deliveryPartnerName || courierName;
-//     order.courierName         = courierName;
-//     order.trackingNumber      = trackingNumber || `TRK${Date.now().toString().slice(-8)}`;
-//     order.assignedAt          = new Date();
-
-//     if (estimatedDelivery) order.estimatedDelivery = new Date(estimatedDelivery);
-
-//     // Keep existing status (do NOT auto-advance to shipped)
-//     order.statusHistory.push({
-//       status:    order.orderStatus,
-//       note:      note || `Assigned to ${courierName} (${deliveryPartnerName}) · Tracking: ${order.trackingNumber}`,
-//       changedAt: new Date(),
-//       changedBy: req.user._id,
-//     });
-
-//     await order.save();
-    
-//     const updated = await Order.findById(order._id)
-//       .populate("userId", "name email mobileNo")
-//       .lean();
-
-//     res.json({ success: true, order: updated });
-//   } catch (error) {
-//     console.error("adminAssignDelivery error:", error);
-//     res.status(500).json({ message: error.message });
-//   }
-// };
-// @desc    Assign delivery partner to order
+// @desc    Assign delivery partner to order - ✅ FIXED
 // @route   PUT /api/orders/admin/:id/assign
 // @access  Private/Admin
 export const adminAssignDelivery = async (req, res) => {
@@ -515,14 +512,12 @@ export const adminAssignDelivery = async (req, res) => {
     const { 
       courierName, 
       trackingNumber, 
-      orderStatus, 
-      note, 
-      estimatedDelivery,
-      partnerId,           // Add this
-      deliveryPartnerId,   // Add this
-      deliveryPartnerName, // Add this
-      partnerName          // Add this
+      deliveryPartnerId,
+      deliveryPartnerName,
+      note
     } = req.body;
+
+    console.log("📦 Assigning delivery partner:", { courierName, deliveryPartnerId, deliveryPartnerName });
 
     if (!courierName && !deliveryPartnerName) {
       return res.status(400).json({ message: "courierName or deliveryPartnerName is required" });
@@ -531,53 +526,43 @@ export const adminAssignDelivery = async (req, res) => {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found" });
 
-    // Get the partner ID (use whichever is provided)
-    const assignedPartnerId = partnerId || deliveryPartnerId;
-    
-    // Get the partner name
-    const assignedPartnerName = deliveryPartnerName || partnerName || courierName;
+    const partnerName = deliveryPartnerName || courierName;
+    const partnerId = deliveryPartnerId;
 
-    // Update order with delivery partner info
-    order.courierName = assignedPartnerName;
+    // ✅ Save delivery partner info to order
+    if (partnerId) {
+      order.deliveryPartnerId = partnerId;
+    }
+    order.deliveryPartnerName = partnerName;
+    order.courierName = courierName || partnerName;
     order.trackingNumber = trackingNumber || `TRK${Date.now().toString().slice(-8)}`;
-    
-    // ✅ IMPORTANT: Store partner ID in order
-    order.deliveryPartnerId = assignedPartnerId;
-    order.partnerId = assignedPartnerId;  // For backward compatibility
-    order.partnerName = assignedPartnerName;
+    order.assignedAt = new Date();
 
-    if (estimatedDelivery) order.estimatedDelivery = new Date(estimatedDelivery);
-
-    // Advance status to shipped if not already further along
+    // Only advance status if order is still pending/confirmed/processing
     const advanceStatuses = ["pending", "confirmed", "processing"];
-    if (orderStatus) {
-      order.orderStatus = orderStatus;
-    } else if (advanceStatuses.includes(order.orderStatus)) {
-      order.orderStatus = "shipped";
+    if (advanceStatuses.includes(order.orderStatus)) {
+      order.orderStatus = "processing";
     }
 
     order.statusHistory.push({
       status: order.orderStatus,
-      note: note || `Assigned to ${assignedPartnerName} · Tracking: ${order.trackingNumber}`,
+      note: note || `Assigned to ${partnerName} · Tracking: ${order.trackingNumber}`,
       changedAt: new Date(),
       changedBy: req.user._id,
     });
 
     await order.save();
 
-    // ✅ CRITICAL: Update the delivery partner's assignedOrders array
-    if (assignedPartnerId) {
-      const DeliveryPartner = (await import('../model/DeliveryPartner.js')).default;
-      const deliveryPartner = await DeliveryPartner.findById(assignedPartnerId);
+    // ✅ Update the delivery partner's assignedOrders array
+    if (partnerId) {
+      const deliveryPartner = await DeliveryPartner.findById(partnerId);
       
       if (deliveryPartner) {
-        // Check if order already assigned to this partner
         const alreadyAssigned = deliveryPartner.assignedOrders?.some(
           a => a.orderId?.toString() === order._id.toString()
         );
         
         if (!alreadyAssigned) {
-          // Add order to partner's assignedOrders
           if (!deliveryPartner.assignedOrders) {
             deliveryPartner.assignedOrders = [];
           }
@@ -590,11 +575,9 @@ export const adminAssignDelivery = async (req, res) => {
           
           await deliveryPartner.save();
           console.log(`✅ Order ${order.orderNumber} assigned to delivery partner ${deliveryPartner.name}`);
-        } else {
-          console.log(`⚠️ Order ${order.orderNumber} already assigned to ${deliveryPartner.name}`);
         }
       } else {
-        console.log(`⚠️ Delivery partner with ID ${assignedPartnerId} not found`);
+        console.log(`⚠️ Delivery partner with ID ${partnerId} not found`);
       }
     }
 
