@@ -751,7 +751,7 @@ export default function Navbar() {
               </button>
             )}
             <p className={styles.mobileFooterCities}>
-              Paris · Milan · New York · Dubai
+             · NADIAD · NAGPUR  · 
             </p>
           </div>
         </div>

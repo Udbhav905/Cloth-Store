@@ -498,7 +498,7 @@ export default function Collections() {
       {/* Footer accent */}
       <div className={styles.footerAccent}>
         <span>◆ LUXURIA ◆</span>
-        <p>Paris · Milan · New York · Dubai</p>
+        <p> · NADIAD · NAGPUR  ·  </p>
       </div>
 
     </div>

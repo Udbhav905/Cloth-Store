@@ -10,8 +10,7 @@ const getInitials = (name = "") =>
   name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
 
 function authHeader() {
-  /* Read directly from Zustand store state — never localStorage */
-  const token = useAuthStore.getState()?.accessToken || "";
+  const token = useAuthStore.getState()?.accessToken || localStorage.getItem('userToken') || "";
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
  
@@ -22,7 +21,6 @@ async function apiFetch(path, options = {}) {
       ...authHeader(),
       ...(options.headers || {}),
     },
-    /* NO credentials:"include" — never send the shared cookie */
     ...options,
   });
   const data = await res.json().catch(() => ({}));
@@ -53,7 +51,6 @@ function AddressModal({ existing, onSave, onClose, saving }) {
 
   useEffect(() => {
     firstRef.current?.focus();
-    // Prevent body scroll
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
@@ -168,6 +165,47 @@ function AddressCard({ addr, index, onEdit, onDelete, onSetDefault, loading }) {
 }
 
 /* ════════════════════════════════════════════════════════════
+   ORDER CARD COMPONENT - FIXED
+════════════════════════════════════════════════════════════ */
+function OrderStatusBadge({ status }) {
+  const getStatusConfig = (s) => {
+    const statusMap = {
+      'pending': { label: 'Pending', class: 'statusPending' },
+      'confirmed': { label: 'Confirmed', class: 'statusConfirmed' },
+      'processing': { label: 'Processing', class: 'statusProcessing' },
+      'shipped': { label: 'Shipped', class: 'statusShipped' },
+      'out_for_delivery': { label: 'Out for Delivery', class: 'statusOutForDelivery' },
+      'delivered': { label: 'Delivered', class: 'statusDelivered' },
+      'cancelled': { label: 'Cancelled', class: 'statusCancelled' },
+      'returned': { label: 'Returned', class: 'statusReturned' },
+      'refunded': { label: 'Refunded', class: 'statusRefunded' }
+    };
+    return statusMap[s] || { label: s || 'Pending', class: 'statusPending' };
+  };
+
+  const config = getStatusConfig(status);
+  return <span className={`${styles.orderStatus} ${styles[config.class]}`}>{config.label}</span>;
+}
+
+function formatCurrency(amount) {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(amount || 0);
+}
+
+function formatDate(dateString) {
+  if (!dateString) return '—';
+  return new Date(dateString).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
+}
+
+/* ════════════════════════════════════════════════════════════
    MAIN PAGE
 ════════════════════════════════════════════════════════════ */
 const TABS = ["profile", "addresses", "orders"];
@@ -180,12 +218,13 @@ export default function ProfilePage() {
   const [profile,   setProfile]   = useState(null);
   const [addresses, setAddresses] = useState([]);
   const [orders,    setOrders]    = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
 
   /* ── UI state ───────────────────────────────────────────── */
   const [tab,        setTab]        = useState("profile");
   const [loading,    setLoading]    = useState(true);
   const [saving,     setSaving]     = useState(false);
-  const [addrModal,  setAddrModal]  = useState(null);  // null | "new" | {existing address}
+  const [addrModal,  setAddrModal]  = useState(null);
   const [toast,      setToast]      = useState(null);
   const toastRef = useRef(null);
 
@@ -215,19 +254,36 @@ export default function ProfilePage() {
         setAddresses(addrs || []);
       } catch (err) {
         showToast(err.message, "error");
+        if (err.message.includes("401")) navigate("/login");
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [navigate, showToast]);
 
-  /* ── Fetch orders lazily when tab opens ─────────────────── */
+  /* ── ✅ FIXED: Fetch orders from correct endpoint ── */
   useEffect(() => {
-    if (tab !== "orders" || orders.length > 0) return;
-    apiFetch("/users/orders")
-      .then(setOrders)
-      .catch((err) => showToast(err.message, "error"));
-  }, [tab]);
+    if (tab !== "orders") return;
+    
+    const fetchOrders = async () => {
+      setOrdersLoading(true);
+      try {
+        // ✅ CORRECT ENDPOINT: /api/orders/my-orders
+        const data = await apiFetch("/orders/my-orders");
+        const ordersList = Array.isArray(data) ? data : data.orders || data.data || [];
+        setOrders(ordersList);
+        console.log(`✅ Fetched ${ordersList.length} orders`);
+      } catch (err) {
+        console.error("Error fetching orders:", err);
+        showToast(err.message, "error");
+        setOrders([]);
+      } finally {
+        setOrdersLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [tab, showToast]);
 
   /* ── Focus name input when editing ─────────────────────── */
   useEffect(() => {
@@ -245,7 +301,7 @@ export default function ProfilePage() {
       });
       setProfile(updated);
       setNameVal(updated.name);
-      await fetchProfile?.();   // refresh auth store so Navbar initials update
+      await fetchProfile?.();
       showToast("Name updated successfully");
     } catch (err) {
       showToast(err.message, "error");
@@ -261,13 +317,11 @@ export default function ProfilePage() {
       setSaving(true);
       let updated;
       if (addrModal?._id) {
-        // Edit
         updated = await apiFetch(`/users/address/${addrModal._id}`, {
           method: "PUT",
           body: JSON.stringify(form),
         });
       } else {
-        // Add
         updated = await apiFetch("/users/address", {
           method: "POST",
           body: JSON.stringify(form),
@@ -337,7 +391,6 @@ export default function ProfilePage() {
 
       {/* ── Sidebar ────────────────────────────────────────── */}
       <aside className={styles.sidebar}>
-        {/* Avatar */}
         <div className={styles.avatarWrap}>
           <div className={styles.avatarRing} />
           <div className={styles.avatar}>{initials}</div>
@@ -353,7 +406,6 @@ export default function ProfilePage() {
           <span className={styles.verifiedBadge}>✓ Verified</span>
         )}
 
-        {/* Nav tabs */}
         <nav className={styles.sidebarNav}>
           {TABS.map((t) => (
             <button
@@ -389,7 +441,6 @@ export default function ProfilePage() {
             </div>
 
             <div className={styles.infoGrid}>
-              {/* Name — editable */}
               <div className={`${styles.infoCard} ${styles.infoCardFull}`}>
                 <div className={styles.infoCardHeader}>
                   <span className={styles.infoCardLabel}>Full Name</span>
@@ -423,7 +474,6 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              {/* Email — locked */}
               <div className={styles.infoCard}>
                 <div className={styles.infoCardHeader}>
                   <span className={styles.infoCardLabel}>Email Address</span>
@@ -438,7 +488,6 @@ export default function ProfilePage() {
                 <p className={styles.infoCardValue}>{profile?.email}</p>
               </div>
 
-              {/* Mobile — locked */}
               <div className={styles.infoCard}>
                 <div className={styles.infoCardHeader}>
                   <span className={styles.infoCardLabel}>Mobile Number</span>
@@ -453,7 +502,6 @@ export default function ProfilePage() {
                 <p className={styles.infoCardValue}>{profile?.mobileNo || "—"}</p>
               </div>
 
-              {/* Account created */}
               <div className={styles.infoCard}>
                 <span className={styles.infoCardLabel}>Member Since</span>
                 <p className={styles.infoCardValue}>
@@ -464,7 +512,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Quick links */}
             <div className={styles.quickLinks}>
               <button className={styles.quickLink} onClick={() => setTab("addresses")}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3">
@@ -534,7 +581,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* ════ ORDERS TAB ════ */}
+        {/* ════ ORDERS TAB - ✅ FIXED ════ */}
         {tab === "orders" && (
           <div className={styles.tabPanel} key="orders">
             <div className={styles.panelHeader}>
@@ -542,7 +589,12 @@ export default function ProfilePage() {
               <p className={styles.panelSub}>Your complete purchase history</p>
             </div>
 
-            {orders.length === 0 ? (
+            {ordersLoading ? (
+              <div className={styles.loadWrap}>
+                <div className={styles.loadSpinner} />
+                <p className={styles.loadText}>Loading your orders…</p>
+              </div>
+            ) : orders.length === 0 ? (
               <div className={styles.emptyTab}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.8" className={styles.emptyTabIcon}>
                   <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
@@ -559,28 +611,26 @@ export default function ProfilePage() {
                   <div
                     key={order._id}
                     className={styles.orderCard}
-                    style={{ "--i": i, animation: `fadeUp 0.5s ease ${i * 0.07}s both` }}
+                    style={{ animation: `fadeUp 0.5s ease ${i * 0.07}s both` }}
                   >
                     <div className={styles.orderCardTop}>
                       <div>
-                        <span className={styles.orderId}>#{order._id?.slice(-8).toUpperCase()}</span>
+                        <span className={styles.orderId}>#{order.orderNumber || order._id?.slice(-8).toUpperCase()}</span>
                         <span className={styles.orderDate}>
-                          {new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                          {formatDate(order.createdAt)}
                         </span>
                       </div>
-                      <span className={`${styles.orderStatus} ${styles[`status_${order.status?.toLowerCase()}`]}`}>
-                        {order.status || "Processing"}
-                      </span>
+                      <OrderStatusBadge status={order.orderStatus} />
                     </div>
 
                     {/* Items preview */}
                     <div className={styles.orderItems}>
                       {(order.items || []).slice(0, 3).map((item, j) => (
                         <div key={j} className={styles.orderItem}>
-                          {item.productId?.mainImage && (
-                            <img src={item.productId.mainImage} alt={item.productId?.name} className={styles.orderItemImg} />
+                          {item.image && (
+                            <img src={item.image} alt={item.productName || item.name} className={styles.orderItemImg} />
                           )}
-                          <span className={styles.orderItemName}>{item.productId?.name || item.name}</span>
+                          <span className={styles.orderItemName}>{item.productName || item.name}</span>
                           <span className={styles.orderItemQty}>×{item.quantity}</span>
                         </div>
                       ))}
@@ -591,7 +641,7 @@ export default function ProfilePage() {
 
                     <div className={styles.orderCardBottom}>
                       <span className={styles.orderTotal}>
-                        ₹{(order.totalAmount || 0).toLocaleString("en-IN")}
+                        {formatCurrency(order.totalAmount)}
                       </span>
                       <Link to={`/orders/${order._id}`} className={styles.orderViewBtn}>
                         View Details

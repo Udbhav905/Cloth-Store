@@ -3,35 +3,36 @@ import { Link } from "react-router-dom";
 import styles from "./Footer.module.css";
 
 /* ─────────────────────────────────────────────
-   FOOTER DATA
+   FOOTER DATA - Updated routes to match your app
 ───────────────────────────────────────────── */
 const LINKS = [
   {
     heading: "Collections",
     items: [
-      { label: "Evening Gowns",    to: "/collections/evening-gowns" },
-      { label: "Tailored Suiting", to: "/collections/tailored-suits" },
-      { label: "Resort Wear",      to: "/collections/resort-wear" },
-      { label: "Bridal Couture",   to: "/collections/bridal-couture" },
-      { label: "Cashmere Knits",   to: "/collections/cashmere-knits" },
+      { label: "Mens",    to: "/collections/men" },
+      { label: "Women Suiting", to: "/collections/women" },
+      { label: "Sales",      to: "/collections/sale" },
+      // { label: "Bridal Couture",   to: "/collections/accessories" },
+      // { label: "Cashmere Knits",   to: "/collections/cashmere-knits" },
       { label: "Accessories",      to: "/collections/accessories" },
     ],
   },
-  {
-    heading: "Maison",
-    items: [
-      { label: "Our Heritage",   to: "/heritage" },
-      { label: "Atelier",        to: "/atelier" },
-      { label: "Sustainability", to: "/sustainability" },
-      { label: "Careers",        to: "/careers" },
-      { label: "Press",          to: "/press" },
-    ],
-  },
+  // {
+  //   heading: "Maison",
+  //   items: [
+  //     { label: "Our Heritage",   to: "/heritage" },
+  //     { label: "Atelier",        to: "/atelier" },
+  //     { label: "Sustainability", to: "/sustainability" },
+  //     { label: "Careers",        to: "/careers" },
+  //     { label: "Press",          to: "/press" },
+  //   ],
+  // },
   {
     heading: "Client Services",
     items: [
       { label: "My Orders",         to: "/my-orders" },
       { label: "Wishlist",          to: "/wishlist" },
+      { label: "Profile",           to: "/profile" },
       { label: "Size Guide",        to: "/size-guide" },
       { label: "Shipping & Returns",to: "/shipping" },
       { label: "Care Instructions", to: "/care" },
@@ -116,16 +117,26 @@ export default function Footer() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+  const scrollToTop = () => {
+    // Use Lenis if available for smooth scroll
+    if (window.lenis) {
+      window.lenis.scrollTo(0, { duration: 0.8 });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
 
-  /* Newsletter mock submit */
+  /* Newsletter submit */
   const handleSubscribe = (e) => {
     e.preventDefault();
     if (!email.trim() || subState !== "idle") return;
     setSubState("loading");
+    // Simulate API call
     setTimeout(() => {
       setSubState("done");
       setEmail("");
+      // Reset after 3 seconds
+      setTimeout(() => setSubState("idle"), 3000);
     }, 1400);
   };
 
@@ -264,8 +275,8 @@ export default function Footer() {
           >
             <h4 className={styles.colHeading}>{col.heading}</h4>
             <ul className={styles.colList}>
-              {col.items.map((item, li) => (
-                <li key={item.label} style={{ "--li": li }}>
+              {col.items.map((item) => (
+                <li key={item.label}>
                   <Link to={item.to} className={styles.colLink}>
                     <span className={styles.colLinkDot}>·</span>
                     {item.label}
@@ -281,9 +292,9 @@ export default function Footer() {
           <h4 className={styles.colHeading}>Find Us</h4>
           <div className={styles.contactList}>
             {[
-              { city: "Paris", addr: "8 Rue du Faubourg Saint-Honoré, 75008" },
-              { city: "Milan",  addr: "Via Montenapoleone 12, 20121" },
-              { city: "Dubai",  addr: "Fashion Ave, Dubai Mall, Downtown" },
+              { city: "Nadiad", addr: "DDU,Collage Road" },
+              { city: "NAGPUR",  addr: "WHITE HOUSE" },
+              // { city: "BOTAD",  addr: "NEAR VARIYADEVI TEMPLE" },
             ].map((loc) => (
               <div key={loc.city} className={styles.contactItem}>
                 <span className={styles.contactCity}>{loc.city}</span>
@@ -291,8 +302,8 @@ export default function Footer() {
               </div>
             ))}
             <div className={styles.contactItem}>
-              <span className={styles.contactCity}>Concierge</span>
-              <span className={styles.contactAddr}>+33 1 23 45 67 89</span>
+              <span className={styles.contactCity}>Nadiad</span>
+              <span className={styles.contactAddr}>+8128049281</span>
             </div>
           </div>
         </div>
@@ -307,14 +318,11 @@ export default function Footer() {
           <span className={styles.bottomDiamond}>◆ LUXURIA ◆</span>
         </div>
         <div className={styles.bottomRight}>
-          {["Privacy Policy", "Terms of Use", "Cookie Settings"].map((t, i) => (
-            <span key={t} className={styles.bottomLinkWrap}>
-              <Link to={`/${t.toLowerCase().replace(/\s+/g, "-")}`} className={styles.bottomLink}>
-                {t}
-              </Link>
-              {i < 2 && <span className={styles.bottomSep}>·</span>}
-            </span>
-          ))}
+          <Link to="/privacy-policy" className={styles.bottomLink}>Privacy Policy</Link>
+          <span className={styles.bottomSep}>·</span>
+          <Link to="/terms-of-use" className={styles.bottomLink}>Terms of Use</Link>
+          <span className={styles.bottomSep}>·</span>
+          <Link to="/cookie-settings" className={styles.bottomLink}>Cookie Settings</Link>
         </div>
       </div>
 

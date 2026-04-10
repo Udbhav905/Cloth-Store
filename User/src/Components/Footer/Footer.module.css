@@ -689,7 +689,7 @@
 @media (max-width: 1200px) {
   .body {
     grid-template-columns: 240px repeat(3, 1fr);
-    gap: 36px;
+    gap: 250px;
   }
 
   .contactCol { grid-column: 1 / -1; }
