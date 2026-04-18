@@ -1,16 +1,6 @@
-/* ReviewModal.jsx
-   Drop-in review modal for user orders page.
-   Usage:
-     <ReviewModal
-       order={orderObject}
-       item={orderItemObject}          // single product item
-       onClose={() => …}
-       onSuccess={(review) => …}
-     />
-*/
 
 import { useState, useEffect, useRef } from "react";
-import styles from "./ReviewModal.module.css";
+import styles from "./Reviewmodal.module.css";
 
 import useApiStore from "../../store/others";
 const API = useApiStore.getState().API;
