@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import useProductStore, { calcFinalPrice, hasDiscount, formatPrice } from "../store/useProductStore";
-import useCategoryStore from "../store/useCategoryStore";
+import useCategoryStore from "../store/Usecategorystore";
 import styles from "./styles/Collections.module.css";
 
 /* ─── Floating fabric particle ─────────────────────────── */
