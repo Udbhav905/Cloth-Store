@@ -8,7 +8,6 @@ export const validateRequest = (req, res, next) => {
   next();
 };
 
-// User validation
 export const registerValidation = [
   body("name").notEmpty().withMessage("Name is required"),
   body("email").isEmail().withMessage("Valid email is required"),
@@ -23,7 +22,6 @@ export const loginValidation = [
   validateRequest
 ];
 
-// Product validation
 export const productValidation = [
   body("name").notEmpty().withMessage("Product name is required"),
   body("price").isNumeric().withMessage("Price must be a number"),
@@ -32,7 +30,6 @@ export const productValidation = [
   validateRequest
 ];
 
-// Order validation
 export const orderValidation = [
   body("items").isArray({ min: 1 }).withMessage("At least one item is required"),
   body("shippingAddress").notEmpty().withMessage("Shipping address is required"),
@@ -40,7 +37,6 @@ export const orderValidation = [
   validateRequest
 ];
 
-// Review validation
 export const reviewValidation = [
   body("rating").isInt({ min: 1, max: 5 }).withMessage("Rating must be between 1 and 5"),
   body("review").notEmpty().withMessage("Review text is required"),

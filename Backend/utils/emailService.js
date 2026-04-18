@@ -1,7 +1,5 @@
-// utils/emailService.js
 import { sendEmail } from "./sendEmail.js";
 
-// Send password reset email
 export const sendPasswordResetEmail = async (email, resetToken, userName) => {
   const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
@@ -75,7 +73,6 @@ export const sendPasswordResetEmail = async (email, resetToken, userName) => {
   });
 };
 
-// Send password changed confirmation
 export const sendPasswordChangedConfirmation = async (email, userName) => {
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

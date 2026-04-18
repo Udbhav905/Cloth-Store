@@ -11,10 +11,8 @@ import { protectDeliveryPartner } from '../Middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Public routes
 router.post('/login', loginPartner);
 
-// Protected routes
 router.use(protectDeliveryPartner);
 
 router.get('/stats', getPartnerStats);

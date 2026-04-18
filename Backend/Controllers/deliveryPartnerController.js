@@ -1,12 +1,8 @@
 import DeliveryPartner from "../model/DeliveryPartner.js";
 
-// @desc    Register new delivery partner
-// @route   POST /api/delivery-partners/register
-// @access  Private/Admin
-// @desc    Register new delivery partner
+
 import bcrypt from "bcryptjs";
 
-// @desc    Register new delivery partner
 const registerDeliveryPartner = async (req, res) => {
   try {
     const {
@@ -22,7 +18,6 @@ const registerDeliveryPartner = async (req, res) => {
       bankDetails,
     } = req.body;
 
-    // Check if partner already exists
     const existingPartner = await DeliveryPartner.findOne({
       $or: [
         { email },
@@ -41,14 +36,11 @@ const registerDeliveryPartner = async (req, res) => {
       });
     }
 
-    // Generate default password (using phone number)
     const defaultPassword = phone; // or use a more secure default like 'Delivery@123'
 
-    // Hash the password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(defaultPassword, salt);
 
-    // Create new delivery partner
     const deliveryPartner = new DeliveryPartner({
       name,
       email,
@@ -87,21 +79,17 @@ const registerDeliveryPartner = async (req, res) => {
   }
 };
 
-// @desc    Get all delivery partners
-// @route   GET /api/delivery-partners
-// @access  Private/Admin
+
 const getAllDeliveryPartners = async (req, res) => {
   try {
     const { status, page = 1, limit = 10, search } = req.query;
 
     let query = {};
 
-    // Filter by status
     if (status) {
       query.status = status;
     }
 
-    // Search by name, email, phone, company
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: "i" } },
@@ -140,9 +128,6 @@ const getAllDeliveryPartners = async (req, res) => {
   }
 };
 
-// @desc    Get single delivery partner by ID
-// @route   GET /api/delivery-partners/:id
-// @access  Private/Admin
 const getDeliveryPartnerById = async (req, res) => {
   try {
     const deliveryPartner = await DeliveryPartner.findById(req.params.id);
@@ -168,9 +153,7 @@ const getDeliveryPartnerById = async (req, res) => {
   }
 };
 
-// @desc    Update delivery partner
-// @route   PUT /api/delivery-partners/:id
-// @access  Private/Admin
+
 const updateDeliveryPartner = async (req, res) => {
   try {
     const updates = req.body;
@@ -183,7 +166,6 @@ const updateDeliveryPartner = async (req, res) => {
       });
     }
 
-    // Prevent updating sensitive fields if not admin
     delete updates._id;
     delete updates.createdAt;
 
@@ -210,9 +192,6 @@ const updateDeliveryPartner = async (req, res) => {
   }
 };
 
-// @desc    Delete delivery partner
-// @route   DELETE /api/delivery-partners/:id
-// @access  Private/Admin
 const deleteDeliveryPartner = async (req, res) => {
   try {
     const deliveryPartner = await DeliveryPartner.findById(req.params.id);
@@ -240,9 +219,7 @@ const deleteDeliveryPartner = async (req, res) => {
   }
 };
 
-// @desc    Update delivery partner status
-// @route   PATCH /api/delivery-partners/:id/status
-// @access  Private/Admin
+
 const updatePartnerStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -282,9 +259,7 @@ const updatePartnerStatus = async (req, res) => {
   }
 };
 
-// @desc    Get delivery partner statistics
-// @route   GET /api/delivery-partners/stats
-// @access  Private/Admin
+
 const getPartnerStats = async (req, res) => {
   try {
     const totalPartners = await DeliveryPartner.countDocuments();

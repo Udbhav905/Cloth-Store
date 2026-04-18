@@ -28,7 +28,6 @@ export default function DeliveryPartner() {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
   });
 
-  // Fetch partners from API
   const fetchPartners = async () => {
     try {
       setLoading(true);
@@ -48,7 +47,6 @@ export default function DeliveryPartner() {
     }
   };
 
-  // Fetch stats from API
   const fetchStats = async () => {
     try {
       const response = await axios.get('/api/delivery-partners/stats', getAuthConfig());
@@ -63,8 +61,7 @@ export default function DeliveryPartner() {
     fetchStats();
   }, [filters]);
 
-  // Register partner via API
-  // Register partner via API
+  
 const handleSubmit = async (e) => {
   e.preventDefault();
   try {
@@ -74,7 +71,6 @@ const handleSubmit = async (e) => {
     fetchPartners();
     fetchStats();
     
-    // Show success message with credentials
     if (response.data.data && response.data.data.defaultPassword) {
       alert(`Delivery partner registered successfully!\n\nLogin Credentials:\nEmail: ${formData.email}\nPassword: ${response.data.data.defaultPassword}\n\nPlease share these credentials with the delivery partner.`);
     } else {
@@ -85,7 +81,6 @@ const handleSubmit = async (e) => {
   }
 };
 
-  // Update status via API
   const handleStatusChange = async (id, status) => {
     try {
       await axios.patch(`/api/delivery-partners/${id}/status`, { status }, getAuthConfig());
@@ -96,7 +91,6 @@ const handleSubmit = async (e) => {
     }
   };
 
-  // Delete via API
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure?')) {
       try {

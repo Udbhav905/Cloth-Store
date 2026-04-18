@@ -1,4 +1,3 @@
-// components/ForgotPasswordModal/ForgotPasswordModal.jsx
 import { useState } from "react";
 import styles from "../Authmodal/AuthModal.module.css";
 

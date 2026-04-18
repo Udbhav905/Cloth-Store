@@ -76,11 +76,9 @@ function CategoryCard({ cat, index, visible }) {
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
 
-    // Intense but smooth rotation limits calculation
     const rotateX = ((y - centerY) / centerY) * -10; // Max tilt up/down
     const rotateY = ((x - centerX) / centerX) * 10;  // Max tilt left/right
 
-    // Glare positioning in %
     const glareX = (x / rect.width) * 100;
     const glareY = (y / rect.height) * 100;
 

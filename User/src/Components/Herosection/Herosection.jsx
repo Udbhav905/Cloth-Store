@@ -52,7 +52,6 @@ export default function Herosection() {
     setPrev(current);
     setCurrent(nextIdx);
     
-    // Reset timer
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
         changeSlide((nextIdx + 1) % SLIDES.length);

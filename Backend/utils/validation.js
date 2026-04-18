@@ -1,4 +1,3 @@
-// utils/validation.js
 import { body, validationResult } from "express-validator";
 
 export const validateRequest = (req, res, next) => {

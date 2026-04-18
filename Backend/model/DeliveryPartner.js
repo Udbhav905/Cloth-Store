@@ -23,11 +23,9 @@ const deliveryPartnerSchema = new mongoose.Schema({
     trim: true,
     match: [/^[0-9]{10}$/, "Please enter a valid 10-digit phone number"],
   },
-  // Add this to your schema
    password: {
     type: String,
     default: function() {
-      // Generate a default password based on phone number
       return this.phone || 'delivery@123';
     }
   },
@@ -136,15 +134,11 @@ const deliveryPartnerSchema = new mongoose.Schema({
   },
 });
 
-// Update timestamp on save
-// ✅ CORRECT - Regular function works with mongoose middleware
 deliveryPartnerSchema.pre("save", function (next) {
   this.updatedAt = Date.now();
   //   next();
 });
 
-// Index for faster queries
-// deliveryPartnerSchema.index({ email: 1 });
 deliveryPartnerSchema.index({ phone: 1 });
 deliveryPartnerSchema.index({ status: 1 });
 deliveryPartnerSchema.index({ "availability.isAvailable": 1 });

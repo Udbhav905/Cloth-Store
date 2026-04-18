@@ -12,7 +12,6 @@ import { protect } from "../Middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// All cart routes are protected
 router.use(protect);
 
 router.route("/")

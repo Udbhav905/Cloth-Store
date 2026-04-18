@@ -2,7 +2,6 @@ import React from 'react'
 import { useParams } from 'react-router-dom'
 import styles from '../Pages/styles/Page.module.css'
 
-// Converts slug back to readable label e.g. "evening-gowns" → "Evening Gowns"
 const toLabel = (slug) =>
   slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 

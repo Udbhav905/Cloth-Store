@@ -66,7 +66,6 @@ const cartSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Pre-save middleware to calculate totals
 cartSchema.pre('save', function(next) {
   this.totalItems = this.items.reduce((sum, item) => sum + item.quantity, 0);
   this.subtotal = this.items.reduce((sum, item) => 

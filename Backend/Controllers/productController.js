@@ -9,7 +9,6 @@ import { uploadToCloudinary } from "../utils/cloudinaryUpload.js";
 const LIST_SELECT  = "name slug mainImage basePrice discountType discountValue averageRating totalReviews isBestSeller isNewArrival isFeatured totalStock category subCategory";
 const CARD_SELECT  = "name slug mainImage basePrice discountType discountValue averageRating totalReviews totalStock category";
 
-// Invalidate all product-related cache keys after any write
 const bustProductCache = () => {
   ["featured", "new-arrivals", "best-sellers"].forEach((k) => cache.del(k));
 };
@@ -18,7 +17,6 @@ export const createProduct = async (req, res) => {
   try {
     const { name, category, variants, ...otherData } = req.body;
 
-    // ── Validate category ──
     const categoryExists = await Category.findById(category).lean();
     if (!categoryExists) {
       return res.status(400).json({ message: "Category not found" });
@@ -26,16 +24,14 @@ export const createProduct = async (req, res) => {
 
     const slug = generateSlug(name);
 
-    // ── Duplicate check ──
     const existingProduct = await Product.findOne(
       { $or: [{ name }, { slug }] },
-      "_id"          // only fetch _id — fastest possible check
+      "_id"         
     ).lean();
     if (existingProduct) {
       return res.status(400).json({ message: "Product already exists" });
     }
 
-    // ── Upload images in parallel ──
     const [mainImageUrl, galleryUrls] = await Promise.all([
       req.files?.mainImage?.length > 0
         ? uploadToCloudinary(req.files.mainImage[0].buffer)
@@ -45,13 +41,11 @@ export const createProduct = async (req, res) => {
         : Promise.resolve([]),
     ]);
 
-    // ── Parse + validate variants ──
     let parsedVariants = [];
     if (variants) {
       parsedVariants = typeof variants === "string" ? JSON.parse(variants) : variants;
     }
 
-    // ── Upload variant images in parallel ──
     if (req.files?.variantImages?.length > 0 && parsedVariants.length > 0) {
       await Promise.all(
         parsedVariants.map(async (v, i) => {
@@ -62,7 +56,6 @@ export const createProduct = async (req, res) => {
       );
     }
 
-    // ── Duplicate SKU check ──
     if (parsedVariants.length > 0) {
       const skus = parsedVariants.map((v) => v.sku);
       if (new Set(skus).size !== skus.length) {
@@ -93,7 +86,6 @@ export const createProduct = async (req, res) => {
 
 export const getProducts = async (req, res) => {
   try {
-    // ── Build base query with lean ──
     const baseQuery = Product.find().lean();
 
     const features = new ApiFeatures(baseQuery, req.query)
@@ -102,7 +94,6 @@ export const getProducts = async (req, res) => {
       .sort()
       .paginate();
 
-    // ── Run query + count in parallel ──
     const [products, totalCount] = await Promise.all([
       features.query
         .populate("category",    "name slug")
@@ -130,7 +121,6 @@ export const getProducts = async (req, res) => {
 
 export const getProductById = async (req, res) => {
   try {
-    // ── Fetch product + reviews in parallel ──
     const [product, reviews] = await Promise.all([
       Product.findById(req.params.id)
         .lean()
@@ -165,7 +155,6 @@ export const getProductBySlug = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // ── Fetch reviews + related products in parallel ──
     const [reviews, relatedProducts] = await Promise.all([
       Review.find({ productId: product._id, isApproved: true })
         .lean()
@@ -188,22 +177,12 @@ export const getProductBySlug = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-// Add this after your existing functions
 
-/* ─────────────────────────────────────────────
-   GET PRODUCTS BY CATEGORY (INCLUDING SUBCATEGORIES)
-   GET /api/products/category/:slug
-───────────────────────────────────────────── */
-/* ─────────────────────────────────────────────
-   GET PRODUCTS BY CATEGORY (INCLUDING SUBCATEGORIES)
-   GET /api/products/category/:slug
-───────────────────────────────────────────── */
 export const getProductsByCategory = async (req, res) => {
   try {
     const { slug } = req.params;
     const { limit = 50, page = 1, sort = "-createdAt" } = req.query;
     
-    // Find the category by slug
     const category = await Category.findOne({ slug }).lean();
     
     if (!category) {
@@ -213,29 +192,26 @@ export const getProductsByCategory = async (req, res) => {
     console.log(`🔍 Found category: ${category.name} (ID: ${category._id})`);
     console.log(`🔍 Parent category: ${category.parentCategory}`);
     
-    // Get all subcategories of this category
     const subCategories = await Category.find({ parentCategory: category._id }).lean();
     const subCategoryIds = subCategories.map(sc => sc._id);
     
     console.log(`📁 Found ${subCategories.length} subcategories:`, subCategories.map(sc => sc.name));
     
-    // Build query: products where category matches OR subCategory matches
     const query = {
       isActive: true,
       $or: [
         { category: category._id },
-        { subCategory: category._id }  // ← THIS IS KEY! Products where subCategory = this category ID
+        { subCategory: category._id } 
       ]
     };
     
-    // Also include products that belong to any subcategory
     if (subCategoryIds.length > 0) {
       query.$or.push({ subCategory: { $in: subCategoryIds } });
     }
     
     console.log("📝 Query:", JSON.stringify(query, null, 2));
     
-    // Get products with pagination
+    
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const products = await Product.find(query)
       .lean()
@@ -294,7 +270,6 @@ export const getProductsBySubCategory = async (req, res) => {
     const { slug } = req.params;
     const { limit = 50, page = 1, sort = "-createdAt" } = req.query;
     
-    // Find the subcategory
     const subCategory = await Category.findOne({ slug }).lean();
     
     if (!subCategory) {
@@ -303,13 +278,11 @@ export const getProductsBySubCategory = async (req, res) => {
     
     console.log(`🔍 Found subcategory: ${subCategory.name} (ID: ${subCategory._id})`);
     
-    // Get parent category if exists
     let parentCategory = null;
     if (subCategory.parentCategory) {
       parentCategory = await Category.findById(subCategory.parentCategory).lean();
     }
     
-    // Get products with this subcategory
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const products = await Product.find({ 
       subCategory: subCategory._id,
@@ -365,13 +338,11 @@ export const updateProduct = async (req, res) => {
 
     const { name, variants, ...otherData } = req.body;
 
-    // ── Update slug if name changed ──
     if (name && name !== product.name) {
       product.name = name;
       product.slug = generateSlug(name);
     }
 
-    // ── Upload new images in parallel ──
     if (req.files) {
       const [mainImageUrl, galleryUrls] = await Promise.all([
         req.files.mainImage?.length > 0
@@ -386,7 +357,6 @@ export const updateProduct = async (req, res) => {
       if (galleryUrls)   product.galleryImages = [...(product.galleryImages || []), ...galleryUrls];
     }
 
-    // ── Parse + validate variants ──
     if (variants) {
       const parsedVariants = typeof variants === "string" ? JSON.parse(variants) : variants;
 
@@ -399,7 +369,6 @@ export const updateProduct = async (req, res) => {
       product.totalStock = parsedVariants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
     }
 
-    // ── Apply scalar + parsed fields ──
     const JSON_FIELDS  = ["returnPolicy"];
     const ARRAY_FIELDS = ["occasion", "season", "metaKeywords"];
 
@@ -513,14 +482,12 @@ export const searchProducts = async (req, res) => {
 
     const filter = { isActive: true };
 
-    // ── Price filter ──
     if (minPrice || maxPrice) {
       filter.basePrice = {};
       if (minPrice) filter.basePrice.$gte = Number(minPrice);
       if (maxPrice) filter.basePrice.$lte = Number(maxPrice);
     }
 
-    // ── Natural language price parsing ──
     if (q) {
       const underMatch = q.match(/(?:under|below|less\s*than)\s*₹?\$?(\d+)/i);
       const overMatch  = q.match(/(?:over|above|more\s*than)\s*₹?\$?(\d+)/i);
@@ -534,12 +501,10 @@ export const searchProducts = async (req, res) => {
       .trim()
       .toLowerCase();
 
-    // ── Use $text index when keyword exists ──
     if (keyword) {
       filter.$text = { $search: keyword };
     }
 
-    // ── Single DB query with lean ──
     const [products, total] = await Promise.all([
       Product.find(filter)
         .lean()
@@ -552,12 +517,10 @@ export const searchProducts = async (req, res) => {
       Product.countDocuments(filter),
     ]);
 
-    // ── Post-filter for category/brand/fabric matches missed by $text ──
     let results = products;
     if (keyword) {
       const directMatches = new Set(products.map((p) => p._id.toString()));
 
-      // Only run the extra query if the keyword might match category/brand
       const extraProducts = await Product.find({
         isActive: true,
         ...(filter.basePrice ? { basePrice: filter.basePrice } : {}),
@@ -574,7 +537,6 @@ export const searchProducts = async (req, res) => {
         .populate("subCategory", "name slug")
         .limit(Number(limit));
 
-      // Merge — also check populated category name
       const merged = extraProducts.filter(
         (p) =>
           !directMatches.has(p._id.toString()) &&

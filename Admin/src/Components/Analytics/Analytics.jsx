@@ -12,13 +12,11 @@ export default function Analytics() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Analytics data
   const [orderStats, setOrderStats] = useState(null);
   const [topProducts, setTopProducts] = useState([]);
   const [chartData, setChartData] = useState([]);
   const [timeRange, setTimeRange] = useState("month");
 
-  // Fetch order analytics
   const fetchOrderStats = useCallback(async () => {
     try {
       setLoading(true);
@@ -32,10 +30,8 @@ export default function Analytics() {
 
       const data = await response.json();
 
-      // Set stats
       setOrderStats(data.stats || {});
 
-      // Generate chart data
       if (data.orders && Array.isArray(data.orders)) {
         generateChartData(data.orders);
       }
@@ -48,7 +44,6 @@ export default function Analytics() {
     }
   }, []);
 
-  // Fetch product analytics
   const fetchProductAnalytics = useCallback(async () => {
     try {
       const response = await fetch("/api/products?limit=1000", {
@@ -59,7 +54,6 @@ export default function Analytics() {
 
       const data = await response.json();
 
-      // Sort by best sellers
       const sorted = (data.products || [])
         .sort((a, b) => (b.totalSold || 0) - (a.totalSold || 0))
         .slice(0, 10);
@@ -71,7 +65,7 @@ export default function Analytics() {
     }
   }, []);
 
-  // Generate chart data based on orders
+
   const generateChartData = (orders) => {
     const dailyData = {};
 
@@ -94,43 +88,36 @@ export default function Analytics() {
       dailyData[date].orders += 1;
     });
 
-    // Calculate average order value
     const chartDataArray = Object.values(dailyData).map(item => ({
       ...item,
       revenue: Math.round(item.revenue),
       avgOrder: Math.round(item.revenue / item.orders)
     }));
 
-    // Sort by date
     chartDataArray.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     setChartData(chartDataArray.slice(-30)); // Last 30 days
   };
 
-  // Load data on mount
   useEffect(() => {
     fetchOrderStats();
     fetchProductAnalytics();
   }, [fetchOrderStats, fetchProductAnalytics]);
 
-  // Helper function to format currency
   const formatCurrency = (amount) => {
     if (!amount && amount !== 0) return "₹0";
 return `Rs. ${Math.round(amount).toLocaleString('en-IN')}`;  };
 
-  // Helper function to format number
   const formatNumber = (num) => {
     if (!num && num !== 0) return "0";
     return num.toLocaleString('en-IN');
   };
 
-  // Helper function to format rating
   const formatRating = (rating) => {
     if (!rating || rating === 0) return "No ratings";
     return `${rating.toFixed(1)} ★`;
   };
 
-  // Generate PDF Report
   const generatePDF = () => {
     try {
       const doc = new jsPDF();
@@ -142,7 +129,6 @@ return `Rs. ${Math.round(amount).toLocaleString('en-IN')}`;  };
         day: 'numeric'
       });
 
-      // ===== HEADER =====
       doc.setFillColor(26, 26, 30);
       doc.rect(0, 0, pageWidth, 50, "F");
 
@@ -159,7 +145,6 @@ return `Rs. ${Math.round(amount).toLocaleString('en-IN')}`;  };
 
       let yPosition = 65;
 
-      // ===== OVERVIEW =====
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
@@ -203,7 +188,6 @@ return `Rs. ${Math.round(amount).toLocaleString('en-IN')}`;  };
 
       yPosition = doc.lastAutoTable.finalY + 15;
 
-      // ===== ORDER STATUS =====
       if (yPosition > pageHeight - 80) {
         doc.addPage();
         yPosition = 20;
@@ -247,7 +231,6 @@ return `Rs. ${Math.round(amount).toLocaleString('en-IN')}`;  };
 
       yPosition = doc.lastAutoTable.finalY + 15;
 
-      // ===== TOP PRODUCTS =====
       if (topProducts.length > 0) {
         if (yPosition > pageHeight - 100) {
           doc.addPage();
@@ -291,7 +274,6 @@ return `Rs. ${Math.round(amount).toLocaleString('en-IN')}`;  };
         yPosition = doc.lastAutoTable.finalY + 15;
       }
 
-      // ===== REVENUE TREND =====
       if (chartData.length > 0) {
         if (yPosition > pageHeight - 100) {
           doc.addPage();
@@ -334,7 +316,6 @@ return `Rs. ${Math.round(amount).toLocaleString('en-IN')}`;  };
         });
       }
 
-      // ===== FOOTER =====
       const pageCount = doc.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
@@ -348,10 +329,8 @@ return `Rs. ${Math.round(amount).toLocaleString('en-IN')}`;  };
         );
       }
 
-      // ===== SAVE PDF =====
       doc.save(`LUXURIA_Analytics_Report_${timeRange}_${Date.now()}.pdf`);
       
-      // Optional: Show success message
       console.log("PDF generated successfully");
 
     } catch (err) {

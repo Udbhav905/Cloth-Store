@@ -66,45 +66,6 @@ const useAuthStore = create(
           return { success: false, error: err.message };
         }
       },
-
-      /* ── Login ── */
-      /* ── Login ── */
-      // login: async ({ email, password }) => {
-      //   set({ loading: true, error: null });
-      //   try {
-      //     const res = await fetch(`${API}/auth/login`, {
-      //       method: "POST",
-      //       headers: { "Content-Type": "application/json" },
-      //       body: JSON.stringify({ email, password }),
-      //     });
-      //     const data = await res.json();
-      //     if (!res.ok) throw new Error(data.message || "Login failed");
-      //     const { user, token } = extractUserAndToken(data);
-      //     if (!user) throw new Error("Server returned no user object");
-      //     if (isAdmin(user))
-      //       throw new Error("Admin accounts must use the Admin Panel.");
-      //     if (!token) throw new Error("No token received from server");
-
-      //     set({
-      //       user,
-      //       accessToken: token,
-      //       isLoggedIn: true,
-      //       loading: false,
-      //       authModal: false,
-      //       error: null,
-      //     });
-
-      //     // Initialize cart after successful login
-      //     const useCartStore = (await import("./Usecartstore")).default;
-      //     await useCartStore.getState().initialize();
-
-      //     return { success: true };
-      //   } catch (err) {
-      //     set({ loading: false, error: err.message });
-      //     return { success: false, error: err.message };
-      //   }
-      // },
-        // In your useAuthStore.js, ensure token is stored as 'userToken' for customers
 login: async ({ email, password }) => {
   set({ loading: true, error: null });
   try {
@@ -121,7 +82,6 @@ login: async ({ email, password }) => {
       throw new Error("Admin accounts must use the Admin Panel.");
     if (!token) throw new Error("No token received from server");
 
-    // ✅ Store token as 'userToken' for customers
     localStorage.setItem('userToken', token);
     localStorage.setItem('userData', JSON.stringify(user));
 
@@ -134,7 +94,6 @@ login: async ({ email, password }) => {
       error: null,
     });
 
-    // Initialize cart after successful login
     const useCartStore = (await import("./Usecartstore")).default;
     await useCartStore.getState().initialize();
 
@@ -201,11 +160,9 @@ login: async ({ email, password }) => {
 
           set({ user, isLoggedIn: true });
 
-          // Initialize cart after profile refresh (if token is valid)
           const useCartStore = (await import("./Usecartstore")).default;
           await useCartStore.getState().initialize();
         } catch (_) {
-          // Network error — keep existing state, don't clear
         }
       },
     }),

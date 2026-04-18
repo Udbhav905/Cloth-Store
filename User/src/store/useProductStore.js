@@ -132,21 +132,15 @@ const useProductStore = create((set, get) => ({
     }
   },
 
-  /* ─────────────────────────────────────────────────
-     SEARCH — calls GET /api/products/search?q=...
-     Falls back to client-side filter if no search
-     endpoint exists yet on your backend.
-  ─────────────────────────────────────────────────── */
+  
   fetchSearchResults: async (query) => {
     const q = (query || "").trim();
 
-    // Don't re-fetch if same query is already loaded
     if (get().searchQuery === q && get().searchResults.length > 0) return;
 
     set({ searchLoading: true, searchError: null, searchQuery: q });
 
     try {
-      // Build query string — supports: ?q=men&minPrice=0&maxPrice=500
       const params = new URLSearchParams();
       if (q) params.set("q", q);
 
@@ -160,7 +154,6 @@ const useProductStore = create((set, get) => ({
       }
 
       const data = await res.json();
-      // Accept: { products: [...], total: N }  OR  plain array
       const products = Array.isArray(data) ? data : (data.products ?? []);
       const total    = data.total ?? products.length;
 
@@ -172,7 +165,6 @@ const useProductStore = create((set, get) => ({
 
   clearSearch: () => set({ searchResults: [], searchQuery: "", searchTotal: 0, searchError: null }),
 
-  /* ── Public actions (existing) ── */
   fetchTrending:    (opts) => get()._fetch("best-sellers",  "trending",    opts),
   fetchNewArrivals: (opts) => get()._fetch("new-arrivals",  "newArrivals", opts),
   fetchFeatured:    (opts) => get()._fetch("featured",      "featured",    opts),

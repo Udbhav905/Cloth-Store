@@ -24,7 +24,6 @@ const Categories = () => {
   const [editingId, setEditingId] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
-  // Fetch categories on component mount
   useEffect(() => {
     fetchCategories();
   }, []);
@@ -60,7 +59,6 @@ const Categories = () => {
       const file = files[0];
       setFormData((prev) => ({ ...prev, image: file }));
 
-      // Create preview
       if (file) {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -69,7 +67,6 @@ const Categories = () => {
         reader.readAsDataURL(file);
       }
     } else if (name.includes(".")) {
-      // Handle nested objects (like metadata.title)
       const [parent, child] = name.split(".");
       setFormData((prev) => ({
         ...prev,
@@ -93,15 +90,11 @@ const Categories = () => {
       const token = localStorage.getItem("token");
       const formDataToSend = new FormData();
 
-      // Helper function to append data properly
       const appendIfExists = (key, value) => {
         if (value === null || value === undefined || value === "") {
-          // For parentCategory, we want to explicitly set it to null in the backend
-          // So we append it as an empty string and let backend handle it
           if (key === "parentCategory") {
             formDataToSend.append(key, "");
           }
-          // Skip other null values
           return;
         }
 
@@ -112,7 +105,6 @@ const Categories = () => {
         }
       };
 
-      // Append all form fields
       appendIfExists("name", formData.name);
       appendIfExists("description", formData.description);
       appendIfExists("parentCategory", formData.parentCategory);
@@ -120,7 +112,6 @@ const Categories = () => {
       appendIfExists("sortOrder", formData.sortOrder);
       appendIfExists("metadata", formData.metadata);
 
-      // Handle image separately
       if (formData.image) {
         formDataToSend.append("image", formData.image);
       }
@@ -159,7 +150,6 @@ const Categories = () => {
     setFormData({
       name: category.name || "",
       description: category.description || "",
-      // Fix: Send null instead of empty string for parentCategory when it's null
       parentCategory:
         category.parentCategory?._id || category.parentCategory || null,
       image: null,

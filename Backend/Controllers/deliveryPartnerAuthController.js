@@ -3,14 +3,12 @@ import Order from '../model/Order.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
-// Generate JWT Token
 const generateToken = (id) => {
   return jwt.sign({ id, role: 'delivery_partner' }, process.env.JWT_SECRET, {
     expiresIn: '7d',
   });
 };
 
-// @desc    Login delivery partner
 export const loginPartner = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -68,7 +66,6 @@ export const loginPartner = async (req, res) => {
   }
 };
 
-// @desc    Get partner dashboard stats
 export const getPartnerStats = async (req, res) => {
   try {
     const partner = await DeliveryPartner.findById(req.user.id);
@@ -103,7 +100,6 @@ export const getPartnerStats = async (req, res) => {
   }
 };
 
-// @desc    Get partner's assigned orders
 export const getPartnerOrders = async (req, res) => {
   try {
     console.log("Fetching orders for partner:", req.user.id);
@@ -189,7 +185,6 @@ export const getPartnerOrders = async (req, res) => {
   }
 };
 
-// @desc    Update delivery status - ✅ FIXED: Properly updates both models
 export const updateDeliveryStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -216,7 +211,6 @@ export const updateDeliveryStatus = async (req, res) => {
       });
     }
 
-    // ✅ Map statuses correctly
     let partnerStatus = status;
     let orderStatus = '';
     
@@ -238,10 +232,8 @@ export const updateDeliveryStatus = async (req, res) => {
         orderStatus = partnerStatus;
     }
     
-    // Update assignment status
     assignment.status = partnerStatus;
     
-    // Update Order model
     const order = await Order.findById(orderId);
     if (!order) {
       return res.status(404).json({
@@ -254,7 +246,6 @@ export const updateDeliveryStatus = async (req, res) => {
     
     order.orderStatus = orderStatus;
     
-    // Auto-update payment for COD orders when delivered
     if (partnerStatus === 'delivered' && order.paymentMethod === 'cod') {
       console.log(`💰 COD Order ${order.orderNumber} - Updating payment to PAID`);
       order.paymentStatus = 'paid';
@@ -310,7 +301,6 @@ export const updateDeliveryStatus = async (req, res) => {
   }
 };
 
-// @desc    Update partner availability
 export const updateAvailability = async (req, res) => {
   try {
     const { isAvailable, location } = req.body;

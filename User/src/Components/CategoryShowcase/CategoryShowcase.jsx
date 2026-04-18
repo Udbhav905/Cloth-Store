@@ -4,7 +4,6 @@ import men from "../../assets/confident-young-handsome-man-holds-his-coat-should
 import women from "../../assets/women-cat.jpg"
 import styles from "./CategoryShowcase.module.css";
 
-// High-quality optimized images (using Unsplash CDN with specific dimensions for low file size)
 const categoryImages = {
   men: {
     url: men,

@@ -37,7 +37,6 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Stats error:', error.response?.data || error.message);
       if (error.response?.status === 401) {
-        // Don't redirect immediately, just show error
         toast.error('Session expired. Please login again.');
         setAuthError(true);
       }
@@ -78,7 +77,6 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    // Check token on mount
     const token = localStorage.getItem('partnerToken');
     if (!token) {
       setAuthError(true);
@@ -90,7 +88,6 @@ const Dashboard = () => {
     fetchOrders();
   }, []);
 
-  // Only redirect if authError is true and user clicks logout or after delay
   useEffect(() => {
     if (authError) {
       const timer = setTimeout(() => {

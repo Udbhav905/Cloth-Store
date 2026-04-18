@@ -268,7 +268,6 @@ export default function ProfilePage() {
     const fetchOrders = async () => {
       setOrdersLoading(true);
       try {
-        // ✅ CORRECT ENDPOINT: /api/orders/my-orders
         const data = await apiFetch("/orders/my-orders");
         const ordersList = Array.isArray(data) ? data : data.orders || data.data || [];
         setOrders(ordersList);
@@ -285,12 +284,10 @@ export default function ProfilePage() {
     fetchOrders();
   }, [tab, showToast]);
 
-  /* ── Focus name input when editing ─────────────────────── */
   useEffect(() => {
     if (nameEdit) nameInputRef.current?.focus();
   }, [nameEdit]);
 
-  /* ── Save name ──────────────────────────────────────────── */
   const handleSaveName = async () => {
     if (!nameVal.trim() || nameVal.trim() === profile.name) { setNameEdit(false); return; }
     try {
@@ -311,7 +308,6 @@ export default function ProfilePage() {
     }
   };
 
-  /* ── Address CRUD ───────────────────────────────────────── */
   const handleSaveAddress = async (form) => {
     try {
       setSaving(true);
@@ -363,7 +359,6 @@ export default function ProfilePage() {
     navigate("/");
   };
 
-  /* ── Loading skeleton ───────────────────────────────────── */
   if (loading) return (
     <div className={styles.page}>
       <div className={styles.loadWrap}>

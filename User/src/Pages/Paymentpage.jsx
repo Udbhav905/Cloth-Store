@@ -94,7 +94,6 @@ export default function PaymentPage() {
   const location = useLocation();
   const clearCart = useCartStore((s) => s.clearCart);
 
-  // IMPORTANT: Get ALL values from checkout state
   const { orderBody, subtotal, shipping, gst, gstRate, discount, total } =
     location.state || {};
 
@@ -136,10 +135,8 @@ export default function PaymentPage() {
     : (brand === "AMEX" ? "····" : "···");
   const expiryDisplay = cardExpiry || "MM / YY";
 
-  // Calculate display GST percentage
   const displayGSTPercent = gstRate ? Math.round(gstRate * 100) : 0;
 
-  /* ── Payment handler ── */
   const handlePay = async () => {
     if (!stripe || !elements) { setError("Stripe not ready."); return; }
     if (!cardComplete)         { setError("Please complete all card fields."); return; }
@@ -149,13 +146,11 @@ export default function PaymentPage() {
     setLoading(true);
 
     try {
-      // Use the exact total from checkout (already includes correct GST)
       const amountToPay = Math.round(total);
       
       console.log("💰 Payment Amount:", amountToPay);
       console.log("📊 GST Details:", { gst, gstRate, displayGSTPercent });
       
-      /* Step 1 — Create PaymentIntent */
       const { clientSecret } = await apiFetch("/payments/create-intent", {
         method: "POST",
         body: JSON.stringify({

@@ -20,7 +20,6 @@ export default function Navbar() {
   const { user, isLoggedIn, logout, openAuthModal, fetchProfile } =
     useAuthStore();
   
-  // Get cart store state and actions - using more specific selectors for better reactivity
   const cartItems = useCartStore((state) => state.items);
   const wishlistItems = useCartStore((state) => state.wishlist);
   const initialize = useCartStore((state) => state.initialize);
@@ -29,7 +28,6 @@ export default function Navbar() {
   const syncInProgress = useCartStore((state) => state.syncInProgress);
   const addToCart = useCartStore((state) => state.addToCart); // For testing
 
-  // Compute counts with useMemo for performance
   const cartItemCount = useMemo(() => {
     const count = cartItems.reduce((sum, item) => sum + item.quantity, 0);
     console.log("📊 Cart count recalculated:", count);
@@ -54,7 +52,6 @@ export default function Navbar() {
   const profileRef = useRef(null);
   const cursorRef = useRef(null);
 
-  // Debug: Log cart changes in real-time
   useEffect(() => {
     console.log("🛒 Cart updated in Navbar:");
     console.log("  - Items array length:", cartItems.length);
@@ -62,7 +59,6 @@ export default function Navbar() {
     console.log("  - Items details:", cartItems);
   }, [cartItems, cartItemCount]);
 
-  // Initialize cart and wishlist when user logs in
   useEffect(() => {
     const initStore = async () => {
       if (isLoggedIn) {
@@ -79,7 +75,6 @@ export default function Navbar() {
     initStore();
   }, [isLoggedIn, initialize, resetCart, isInitialized]);
 
-  // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -103,7 +98,6 @@ export default function Navbar() {
 
         console.log("Categories data:", categoriesData);
 
-        // Create a structured menu with proper subcategories
         const menSubcategories = categoriesData
           .filter(
             (cat) =>
@@ -169,7 +163,6 @@ export default function Navbar() {
         console.log("Final categories structure:", structuredCategories);
       } catch (error) {
         console.error("Error fetching categories:", error);
-        // Fallback data
         setCategories([
           {
             _id: "1",
@@ -301,7 +294,6 @@ export default function Navbar() {
 
   const activeCategory = categories[0] || null;
 
-  // Temporary test function
   const testAddItem = async () => {
     console.log("🧪 Test add clicked");
     const result = await addToCart({

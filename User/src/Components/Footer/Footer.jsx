@@ -12,21 +12,11 @@ const LINKS = [
       { label: "Mens",    to: "/collections/men" },
       { label: "Women Suiting", to: "/collections/women" },
       { label: "Sales",      to: "/collections/sale" },
-      // { label: "Bridal Couture",   to: "/collections/accessories" },
-      // { label: "Cashmere Knits",   to: "/collections/cashmere-knits" },
+     
       { label: "Accessories",      to: "/collections/accessories" },
     ],
   },
-  // {
-  //   heading: "Maison",
-  //   items: [
-  //     { label: "Our Heritage",   to: "/heritage" },
-  //     { label: "Atelier",        to: "/atelier" },
-  //     { label: "Sustainability", to: "/sustainability" },
-  //     { label: "Careers",        to: "/careers" },
-  //     { label: "Press",          to: "/press" },
-  //   ],
-  // },
+  
   {
     heading: "Client Services",
     items: [
@@ -118,7 +108,6 @@ export default function Footer() {
   }, []);
 
   const scrollToTop = () => {
-    // Use Lenis if available for smooth scroll
     if (window.lenis) {
       window.lenis.scrollTo(0, { duration: 0.8 });
     } else {
@@ -131,11 +120,9 @@ export default function Footer() {
     e.preventDefault();
     if (!email.trim() || subState !== "idle") return;
     setSubState("loading");
-    // Simulate API call
     setTimeout(() => {
       setSubState("done");
       setEmail("");
-      // Reset after 3 seconds
       setTimeout(() => setSubState("idle"), 3000);
     }, 1400);
   };
@@ -294,7 +281,6 @@ export default function Footer() {
             {[
               { city: "Nadiad", addr: "DDU,Collage Road" },
               { city: "NAGPUR",  addr: "WHITE HOUSE" },
-              // { city: "BOTAD",  addr: "NEAR VARIYADEVI TEMPLE" },
             ].map((loc) => (
               <div key={loc.city} className={styles.contactItem}>
                 <span className={styles.contactCity}>{loc.city}</span>

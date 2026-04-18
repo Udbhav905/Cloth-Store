@@ -1,14 +1,6 @@
 import User from "../model/User.js";
 import Order from "../model/Order.js";
 
-/* ══════════════════════════════════════════════════════════
-   PROFILE — controllers for the logged-in user's own data
-   All routes use req.user._id (set by protect middleware)
-══════════════════════════════════════════════════════════ */
-
-// @desc    Get my profile
-// @route   GET /api/users/me
-// @access  Private
 export const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
@@ -22,15 +14,11 @@ export const getMe = async (req, res) => {
   }
 };
 
-// @desc    Update my profile  (name only — email & mobile are locked)
-// @route   PUT /api/users/me
-// @access  Private
 export const updateMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Only allow name update — email & mobileNo are intentionally excluded
     if (req.body.name !== undefined) user.name = req.body.name.trim();
 
     const updated = await user.save();
@@ -49,9 +37,7 @@ export const updateMe = async (req, res) => {
   }
 };
 
-// @desc    Get all my addresses
-// @route   GET /api/users/addresses
-// @access  Private
+
 export const getAddresses = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("addresses");
@@ -62,9 +48,7 @@ export const getAddresses = async (req, res) => {
   }
 };
 
-// @desc    Get single address by ID
-// @route   GET /api/users/address/:addressId
-// @access  Private
+
 export const getAddressById = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("addresses");
@@ -79,9 +63,7 @@ export const getAddressById = async (req, res) => {
   }
 };
 
-// @desc    Add a new address
-// @route   POST /api/users/address
-// @access  Private
+
 export const addAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -91,7 +73,6 @@ export const addAddress = async (req, res) => {
 
     if (!address1) return res.status(400).json({ message: "address1 is required" });
 
-    // If new address is default, unset others
     if (isDefault) {
       user.addresses.forEach((a) => { a.isDefault = false; });
     }
@@ -105,9 +86,7 @@ export const addAddress = async (req, res) => {
   }
 };
 
-// @desc    Update an address
-// @route   PUT /api/users/address/:addressId
-// @access  Private
+
 export const updateAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -137,9 +116,7 @@ export const updateAddress = async (req, res) => {
   }
 };
 
-// @desc    Delete an address
-// @route   DELETE /api/users/address/:addressId
-// @access  Private
+
 export const deleteAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -160,9 +137,7 @@ export const deleteAddress = async (req, res) => {
   }
 };
 
-// @desc    Set an address as default
-// @route   PUT /api/users/address/:addressId/default
-// @access  Private
+
 export const setDefaultAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -187,9 +162,6 @@ export const setDefaultAddress = async (req, res) => {
   }
 };
 
-// @desc    Get my orders
-// @route   GET /api/users/orders
-// @access  Private
 export const getUserOrders = async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.user._id })

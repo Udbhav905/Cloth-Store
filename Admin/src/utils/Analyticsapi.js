@@ -1,19 +1,12 @@
-// analyticsAPI.js
-// Utility functions for Analytics data fetching and processing
 
 const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:3000/api";
 
-/**
- * Get auth token from localStorage
- * Update this if you store token elsewhere
- */
+
 const getAuthToken = () => {
   return localStorage.getItem("token") || localStorage.getItem("authToken");
 };
 
-/**
- * Common fetch configuration
- */
+
 const getFetchConfig = () => ({
   headers: {
     "Content-Type": "application/json",
@@ -21,9 +14,7 @@ const getFetchConfig = () => ({
   },
 });
 
-/**
- * Fetch all orders with pagination and filtering
- */
+
 export const fetchOrdersData = async (page = 1, limit = 1000) => {
   try {
     const response = await fetch(
@@ -43,9 +34,7 @@ export const fetchOrdersData = async (page = 1, limit = 1000) => {
   }
 };
 
-/**
- * Fetch products data
- */
+
 export const fetchProductsData = async (limit = 1000) => {
   try {
     const response = await fetch(
@@ -65,9 +54,7 @@ export const fetchProductsData = async (limit = 1000) => {
   }
 };
 
-/**
- * Fetch featured products
- */
+
 export const fetchFeaturedProducts = async () => {
   try {
     const response = await fetch(
@@ -86,9 +73,7 @@ export const fetchFeaturedProducts = async () => {
   }
 };
 
-/**
- * Calculate key metrics from orders
- */
+
 export const calculateOrderMetrics = (orders) => {
   if (!Array.isArray(orders) || orders.length === 0) {
     return {
@@ -118,9 +103,7 @@ export const calculateOrderMetrics = (orders) => {
   };
 };
 
-/**
- * Get top products by sales
- */
+
 export const getTopProductsBySales = (products, limit = 10) => {
   if (!Array.isArray(products)) return [];
 
@@ -129,9 +112,7 @@ export const getTopProductsBySales = (products, limit = 10) => {
     .slice(0, limit);
 };
 
-/**
- * Get low stock products
- */
+
 export const getLowStockProducts = (products, threshold = 10) => {
   if (!Array.isArray(products)) return [];
 
@@ -140,9 +121,7 @@ export const getLowStockProducts = (products, threshold = 10) => {
     .sort((a, b) => (a.totalStock || 0) - (b.totalStock || 0));
 };
 
-/**
- * Get daily revenue data for charts
- */
+
 export const getDailyRevenueData = (orders) => {
   if (!Array.isArray(orders)) return [];
 
@@ -165,9 +144,7 @@ export const getDailyRevenueData = (orders) => {
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 };
 
-/**
- * Get status distribution
- */
+
 export const getStatusDistribution = (orders) => {
   if (!Array.isArray(orders)) return {};
 
@@ -181,9 +158,7 @@ export const getStatusDistribution = (orders) => {
   return distribution;
 };
 
-/**
- * Get payment method breakdown
- */
+
 export const getPaymentMethodBreakdown = (orders) => {
   if (!Array.isArray(orders)) return {};
 
@@ -197,9 +172,7 @@ export const getPaymentMethodBreakdown = (orders) => {
   return breakdown;
 };
 
-/**
- * Get top categories by revenue
- */
+
 export const getTopCategories = (products) => {
   if (!Array.isArray(products)) return [];
 
@@ -217,9 +190,6 @@ export const getTopCategories = (products) => {
     .sort((a, b) => b.revenue - a.revenue);
 };
 
-/**
- * Get customer insights
- */
 export const getCustomerInsights = (orders) => {
   if (!Array.isArray(orders) || orders.length === 0) {
     return {
@@ -399,11 +369,9 @@ export const exportToCSV = (data, filename = "analytics.csv") => {
 const convertArrayOfObjectsToCSV = (array) => {
   let csv = "data:text/csv;charset=utf-8,";
 
-  // Header
   const headers = Object.keys(array[0] || {});
   csv += headers.join(",") + "\n";
 
-  // Data rows
   array.forEach((row) => {
     const values = headers.map((header) =>
       typeof row[header] === "string" && row[header].includes(",")

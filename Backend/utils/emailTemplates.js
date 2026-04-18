@@ -1,4 +1,3 @@
-// utils/emailTemplates.js
 export const getPasswordResetEmailTemplate = (resetUrl, userName) => ({
   subject: "Reset Your LUXURIA Password",
   html: `

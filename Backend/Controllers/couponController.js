@@ -1,8 +1,6 @@
 import Coupon from "../model/Coupon.js";
 
-// @desc    Create coupon
-// @route   POST /api/coupons
-// @access  Private/Admin
+
 export const createCoupon = async (req, res) => {
   try {
     const { code, ...otherData } = req.body;
@@ -24,9 +22,7 @@ export const createCoupon = async (req, res) => {
   }
 };
 
-// @desc    Get all coupons
-// @route   GET /api/coupons
-// @access  Private/Admin
+
 export const getCoupons = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -57,9 +53,7 @@ export const getCoupons = async (req, res) => {
   }
 };
 
-// @desc    Get coupon by ID
-// @route   GET /api/coupons/:id
-// @access  Private/Admin
+
 export const getCouponById = async (req, res) => {
   try {
     const coupon = await Coupon.findById(req.params.id);
@@ -74,9 +68,7 @@ export const getCouponById = async (req, res) => {
   }
 };
 
-// @desc    Get coupon by code (public)
-// @route   GET /api/coupons/code/:code
-// @access  Public
+
 export const getCouponByCode = async (req, res) => {
   try {
     const coupon = await Coupon.findOne({ 
@@ -102,9 +94,7 @@ export const getCouponByCode = async (req, res) => {
   }
 };
 
-// @desc    Update coupon
-// @route   PUT /api/coupons/:id
-// @access  Private/Admin
+
 export const updateCoupon = async (req, res) => {
   try {
     const coupon = await Coupon.findById(req.params.id);
@@ -136,9 +126,7 @@ export const updateCoupon = async (req, res) => {
   }
 };
 
-// @desc    Delete coupon
-// @route   DELETE /api/coupons/:id
-// @access  Private/Admin
+
 export const deleteCoupon = async (req, res) => {
   try {
     const coupon = await Coupon.findById(req.params.id);
@@ -154,9 +142,6 @@ export const deleteCoupon = async (req, res) => {
   }
 };
 
-// @desc    Validate coupon
-// @route   POST /api/coupons/validate
-// @access  Private
 export const validateCoupon = async (req, res) => {
   try {
     const { code, cartTotal, userId } = req.body;
@@ -172,7 +157,6 @@ export const validateCoupon = async (req, res) => {
       return res.status(400).json({ valid: false, message: "Invalid or expired coupon" });
     }
 
-    // Check minimum order amount
     if (cartTotal < coupon.minOrderAmount) {
       return res.status(400).json({ 
         valid: false, 
@@ -180,7 +164,6 @@ export const validateCoupon = async (req, res) => {
       });
     }
 
-    // Check max usage
     if (coupon.maxUsage && coupon.totalUsed >= coupon.maxUsage) {
       return res.status(400).json({ 
         valid: false, 
@@ -188,7 +171,6 @@ export const validateCoupon = async (req, res) => {
       });
     }
 
-    // Check user usage
     if (userId) {
       const userUsage = coupon.userUsage.find(
         u => u.userId.toString() === userId
@@ -201,7 +183,6 @@ export const validateCoupon = async (req, res) => {
       }
     }
 
-    // Calculate discount
     let discount = 0;
     if (coupon.discountType === "percentage") {
       discount = (cartTotal * coupon.discountValue) / 100;

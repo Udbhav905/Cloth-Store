@@ -1,4 +1,3 @@
-// Routes/authRoutes.js
 import express from "express";
 import {
   registerUser,
@@ -11,7 +10,6 @@ import { protect,admin } from "../Middleware/authMiddleware.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
 const router = express.Router();
-// ------------------------
 router.post("/test-email", async (req, res) => {
   try {
     await sendEmail({
@@ -35,7 +33,6 @@ router.post("/test-email", async (req, res) => {
   }
 });
 
-// Public routes
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.post("/logout", logoutUser);
@@ -44,7 +41,6 @@ router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 router.post("/change-password", protect, changePassword);
 
-// Protected routes
 router.route("/profile")
   .get(protect, getProfile)
   .put(protect, updateProfile);

@@ -254,7 +254,7 @@ const App = () => {
                 {/* User Pages */}
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/search" element={<SearchPage />} />
-                <Route path="/orders" element={<MyOrders />} />
+                <Route path="/my-orders" element={<MyOrders />} />
 
                 {/* Checkout Flow */}
                 <Route path="/checkout" element={<Checkout />} />

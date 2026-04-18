@@ -18,7 +18,6 @@ import upload from "../Middleware/uploadMiddleware.js";
 
 const router = express.Router();
 
-// Public routes
 router.get("/featured", getFeaturedProducts);
 router.get("/new-arrivals", getNewArrivals);
 router.get("/best-sellers", getBestSellers);
@@ -45,7 +44,6 @@ router.route("/:id")
   .put(
     protect, 
     admin, 
-    // FIX: Add multer middleware here for update
     upload.fields([
       { name: "mainImage", maxCount: 1 },
       { name: "galleryImages", maxCount: 5 },

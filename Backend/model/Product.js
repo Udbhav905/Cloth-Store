@@ -101,22 +101,12 @@ const productSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    // ── Virtuals included in toJSON/toObject (for .lean() use select instead)
     toJSON:   { virtuals: true },
     toObject: { virtuals: true },
   }
 );
 
-/* ─────────────────────────────────────────────
-   INDEXES
-   Rule: index every field used in .find(),
-   .sort(), or .populate() filter
-───────────────────────────────────────────── */
 
-// ── Unique (already implied but explicit is faster)
-// productSchema.index({ slug: 1 },        { unique: true });
-
-// ── Single field — most common filters
 productSchema.index({ category: 1 });
 productSchema.index({ subCategory: 1 });
 productSchema.index({ isActive: 1 });
@@ -128,35 +118,25 @@ productSchema.index({ averageRating: -1 });
 productSchema.index({ totalSold: -1 });
 productSchema.index({ createdAt: -1 });
 
-// ── Compound — matches exact query patterns your API uses
-// GET /products?category=X&isActive=true  (most common)
 productSchema.index({ category: 1, isActive: 1 });
 productSchema.index({ category: 1, isActive: 1, createdAt: -1 });
 productSchema.index({ category: 1, isActive: 1, basePrice: 1 });
 
-// GET /products/featured  →  { isFeatured: true, isActive: true }
 productSchema.index({ isFeatured: 1, isActive: 1, createdAt: -1 });
 
-// GET /products/new-arrivals  →  { isNewArrival: true, isActive: true }
 productSchema.index({ isNewArrival: 1, isActive: 1, createdAt: -1 });
 
-// GET /products/best-sellers  →  { isBestSeller: true, isActive: true }
 productSchema.index({ isBestSeller: 1, isActive: 1, totalSold: -1 });
 
-// Sort by price + filter active
 productSchema.index({ isActive: 1, basePrice: 1 });
 productSchema.index({ isActive: 1, createdAt: -1 });
 
-// ── Full-text search on name + description + brand
 productSchema.index(
   { name: "text", description: "text", brand: "text", shortDescription: "text" },
   { weights: { name: 10, brand: 5, shortDescription: 3, description: 1 }, name: "product_text_search" }
 );
 
-/* ─────────────────────────────────────────────
-   VIRTUAL — computed final price
-   (only works when NOT using .lean())
-───────────────────────────────────────────── */
+
 productSchema.virtual("finalPrice").get(function () {
   if (this.discountType === "percentage" && this.discountValue > 0) {
     return Math.max(0, this.basePrice - (this.basePrice * this.discountValue) / 100);
@@ -167,11 +147,6 @@ productSchema.virtual("finalPrice").get(function () {
   return this.basePrice;
 });
 
-/* ─────────────────────────────────────────────
-   PRE-SAVE HOOK — auto-sync totalStock
-   from variants so you never query variants
-   just to get total stock
-───────────────────────────────────────────── */
 productSchema.pre("save", function (next) {
   if (this.isModified("variants")) {
     this.totalStock = this.variants
@@ -181,13 +156,7 @@ productSchema.pre("save", function (next) {
   // next();
 });
 
-/* ─────────────────────────────────────────────
-   STATIC METHODS
-   Use these in your controllers instead of
-   raw .find() for consistent lean() + select
-───────────────────────────────────────────── */
 
-// Usage: Product.findFeatured(8)
 productSchema.statics.findFeatured = function (limit = 8) {
   return this.find({ isFeatured: true, isActive: true })
     .lean()
@@ -197,7 +166,6 @@ productSchema.statics.findFeatured = function (limit = 8) {
     .limit(limit);
 };
 
-// Usage: Product.findNewArrivals(8)
 productSchema.statics.findNewArrivals = function (limit = 8) {
   return this.find({ isNewArrival: true, isActive: true })
     .lean()
@@ -207,7 +175,6 @@ productSchema.statics.findNewArrivals = function (limit = 8) {
     .limit(limit);
 };
 
-// Usage: Product.findBestSellers(8)
 productSchema.statics.findBestSellers = function (limit = 8) {
   return this.find({ isBestSeller: true, isActive: true })
     .lean()
@@ -217,7 +184,6 @@ productSchema.statics.findBestSellers = function (limit = 8) {
     .limit(limit);
 };
 
-// Usage: Product.findByCategory(categoryId, { page, limit, sort })
 productSchema.statics.findByCategory = function (categoryId, { page = 1, limit = 12, sort = "-createdAt" } = {}) {
   const skip = (page - 1) * limit;
   return this.find({ category: categoryId, isActive: true })

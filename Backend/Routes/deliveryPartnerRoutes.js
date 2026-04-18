@@ -12,14 +12,11 @@ import { protect, admin } from '../Middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// All routes require authentication and admin role
 router.use(protect);
 router.use(admin);
 
-// Stats route (must be before :id route)
 router.get('/stats', getPartnerStats);
 
-// Main routes
 router.post('/register', registerDeliveryPartner);
 router.get('/', getAllDeliveryPartners);
 router.get('/:id', getDeliveryPartnerById);

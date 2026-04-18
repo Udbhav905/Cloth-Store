@@ -17,7 +17,6 @@ export const protect = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // console.log(decoded);
     req.user = await User.findById(decoded.id).select("-password");
     
     if (!req.user) {
@@ -38,9 +37,7 @@ export const admin = (req, res, next) => {
   }
 };
 
-// Add this to your existing authMiddleware.js
 
-// Protect delivery partner routes
  export const protectDeliveryPartner = async (req, res, next) => {
   let token;
 

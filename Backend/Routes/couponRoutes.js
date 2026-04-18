@@ -12,11 +12,9 @@ import { protect, admin } from "../Middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// Public routes
 router.get("/code/:code", getCouponByCode);
 router.post("/validate", protect, validateCoupon);
 
-// Admin routes
 router.route("/")
   .get(protect, admin, getCoupons)
   .post(protect, admin, createCoupon);

@@ -79,7 +79,6 @@ function AddressOption({ addr, selected, onSelect }) {
 
 const EMPTY = { address1: "", address2: "", city: "", state: "", pincode: "", country: "India" };
 
-// Static coupon codes
 const STATIC_COUPONS = {
   "LUXURIA10": { discountPercent: 10, code: "LUXURIA10" },
   "WELCOME20": { discountPercent: 20, code: "WELCOME20" },
@@ -95,7 +94,6 @@ export default function Checkout() {
 
   const buyNow = location.state?.buyNow || null;
 
-  // Get saved order summary from sessionStorage (passed from cart)
   const [savedSummary] = useState(() => {
     const saved = sessionStorage.getItem("checkoutOrderSummary");
     if (saved) {
@@ -142,26 +140,21 @@ export default function Checkout() {
   const [couponApplied, setCouponApplied] = useState(null);
   const [couponLoading, setCouponLoading] = useState(false);
 
-  /* ── Calculate totals with dynamic GST and no shipping ── */
   const subtotal = useMemo(() =>
   orderItems.reduce((acc, i) => acc + (i.price * i.quantity), 0),
   [orderItems]
 );
   
-  // Use saved summary values if available (for discount from cart)
 const discountAmount = savedSummary?.discountAmount || couponApplied?.discount || 0;
   const afterDiscount = subtotal - discountAmount;
   
-  // Calculate GST based on after-discount amount (5% if <1000, else 12%)
   const gstCalc = calculateGST(afterDiscount);
   const gst =  gstCalc.amount;
   const gstRate = gstCalc.rate;
   
-  // No shipping charges
   const shipping = 0;
   const total = afterDiscount + gst;
 
-  /* ── Fetch saved addresses ── */
   useEffect(() => {
     if (!user || !isLoggedIn) {
       navigate("/login");
@@ -183,7 +176,6 @@ const discountAmount = savedSummary?.discountAmount || couponApplied?.discount |
       .finally(() => setAddrLoading(false));
   }, [user, isLoggedIn, navigate]);
 
-  /* ── Redirect if no items ── */
   useEffect(() => {
     if (!buyNow && cartItems.length === 0 && !savedSummary) {
       navigate("/cart");
@@ -217,7 +209,6 @@ const discountAmount = savedSummary?.discountAmount || couponApplied?.discount |
     }
   };
 
-  // Static coupon handler (no API call)
   const handleApplyCoupon = () => {
     if (!coupon.trim()) {
       setError("Please enter a coupon code");
@@ -227,7 +218,6 @@ const discountAmount = savedSummary?.discountAmount || couponApplied?.discount |
     setCouponLoading(true);
     setError("");
     
-    // Simulate loading for better UX
     setTimeout(() => {
       const enteredCode = coupon.trim().toUpperCase();
       const validCoupon = STATIC_COUPONS[enteredCode];

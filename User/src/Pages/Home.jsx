@@ -1,16 +1,13 @@
 import { lazy, Suspense } from "react";
 
-// ── HeroSection loads eagerly — it's above the fold, user sees it first ──
 import HeroSection from "../Components/Herosection/Herosection";
 
-// ── Everything else loads lazily ──
 const CategoryShowcase = lazy(() => import("../Components/CategoryShowcase/CategoryShowcase"));
 const Trending         = lazy(() => import("../Components/Trending/Trending"));
 const NewArrivals      = lazy(() => import("../Components/Newarrivals/Newarrivals"));
 const ShopByCategory   = lazy(() => import("../Components/ShopByCategory/ShopByCategory"));
 const Footer           = lazy(() => import("../Components/Footer/Footer"));
 
-// ── Lightweight section placeholder while a section loads ──
 function SectionSkeleton({ height = "400px" }) {
   return (
     <div style={{

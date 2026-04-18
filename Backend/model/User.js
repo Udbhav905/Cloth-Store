@@ -92,26 +92,18 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 
-/* ─────────────────────────────────────────────
-   Pre-save Hook — Hash password only when modified
-   FIX: `next` properly declared, always called
-───────────────────────────────────────────── */
+
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
   this.password = await bcrypt.hash(this.password, 10);
 });
 
-/* ─────────────────────────────────────────────
-   Instance Methods
-───────────────────────────────────────────── */
 
-// Compare entered password with hashed password
 userSchema.methods.comparePassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Generate short-lived access token
-// Uses JWT_SECRET as fallback so authController.js works too
+
 userSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     {
@@ -126,7 +118,6 @@ userSchema.methods.generateAccessToken = function () {
   );
 };
 
-// Generate long-lived refresh token
 userSchema.methods.generateRefreshToken = function () {
   return jwt.sign(
     { _id: this._id },

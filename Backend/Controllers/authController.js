@@ -40,21 +40,15 @@ const userShape = (user) => ({
 });
 
 
-// ─────────────────────────────────────────────
-// @desc    Register user
-// @route   POST /api/auth/register
-// @access  Public
-// ─────────────────────────────────────────────
+
 export const registerUser = async (req, res) => {
   try {
     const { name, email, mobileNo, password } = req.body;
 
-    // Validate required fields
     if (!name || !email || !mobileNo || !password) {
       return res.status(400).json({ message: "Please provide all required fields" });
     }
 
-    // Check for existing user
     const userExists = await User.findOne({ $or: [{ email }, { mobileNo }] });
     if (userExists) {
       return res.status(400).json({
@@ -62,7 +56,6 @@ export const registerUser = async (req, res) => {
       });
     }
 
-    // Create user — pre-save hook hashes password automatically
     const user = await User.create({ name, email, mobileNo, password, role: "user" });
 
     const token = generateToken(user._id);
@@ -80,11 +73,6 @@ export const registerUser = async (req, res) => {
 };
 
 
-// ─────────────────────────────────────────────
-// @desc    Create admin user
-// @route   POST /api/auth/registeradmin
-// @access  Public (lock down with secret key in production)
-// ─────────────────────────────────────────────
 export const createAdmin = async (req, res) => {
   try {
     const { name, email, mobileNo, password } = req.body;
@@ -111,11 +99,7 @@ export const createAdmin = async (req, res) => {
 };
 
 
-// ─────────────────────────────────────────────
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
-// ─────────────────────────────────────────────
+
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -138,7 +122,6 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // Use findByIdAndUpdate to avoid triggering pre-save hook on login
     await User.findByIdAndUpdate(user._id, { lastLogin: new Date() });
 
     const token = generateToken(user._id);
@@ -156,11 +139,7 @@ export const loginUser = async (req, res) => {
 };
 
 
-// ─────────────────────────────────────────────
-// @desc    Logout user
-// @route   POST /api/auth/logout
-// @access  Public
-// ─────────────────────────────────────────────
+
 export const logoutUser = async (req, res) => {
   res.cookie("token", "", {
     httpOnly: true,
@@ -170,11 +149,6 @@ export const logoutUser = async (req, res) => {
 };
 
 
-// ─────────────────────────────────────────────
-// @desc    Get current user profile
-// @route   GET /api/auth/profile
-// @access  Private
-// ─────────────────────────────────────────────
 export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password -refreshToken");
@@ -202,11 +176,7 @@ export const getProfile = async (req, res) => {
 };
 
 
-// ─────────────────────────────────────────────
-// @desc    Update user profile (self)
-// @route   PUT /api/auth/profile
-// @access  Private
-// ─────────────────────────────────────────────
+
 export const updateProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -219,7 +189,6 @@ export const updateProfile = async (req, res) => {
     if (req.body.email)    user.email    = req.body.email;
     if (req.body.mobileNo) user.mobileNo = req.body.mobileNo;
 
-    // Pre-save hook will re-hash only if password is set here
     if (req.body.password) {
       user.password = req.body.password;
     }
@@ -235,13 +204,7 @@ export const updateProfile = async (req, res) => {
 };
 
 
-// ═══════════════════════════════════════════════
-//   ADDRESS MANAGEMENT
-// ═══════════════════════════════════════════════
 
-// @desc    Get all addresses
-// @route   GET /api/users/addresses
-// @access  Private
 export const getAddresses = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("addresses");
@@ -254,9 +217,7 @@ export const getAddresses = async (req, res) => {
 };
 
 
-// @desc    Get single address by ID
-// @route   GET /api/users/address/:addressId
-// @access  Private
+
 export const getAddressById = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("addresses");
@@ -273,9 +234,7 @@ export const getAddressById = async (req, res) => {
 };
 
 
-// @desc    Add new address
-// @route   POST /api/users/address
-// @access  Private
+
 export const addAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -312,9 +271,7 @@ export const addAddress = async (req, res) => {
 };
 
 
-// @desc    Update existing address
-// @route   PUT /api/users/address/:addressId
-// @access  Private
+
 export const updateAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -346,9 +303,7 @@ export const updateAddress = async (req, res) => {
 };
 
 
-// @desc    Delete address
-// @route   DELETE /api/users/address/:addressId
-// @access  Private
+
 export const deleteAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -372,9 +327,7 @@ export const deleteAddress = async (req, res) => {
 };
 
 
-// @desc    Set address as default
-// @route   PUT /api/users/address/:addressId/default
-// @access  Private
+
 export const setDefaultAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -383,7 +336,6 @@ export const setDefaultAddress = async (req, res) => {
     const address = user.addresses.id(req.params.addressId);
     if (!address) return res.status(404).json({ message: "Address not found" });
 
-    // Clear all defaults, then set selected one
     user.addresses.forEach((a) => { a.isDefault = false; });
     address.isDefault = true;
 
@@ -401,13 +353,7 @@ export const setDefaultAddress = async (req, res) => {
 };
 
 
-// ═══════════════════════════════════════════════
-//   ADMIN — USER MANAGEMENT
-// ═══════════════════════════════════════════════
 
-// @desc    Get all users (paginated)
-// @route   GET /api/users
-// @access  Private/Admin
 export const getUsers = async (req, res) => {
   try {
     const page  = parseInt(req.query.page)  || 1;
@@ -437,9 +383,7 @@ export const getUsers = async (req, res) => {
 };
 
 
-// @desc    Get user by ID
-// @route   GET /api/users/:id
-// @access  Private/Admin
+
 export const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password -refreshToken");
@@ -452,24 +396,18 @@ export const getUserById = async (req, res) => {
 };
 
 
-// @desc    Update user (admin) — uses findByIdAndUpdate to SKIP pre-save hook
-// @route   PUT /api/users/:id
-// @access  Private/Admin
+
 export const updateUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Build only the fields that were sent
     const updates = {};
     if (req.body.name      !== undefined) updates.name      = req.body.name;
     if (req.body.email     !== undefined) updates.email     = req.body.email;
     if (req.body.mobileNo  !== undefined) updates.mobileNo  = req.body.mobileNo;
     if (req.body.role      !== undefined) updates.role      = req.body.role;
     if (req.body.isBlocked !== undefined) updates.isBlocked = req.body.isBlocked;
-
-    // Use findByIdAndUpdate so the pre-save hook is NOT triggered
-    // (admin shouldn't accidentally re-hash an already-hashed password)
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       { $set: updates },
@@ -485,9 +423,7 @@ export const updateUser = async (req, res) => {
 };
 
 
-// @desc    Delete user
-// @route   DELETE /api/users/:id
-// @access  Private/Admin
+
 export const deleteUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -503,15 +439,12 @@ export const deleteUser = async (req, res) => {
 };
 
 
-// @desc    Toggle user block status
-// @route   PUT /api/users/:id/toggle-block
-// @access  Private/Admin
+
 export const toggleUserBlock = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Use findByIdAndUpdate to skip pre-save hook
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       { $set: { isBlocked: !user.isBlocked } },
@@ -530,15 +463,9 @@ export const toggleUserBlock = async (req, res) => {
 };
 
 
-// @desc    Get user orders
-// @route   GET /api/users/orders
-// @access  Private
+
 export const getUserOrders = async (req, res) => {
   try {
-    // Uncomment when Order model is ready:
-    // import Order from "../model/Order.js";
-    // const orders = await Order.find({ userId: req.user._id }).sort({ createdAt: -1 });
-    // return res.json(orders);
 
     return res.json([]);
   } catch (error) {
@@ -557,30 +484,25 @@ export const forgotPassword = async (req, res) => {
 
     const user = await User.findOne({ email });
     
-    // For security, always return success even if user doesn't exist
     if (!user) {
       return res.status(200).json({ 
         message: "If an account exists with that email, you will receive reset instructions." 
       });
     }
 
-    // Check if user is blocked
     if (user.isBlocked) {
       return res.status(403).json({ message: "Your account has been blocked. Contact support." });
     }
 
-    // Generate reset token
     const resetToken = crypto.randomBytes(32).toString("hex");
     const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
 
-    // Save to database
     await PasswordReset.create({
       userId: user._id,
       token: hashedToken,
       expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
     });
 
-    // Send email
     await sendPasswordResetEmail(email, resetToken, user.name);
 
     return res.status(200).json({
@@ -605,10 +527,8 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ message: "Password must be at least 6 characters" });
     }
 
-    // Hash the provided token
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-    // Find valid reset request
     const resetRequest = await PasswordReset.findOne({
       token: hashedToken,
       used: false,
@@ -619,21 +539,17 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired reset token" });
     }
 
-    // Get user
     const user = await User.findById(resetRequest.userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Update password
     user.password = newPassword;
     await user.save();
 
-    // Mark token as used
     resetRequest.used = true;
     await resetRequest.save();
 
-    // Send confirmation email
     await sendPasswordChangedConfirmation(user.email, user.name);
 
     return res.status(200).json({
@@ -662,17 +578,14 @@ export const changePassword = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Verify current password
     const isPasswordMatch = await user.comparePassword(currentPassword);
     if (!isPasswordMatch) {
       return res.status(401).json({ message: "Current password is incorrect" });
     }
 
-    // Update password
     user.password = newPassword;
     await user.save();
 
-    // Send confirmation email
     await sendPasswordChangedConfirmation(user.email, user.name);
 
     return res.status(200).json({

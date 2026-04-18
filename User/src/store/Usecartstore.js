@@ -4,13 +4,11 @@ import useAuthStore from "./Useauthstore";
 
 const API = "http://localhost:3000/api";
 
-// Helper to get auth token from the auth store
 const getAuthToken = () => {
   const { accessToken } = useAuthStore.getState();
   return accessToken;
 };
 
-// Helper to check if user is logged in
 const isUserLoggedIn = () => {
   const { isLoggedIn } = useAuthStore.getState();
   return isLoggedIn;
@@ -31,7 +29,6 @@ const useCartStore = create(
       syncInProgress: false,
       syncQueue: [],
 
-      /* ── Helper to make authenticated requests ── */
       _fetchWithAuth: async (url, options = {}) => {
         const token = getAuthToken();
         if (!token) {
@@ -146,11 +143,9 @@ const useCartStore = create(
         }
       },
 
-      /* ── Add to cart (FIXED) ── */
       addToCart: async (item) => {
         console.log("🛒 addToCart called with:", item);
         
-        // For offline mode (not logged in)
         if (!isUserLoggedIn()) {
           console.log("🔵 Adding to local cart (offline mode)");
           const items = get().items;
@@ -181,13 +176,11 @@ const useCartStore = create(
             ];
           }
           
-          // Update state immediately
           set({ items: updatedItems });
           console.log("✅ Local cart updated, new count:", updatedItems.reduce((sum, i) => sum + i.quantity, 0));
           return { success: true, offline: true };
         }
 
-        // For logged in users - backend sync
         try {
           console.log("🔵 Adding to backend cart");
           set({ loading: true });
@@ -542,11 +535,9 @@ const useCartStore = create(
         set({ loading: true, syncInProgress: true });
 
         try {
-          // First sync local data if any
           await get().syncLocalCart();
           await get().syncLocalWishlist();
           
-          // Then fetch from backend
           await Promise.all([get().initCart(), get().fetchWishlist()]);
           console.log("✅ Cart and wishlist initialized successfully");
           

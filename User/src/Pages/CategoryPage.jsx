@@ -327,7 +327,6 @@ export default function CategoryPage() {
   const [subCategories, setSubCategories] = useState([]);
   const [parentCategory, setParentCategory] = useState(null);
 
-  // Fetch products from backend API
   useEffect(() => {
     if (!slug) return;
 
@@ -338,7 +337,6 @@ export default function CategoryPage() {
       try {
         const timestamp = Date.now();
         
-        // First, try to fetch as category (includes subcategories)
         console.log(`🔍 Fetching products for category: ${slug}`);
         const response = await fetch(`${API}/products/category/${slug}?_t=${timestamp}`, {
           headers: { "Cache-Control": "no-cache" }
@@ -355,7 +353,6 @@ export default function CategoryPage() {
           return;
         }
         
-        // If not found as category, try as subcategory
         console.log(`🔍 Trying as subcategory: ${slug}`);
         const subResponse = await fetch(`${API}/products/subcategory/${slug}?_t=${timestamp}`, {
           headers: { "Cache-Control": "no-cache" }
@@ -372,7 +369,6 @@ export default function CategoryPage() {
           return;
         }
         
-        // If still not found, try regular products endpoint with search
         console.log(`🔍 Searching products by name: ${slug}`);
         const searchResponse = await fetch(`${API}/products?search=${slug}&_t=${timestamp}`, {
           headers: { "Cache-Control": "no-cache" }
@@ -398,7 +394,6 @@ export default function CategoryPage() {
     fetchProducts();
   }, [slug]);
 
-  // Local filter state
   const [filters, setFilters] = useState({
     minPrice: "", maxPrice: "",
     sizes: [], colors: [],
@@ -420,7 +415,6 @@ export default function CategoryPage() {
     setPage(1);
   };
 
-  // Extract unique colors
   const allColors = [...new Map(
     products
       .flatMap(p => p.variants || [])
@@ -428,7 +422,6 @@ export default function CategoryPage() {
       .map(v => [v.color, { name: v.color, code: v.colorCode }])
   ).values()];
 
-  // Apply filters
   const filtered = products.filter(p => {
     if (!p) return false;
     const price = calcPrice(p);
@@ -449,7 +442,6 @@ export default function CategoryPage() {
     return true;
   });
 
-  // Sort products
   const sorted = [...filtered].sort((a, b) => {
     switch (sort) {
       case "priceLow": return calcPrice(a) - calcPrice(b);
@@ -460,7 +452,6 @@ export default function CategoryPage() {
     }
   });
 
-  // Paginate
   const totalFiltered = sorted.length;
   const totalPages = Math.max(1, Math.ceil(totalFiltered / PER_PAGE));
   const paginated = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);

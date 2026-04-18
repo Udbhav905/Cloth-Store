@@ -185,7 +185,6 @@ const useCategoryStore = create((set, get) => ({
       const sorted = [...raw].sort((a, b) => {
         const orderDiff = (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
         if (orderDiff !== 0) return orderDiff;
-        // Same sortOrder → use creation date so first-created appears first
         return new Date(a.createdAt ?? 0) - new Date(b.createdAt ?? 0);
       });
 

@@ -112,15 +112,10 @@ function CategorySection({ category, products }) {
   );
 }
 
-/* ════════════════════════════════════════════════════════════
-   MAIN PAGE
-════════════════════════════════════════════════════════════ */
 export default function Collections() {
   const navigate = useNavigate();
 
-  /* ── Store data ─────────────────────────────────────────── */
-  // ✅ Select each slice individually — inline spread/array in a selector
-  //    creates a new reference every render → infinite loop
+  
   const trending         = useProductStore((s) => s.trending     || []);
   const newArrivals      = useProductStore((s) => s.newArrivals  || []);
   const featured         = useProductStore((s) => s.featured     || []);
@@ -129,12 +124,10 @@ export default function Collections() {
   const fetchFeatured    = useProductStore((s) => s.fetchFeatured);
   const trendingLoading  = useProductStore((s) => s.trendingLoading);
 
-  // ✅ Same fix for category store — || [] inside selector = new ref every render
   const categoriesRaw   = useCategoryStore((s) => s.categories || s.allCategories);
   const fetchCategories = useCategoryStore((s) => s.fetchCategories || s.getCategories);
   const categories      = categoriesRaw || [];
 
-  /* ── Local state ────────────────────────────────────────── */
   const [entranceDone, setEntranceDone]   = useState(false);
   const [searchQ,      setSearchQ]        = useState("");
   const [sortBy,       setSortBy]         = useState("default");
@@ -169,13 +162,10 @@ export default function Collections() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  /* ── Deduplicate + filter + sort — all in one useMemo ────── */
   const { filtered, grouped, uncategorised } = useMemo(() => {
-    // 1. Deduplicate across trending / newArrivals / featured
     const merged = [...trending, ...newArrivals, ...featured];
     const unique  = Array.from(new Map(merged.map((p) => [p._id, p])).values());
 
-    // 2. Filter
     const fil = unique.filter((p) => {
       if (activeFilter !== "all" && p.category?.slug !== activeFilter) return false;
       const price = calcFinalPrice(p);
@@ -192,7 +182,6 @@ export default function Collections() {
       return true;
     });
 
-    // 3. Sort
     const sorted = [...fil].sort((a, b) => {
       if (sortBy === "price-asc")  return calcFinalPrice(a) - calcFinalPrice(b);
       if (sortBy === "price-desc") return calcFinalPrice(b) - calcFinalPrice(a);
@@ -202,7 +191,6 @@ export default function Collections() {
       return 0;
     });
 
-    // 4. Group by category
     const grp = categories.reduce((acc, cat) => {
       acc[cat._id] = {
         category: cat,
@@ -213,7 +201,6 @@ export default function Collections() {
       return acc;
     }, {});
 
-    // 5. Uncategorised bucket
     const catIds = new Set(
       Object.values(grp).flatMap((g) => g.products.map((p) => p._id))
     );

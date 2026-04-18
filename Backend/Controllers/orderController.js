@@ -7,9 +7,7 @@ import DeliveryPartner from "../model/DeliveryPartner.js";
    CUSTOMER CONTROLLERS
 ═══════════════════════════════════════════════════════════ */
 
-// @desc    Create new order
-// @route   POST /api/orders
-// @access  Private
+
 export const createOrder = async (req, res) => {
   try {
     const {
@@ -70,7 +68,6 @@ export const createOrder = async (req, res) => {
       image:      item.image || "",
     }));
 
-    // ✅ FIXED: Add name to shipping address if not present
     const enrichedShippingAddress = {
       name: req.user.name,  // Add user's name to shipping address
       ...shippingAddress
@@ -102,7 +99,6 @@ export const createOrder = async (req, res) => {
     console.log(`✅ Order created for user: ${req.user.email} (${req.user.name})`);
     console.log(`Order ID: ${order._id}, Order Number: ${order.orderNumber}`);
 
-    // Reduce product stock
     for (const item of processedItems) {
       const product = await Product.findById(item.productId);
       if (product) {
@@ -116,7 +112,6 @@ export const createOrder = async (req, res) => {
       }
     }
 
-    // Clear cart
     if (paymentMethod === "cod" || !req.body.fromBuyNow) {
       await Cart.findOneAndUpdate(
         { userId: req.user._id },
@@ -124,7 +119,6 @@ export const createOrder = async (req, res) => {
       );
     }
 
-    // ✅ FIXED: Return the populated order for immediate display
     const populatedOrder = await Order.findById(order._id).populate("userId", "name email mobileNo");
     res.status(201).json(populatedOrder);
   } catch (error) {
@@ -133,9 +127,7 @@ export const createOrder = async (req, res) => {
   }
 };
 
-// @desc    Get all orders (basic, admin)
-// @route   GET /api/orders
-// @access  Private/Admin
+
 export const getOrders = async (req, res) => {
   try {
     const page  = parseInt(req.query.page)  || 1;
@@ -161,9 +153,7 @@ export const getOrders = async (req, res) => {
   }
 };
 
-// @desc    Get my orders - ✅ FIXED to properly return orders
-// @route   GET /api/orders/my-orders
-// @access  Private
+
 export const getMyOrders = async (req, res) => {
   try {
     console.log(`Fetching orders for user: ${req.user._id} (${req.user.email})`);
@@ -185,9 +175,7 @@ export const getMyOrders = async (req, res) => {
   }
 };
 
-// @desc    Get order by ID
-// @route   GET /api/orders/:id
-// @access  Private
+
 export const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
@@ -205,9 +193,7 @@ export const getOrderById = async (req, res) => {
   }
 };
 
-// @desc    Update order status
-// @route   PUT /api/orders/:id/status
-// @access  Private/Admin
+
 export const updateOrderStatus = async (req, res) => {
   try {
     const { status, note } = req.body;
@@ -239,9 +225,7 @@ export const updateOrderStatus = async (req, res) => {
   }
 };
 
-// @desc    Update payment status
-// @route   PUT /api/orders/:id/payment
-// @access  Private/Admin
+
 export const updatePaymentStatus = async (req, res) => {
   try {
     const { paymentStatus, transactionId } = req.body;
@@ -263,9 +247,7 @@ export const updatePaymentStatus = async (req, res) => {
   }
 };
 
-// @desc    Cancel order
-// @route   PUT /api/orders/:id/cancel
-// @access  Private
+
 export const cancelOrder = async (req, res) => {
   try {
     const { reason } = req.body;
@@ -324,9 +306,7 @@ export const cancelOrder = async (req, res) => {
    ADMIN CONTROLLERS
 ═══════════════════════════════════════════════════════════ */
 
-// @desc    Get all orders with stats, search, pagination
-// @route   GET /api/orders/admin/all
-// @access  Private/Admin
+
 export const adminGetAllOrders = async (req, res) => {
   const startTime = Date.now();
   try {
@@ -359,7 +339,6 @@ export const adminGetAllOrders = async (req, res) => {
     };
     const sort = sortMap[req.query.sort] || { createdAt: -1 };
 
-    // ✅ FIXED: Properly populate userId to get customer name
     const [orders, total] = await Promise.all([
       Order.find(query)
         .populate("userId", "name email mobileNo")
@@ -370,7 +349,6 @@ export const adminGetAllOrders = async (req, res) => {
       Order.countDocuments(query),
     ]);
 
-    // Get stats
     const [statusCounts, revenueData] = await Promise.all([
       Order.aggregate([
         { $match: {} },
@@ -417,9 +395,7 @@ export const adminGetAllOrders = async (req, res) => {
   }
 };
 
-// @desc    Get single order detail (admin)
-// @route   GET /api/orders/admin/:id
-// @access  Private/Admin
+
 export const adminGetOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
@@ -436,9 +412,7 @@ export const adminGetOrderById = async (req, res) => {
   }
 };
 
-// @desc    Update order status (admin panel)
-// @route   PUT /api/orders/admin/:id/status
-// @access  Private/Admin
+
 export const adminUpdateStatus = async (req, res) => {
   try {
     const { orderStatus, note } = req.body;
@@ -452,7 +426,6 @@ export const adminUpdateStatus = async (req, res) => {
     const prev = order.orderStatus;
     order.orderStatus = orderStatus;
 
-    // ✅ Auto-update payment for COD orders when marked as delivered
     if (orderStatus === "delivered" && order.paymentMethod === "cod") {
       console.log(`💰 Admin: COD Order ${order.orderNumber} marked as delivered - Updating payment to PAID`);
       order.paymentStatus = "paid";
@@ -504,9 +477,7 @@ export const adminUpdateStatus = async (req, res) => {
   }
 };
 
-// @desc    Assign delivery partner to order - ✅ FIXED
-// @route   PUT /api/orders/admin/:id/assign
-// @access  Private/Admin
+
 export const adminAssignDelivery = async (req, res) => {
   try {
     const { 
@@ -529,7 +500,6 @@ export const adminAssignDelivery = async (req, res) => {
     const partnerName = deliveryPartnerName || courierName;
     const partnerId = deliveryPartnerId;
 
-    // ✅ Save delivery partner info to order
     if (partnerId) {
       order.deliveryPartnerId = partnerId;
     }
@@ -538,7 +508,6 @@ export const adminAssignDelivery = async (req, res) => {
     order.trackingNumber = trackingNumber || `TRK${Date.now().toString().slice(-8)}`;
     order.assignedAt = new Date();
 
-    // Only advance status if order is still pending/confirmed/processing
     const advanceStatuses = ["pending", "confirmed", "processing"];
     if (advanceStatuses.includes(order.orderStatus)) {
       order.orderStatus = "processing";
@@ -553,7 +522,6 @@ export const adminAssignDelivery = async (req, res) => {
 
     await order.save();
 
-    // ✅ Update the delivery partner's assignedOrders array
     if (partnerId) {
       const deliveryPartner = await DeliveryPartner.findById(partnerId);
       
@@ -592,9 +560,7 @@ export const adminAssignDelivery = async (req, res) => {
   }
 };
 
-// @desc    Save / update admin note on order
-// @route   PUT /api/orders/admin/:id/note
-// @access  Private/Admin
+
 export const adminUpdateNote = async (req, res) => {
   try {
     const { adminNotes } = req.body;

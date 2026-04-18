@@ -20,10 +20,8 @@ export const createPaymentIntent = async (req, res) => {
       return res.status(400).json({ message: "Invalid amount" });
     }
 
-    // Stripe requires smallest currency unit — paise for INR
     const amountInPaise = Math.round(Number(amount) * 100);
 
-    // Metadata values MUST be strings (Stripe rejects numbers)
     const safeMetadata = {
       userId:     String(req.user._id),
       orderTotal: String(amount),
@@ -36,18 +34,14 @@ export const createPaymentIntent = async (req, res) => {
       metadata: safeMetadata,
     };
 
-    /* ── CardElement uses confirmCardPayment which needs
-       automatic_payment_methods DISABLED (or not set).
-       PaymentElement needs it ENABLED.
-       Since your Paymentpage.jsx uses CardElement + confirmCardPayment,
-       we do NOT set automatic_payment_methods here. ── */
+ 
 
     const paymentIntent = await stripe.paymentIntents.create(paymentIntentOptions);
 
     res.status(200).json({
       clientSecret:    paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
-      amount:          paymentIntent.amount,       // in paise
+      amount:          paymentIntent.amount,      
       currency:        paymentIntent.currency,
     });
 
@@ -72,7 +66,6 @@ export const verifyPayment = async (req, res) => {
       return res.status(400).json({ message: "paymentIntentId is required" });
     }
 
-    // Retrieve from Stripe — this is the source of truth
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
     if (paymentIntent.status !== "succeeded") {
@@ -81,7 +74,6 @@ export const verifyPayment = async (req, res) => {
       });
     }
 
-    // Update order if orderId provided
     if (orderId) {
       const order = await Order.findById(orderId);
       if (order && order.paymentStatus !== "paid") {
@@ -135,7 +127,6 @@ export const stripeWebhook = async (req, res) => {
 
   let event;
   try {
-    // req.body MUST be raw Buffer here — see paymentRoutes.js
     event = stripe.webhooks.constructEvent(req.body, sig, secret);
   } catch (err) {
     console.error("[webhook] Signature verification failed:", err.message);
@@ -193,7 +184,6 @@ export const stripeWebhook = async (req, res) => {
       }
 
       default:
-        // Ignore other event types
         break;
     }
 

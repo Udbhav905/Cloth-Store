@@ -2,29 +2,31 @@ import express from "express";
 import {
   createReview,
   getProductReviews,
+  canUserReview,
+  getReviewsByOrder,
   updateReview,
   deleteReview,
   markHelpful,
   getAllReviews,
-  moderateReview
+  moderateReview,
 } from "../Controllers/reviewController.js";
 import { protect, admin } from "../Middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// Public routes
+/* ── Public ── */
 router.get("/product/:productId", getProductReviews);
 
-// Protected routes
-router.post("/", protect, createReview);
-router.post("/:id/helpful", protect, markHelpful);
+/* ── Authenticated ── */
+router.post("/",                    protect, createReview);
+router.get("/can-review/:productId", protect, canUserReview);
+router.get("/order/:orderId",        protect, getReviewsByOrder);
+router.put("/:id",                   protect, updateReview);
+router.delete("/:id",                protect, deleteReview);
+router.post("/:id/helpful",          protect, markHelpful);
 
-// Admin routes
-router.get("/admin/all", protect, admin, getAllReviews);
+/* ── Admin ── */
+router.get("/",            protect, admin, getAllReviews);
 router.put("/:id/moderate", protect, admin, moderateReview);
-
-router.route("/:id")
-  .put(protect, updateReview)
-  .delete(protect, deleteReview);
 
 export default router;

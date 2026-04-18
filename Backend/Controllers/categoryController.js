@@ -2,9 +2,7 @@ import Category from "../model/Category.js";
 import { generateSlug } from "../utils/generateSlug.js";
 import cloudinary from "../config/cloudinary.js";
 
-// @desc    Create category
-// @route   POST /api/categories
-// @access  Private/Admin
+
 
 export const createCategory = async (req, res) => {
   try {
@@ -20,7 +18,6 @@ export const createCategory = async (req, res) => {
       return res.status(400).json({ message: "Category already exists" });
     }
 
-    // --- Cloudinary Upload ---
     let imageUrl = null;
     if (req.file) {
       const uploadResult = await new Promise((resolve, reject) => {
@@ -61,9 +58,7 @@ export const createCategory = async (req, res) => {
   }
 };
 
-// @desc    Get all categories
-// @route   GET /api/categories
-// @access  Public
+
 export const getCategories = async (req, res) => {
   try {
     const { active, parent } = req.query;
@@ -90,9 +85,7 @@ export const getCategories = async (req, res) => {
   }
 };
 
-// @desc    Get category by ID
-// @route   GET /api/categories/:id
-// @access  Public
+
 export const getCategoryById = async (req, res) => {
   try {
     const category = await Category.findById(req.params.id).populate(
@@ -117,9 +110,7 @@ export const getCategoryById = async (req, res) => {
   }
 };
 
-// @desc    Get category by slug
-// @route   GET /api/categories/slug/:slug
-// @access  Public
+
 export const getCategoryBySlug = async (req, res) => {
   try {
     const category = await Category.findOne({ slug: req.params.slug }).populate(
@@ -144,12 +135,7 @@ export const getCategoryBySlug = async (req, res) => {
   }
 };
 
-// @desc    Update category
-// @route   PUT /api/categories/:id
-// @access  Private/Admin
-// @desc    Update category
-// @route   PUT /api/categories/:id
-// @access  Private/Admin
+
 export const updateCategory = async (req, res) => {
   try {
     console.log("req body", req.body);
@@ -169,7 +155,6 @@ export const updateCategory = async (req, res) => {
       metadata,
     } = req.body;
 
-    // Handle name and slug
     if (name && name !== category.name) {
       category.slug = generateSlug(name);
       category.name = name;
@@ -177,32 +162,26 @@ export const updateCategory = async (req, res) => {
       category.name = name;
     }
 
-    // Handle description
     if (description !== undefined) {
       category.description = description;
     }
 
-    // Fix: Handle parentCategory properly - convert empty string to null
     if (parentCategory !== undefined) {
       category.parentCategory = parentCategory === '' ? null : parentCategory;
     }
 
-    // Handle image
     if (image !== undefined) {
       category.image = image;
     }
 
-    // Handle isActive
     if (isActive !== undefined) {
       category.isActive = isActive === 'true' || isActive === true;
     }
 
-    // Handle sortOrder
     if (sortOrder !== undefined) {
       category.sortOrder = parseInt(sortOrder) || 0;
     }
 
-    // Handle metadata
     if (req.body.metadata) {
       try {
         const parsedMetadata = typeof req.body.metadata === 'string' 
@@ -222,9 +201,7 @@ export const updateCategory = async (req, res) => {
   }
 };
 
-// @desc    Delete category
-// @route   DELETE /api/categories/:id
-// @access  Private/Admin
+
 export const deleteCategory = async (req, res) => {
   try {
     const category = await Category.findById(req.params.id);
@@ -251,9 +228,7 @@ export const deleteCategory = async (req, res) => {
   }
 };
 
-// @desc    Get category tree (hierarchy)
-// @route   GET /api/categories/tree
-// @access  Public
+
 export const getCategoryTree = async (req, res) => {
   try {
     const buildTree = async (parentId = null) => {

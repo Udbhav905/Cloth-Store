@@ -5,6 +5,7 @@ import Login      from "./Components/Login/Login";
 import Dashboard  from "./Components/Dashboard/Dashboard";
 import Categories from "./Components/Categories/Categories";
 import Analytics from "./Components/Analytics/Analytics";
+import AdminReviews from "./Components/AdminReviews/Adminreviews";
 
 import Products   from "./Components/Products/Products";
 import Orders     from "./Components/Order/Order";
@@ -79,6 +80,8 @@ function App() {
           <Route path="/orders"      element={<Protected><Orders/></Protected>}/>
           <Route path="/delivery-partners" element={<Protected><DeliveryPartner /></Protected>}/>
           <Route path="/analytics"   element={<Protected><Analytics/></Protected>}/>
+          <Route path="/reviews"   element={<Protected><AdminReviews/></Protected>}/>
+          
           <Route path="/"            element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace/>}/>
           <Route path="*"            element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace/>}/>
         </Routes>

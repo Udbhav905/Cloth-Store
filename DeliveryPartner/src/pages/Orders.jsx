@@ -6,286 +6,120 @@ import './Orders.css';
 
 const STATUS_OPTIONS = [
   { value: 'assigned', label: 'Ready for Pickup', icon: '📋' },
-  { value: 'picked', label: 'Out for Delivery', icon: '📦' },
-  { value: 'delivered', label: 'Delivered', icon: '✅' }
+  { value: 'picked',   label: 'Out for Delivery', icon: '📦' },
+  { value: 'delivered',label: 'Delivered',         icon: '✅' },
 ];
 
-const getStatusDetails = (statusValue) => {
-  return STATUS_OPTIONS.find(opt => opt.value === statusValue) || { label: statusValue || 'Assigned', icon: '📋' };
-};
+const getStatusDetails = (v) =>
+  STATUS_OPTIONS.find(o => o.value === v) || { label: v || 'Assigned', icon: '📋' };
 
-const Orders = () => {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [updating, setUpdating] = useState(false);
-  const [partnerData, setPartnerData] = useState(null);
-  const [openDropdownId, setOpenDropdownId] = useState(null);
+export default function Orders() {
+  const [orders,          setOrders]          = useState([]);
+  const [loading,         setLoading]         = useState(true);
+  const [selectedOrder,   setSelectedOrder]   = useState(null);
+  const [updating,        setUpdating]        = useState(false);
+  const [partnerData,     setPartnerData]     = useState(null);
+  const [openDropdownId,  setOpenDropdownId]  = useState(null);
 
   const getAuthConfig = () => ({
-    headers: { Authorization: `Bearer ${localStorage.getItem('partnerToken')}` }
+    headers: { Authorization: `Bearer ${localStorage.getItem('partnerToken')}` },
   });
 
   const getPartnerInfo = () => {
-    const data = localStorage.getItem('partnerData');
-    if (data) {
-      try {
-        return JSON.parse(data);
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
+    try { return JSON.parse(localStorage.getItem('partnerData') || 'null'); }
+    catch { return null; }
   };
 
-  // const fetchOrders = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const partner = getPartnerInfo();
-  //     console.log("Partner info:", partner);
-      
-  //     const response = await axios.get(`${API_BASE_URL}/api/delivery-partner/orders`, getAuthConfig());
-  //     console.log("Orders response:", response.data);
-      
-  //     let ordersList = [];
-  //     if (response.data.data) {
-  //       ordersList = response.data.data;
-  //     } else if (response.data.orders) {
-  //       ordersList = response.data.orders;
-  //     } else if (Array.isArray(response.data)) {
-  //       ordersList = response.data;
-  //     }
-      
-  //     // Map status to delivery partner statuses if needed
-  //     const mappedOrders = ordersList.map(order => {
-  //       // If order has status like 'processing', map to 'assigned' for delivery partner
-  //       let deliveryStatus = order.status;
-  //       if (order.status === 'processing' || order.status === 'confirmed' || order.status === 'pending') {
-  //         deliveryStatus = 'assigned';
-  //       } else if (order.status === 'shipped' || order.status === 'out_for_delivery') {
-  //         deliveryStatus = 'picked';
-  //       }
-        
-  //       return {
-  //         ...order,
-  //         status: deliveryStatus
-  //       };
-  //     });
-      
-  //     console.log("Processed orders:", mappedOrders);
-  //     setOrders(mappedOrders);
-      
-  //     if (mappedOrders.length === 0) {
-  //       console.log("No orders found for this delivery partner");
-  //     }
-  //   } catch (error) {
-  //     console.error('Fetch orders error:', error);
-  //     console.error('Error details:', error.response?.data);
-  //     if (error.response?.status === 401) {
-  //       toast.error('Session expired. Please login again.');
-  //       localStorage.removeItem('partnerToken');
-  //       localStorage.removeItem('partnerData');
-  //       window.location.href = '/login';
-  //     } else {
-  //       toast.error(error.response?.data?.message || 'Failed to fetch orders');
-  //     }
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // Update order status (for delivery partner)
-  // const updateOrderStatus = async (orderId, status) => {
-  //   setUpdating(true);
-  //   try {
-  //     // Map delivery status to actual order status if needed
-  //     let actualStatus = status;
-  //     if (status === 'assigned') actualStatus = 'processing';
-  //     if (status === 'picked') actualStatus = 'shipped';
-      
-  //     const response = await axios.put(
-  //       `${API_BASE_URL}/api/delivery-partner/orders/${orderId}/status`, 
-  //       { status: actualStatus }, 
-  //       getAuthConfig()
-  //     );
-      
-  //     console.log("Update response:", response.data);
-      
-  //     const statusMessages = {
-  //       assigned: 'Order accepted!',
-  //       picked: 'Order marked as picked up!',
-  //       delivered: 'Order marked as delivered! 🎉'
-  //     };
-  //     toast.success(statusMessages[status] || `Order status updated to ${status}`);
-      
-  //     fetchOrders();
-  //     setSelectedOrder(null);
-  //     setOpenDropdownId(null);
-  //   } catch (error) {
-  //     console.error('Update status error:', error);
-  //     const errorMsg = error.response?.data?.message || 'Failed to update status';
-  //     toast.error(errorMsg);
-  //   } finally {
-  //     setUpdating(false);
-  //   }
-  // };
-  // Update order status (for delivery partner) - FIXED
-const fetchOrders = async () => {
-  setLoading(true);
-  try {
-    const partner = getPartnerInfo();
-    console.log("Partner info:", partner);
-    
-    const response = await axios.get(`${API_BASE_URL}/api/delivery-partner/orders`, getAuthConfig());
-    console.log("Orders response:", response.data);
-    
-    let ordersList = [];
-    if (response.data.data) {
-      ordersList = response.data.data;
-    } else if (response.data.orders) {
-      ordersList = response.data.orders;
-    } else if (Array.isArray(response.data)) {
-      ordersList = response.data;
-    }
-    
-    // Don't map statuses - use the status from backend directly
-    // The backend should return the correct delivery partner status
-    const processedOrders = ordersList.map(order => {
-      console.log(`Order ${order.orderNumber} has status:`, order.status);
-      return order;
-    });
-    
-    console.log("Processed orders:", processedOrders);
-    setOrders(processedOrders);
-    
-    if (processedOrders.length === 0) {
-      console.log("No orders found for this delivery partner");
-    }
-  } catch (error) {
-    console.error('Fetch orders error:', error);
-    console.error('Error details:', error.response?.data);
-    if (error.response?.status === 401) {
-      toast.error('Session expired. Please login again.');
-      localStorage.removeItem('partnerToken');
-      localStorage.removeItem('partnerData');
-      window.location.href = '/login';
-    } else {
-      toast.error(error.response?.data?.message || 'Failed to fetch orders');
-    }
-  } finally {
-    setLoading(false);
-  }
-};
-  const updateOrderStatus = async (orderId, status) => {
-  setUpdating(true);
-  try {
-    // Send the status directly - backend will handle the mapping
-    const response = await axios.put(
-      `${API_BASE_URL}/api/delivery-partner/orders/${orderId}/status`, 
-      { status: status },  // Send 'assigned', 'picked', or 'delivered'
-      getAuthConfig()
-    );
-    
-    console.log("Update response:", response.data);
-    
-    const statusMessages = {
-      assigned: 'Order accepted!',
-      picked: 'Order marked as picked up!',
-      delivered: 'Order marked as delivered! 🎉'
-    };
-    toast.success(statusMessages[status] || `Order status updated to ${status}`);
-    
-    // Refresh orders to show updated status
-    await fetchOrders();
-    setSelectedOrder(null);
-    setOpenDropdownId(null);
-  } catch (error) {
-    console.error('Update status error:', error);
-    const errorMsg = error.response?.data?.message || 'Failed to update status';
-    toast.error(errorMsg);
-  } finally {
-    setUpdating(false);
-  }
-};
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (!e.target.closest('.custom-select-container')) {
-        setOpenDropdownId(null);
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/delivery-partner/orders`, getAuthConfig());
+      const list = res.data.data || res.data.orders || (Array.isArray(res.data) ? res.data : []);
+      setOrders(list);
+    } catch (err) {
+      if (err.response?.status === 401) {
+        toast.error('Session expired. Please login again.');
+        localStorage.removeItem('partnerToken');
+        localStorage.removeItem('partnerData');
+        window.location.href = '/login';
+      } else {
+        toast.error(err.response?.data?.message || 'Failed to fetch orders');
       }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateOrderStatus = async (orderId, status) => {
+    setUpdating(true);
+    try {
+      await axios.put(
+        `${API_BASE_URL}/api/delivery-partner/orders/${orderId}/status`,
+        { status },
+        getAuthConfig(),
+      );
+      const msgs = { assigned: 'Order accepted!', picked: 'Marked as picked up!', delivered: 'Delivered! 🎉' };
+      toast.success(msgs[status] || `Status → ${status}`);
+      await fetchOrders();
+      setSelectedOrder(null);
+      setOpenDropdownId(null);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update status');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  /* Close dropdown on outside click */
+  useEffect(() => {
+    const fn = (e) => { if (!e.target.closest('.dp-select-wrap')) setOpenDropdownId(null); };
+    document.addEventListener('mousedown', fn);
+    return () => document.removeEventListener('mousedown', fn);
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem('partnerToken');
-    const partner = getPartnerInfo();
-    setPartnerData(partner);
-    
-    if (!token) {
-      window.location.href = '/login';
-      return;
-    }
+    if (!localStorage.getItem('partnerToken')) { window.location.href = '/login'; return; }
+    setPartnerData(getPartnerInfo());
     fetchOrders();
   }, []);
 
-  const pendingOrders = orders.filter(o => o.status !== 'delivered');
-  const completedOrders = orders.filter(o => o.status === 'delivered');
+  const active    = orders.filter(o => o.status !== 'delivered');
+  const completed = orders.filter(o => o.status === 'delivered');
 
-  const handleStatusSelect = (orderId, newStatus) => {
-    updateOrderStatus(orderId, newStatus);
-    setOpenDropdownId(null);
-  };
+  /* ── Status dropdown ── */
+  const renderDropdown = (order, suffix = '') => {
+    const dropId    = `${order._id}${suffix}`;
+    const isOpen    = openDropdownId === dropId;
+    const cur       = getStatusDetails(order.status);
+    const isDone    = order.status === 'delivered';
 
-  const renderStatusDropdown = (order, isModal = false) => {
-    const currentStatus = getStatusDetails(order.status);
-    const isOpen = openDropdownId === (isModal ? `modal-${order._id}` : order._id);
-    
-    // Get available next statuses based on current status
-    const getAvailableStatuses = () => {
-      switch(order.status) {
-        case 'assigned':
-          return STATUS_OPTIONS.filter(opt => opt.value === 'picked' || opt.value === 'delivered');
-        case 'picked':
-          return STATUS_OPTIONS.filter(opt => opt.value === 'delivered');
-        case 'delivered':
-          return [];
-        default:
-          return STATUS_OPTIONS;
-      }
-    };
-    
-    const availableStatuses = getAvailableStatuses();
-    
+    const next = STATUS_OPTIONS.filter(o => {
+      if (order.status === 'assigned') return o.value === 'picked' || o.value === 'delivered';
+      if (order.status === 'picked')   return o.value === 'delivered';
+      return false;
+    });
+
     return (
-      <div className={`custom-select-container ${isOpen ? 'active' : ''}`}>
-        <button 
-          className={`select-trigger status-btn-${order.status}`}
+      <div className={`dp-select-wrap ${isOpen ? 'dp-open' : ''}`}>
+        <button
+          className={`dp-trigger dp-trigger--${order.status}`}
+          disabled={updating || isDone}
           onClick={(e) => {
             e.stopPropagation();
-            setOpenDropdownId(isOpen ? null : (isModal ? `modal-${order._id}` : order._id));
+            setOpenDropdownId(isOpen ? null : dropId);
           }}
-          disabled={updating || order.status === 'delivered'}
         >
-          <span className="select-icon">{currentStatus.icon}</span>
-          <span className="select-label">{currentStatus.label}</span>
-          {order.status !== 'delivered' && <span className={`select-arrow ${isOpen ? 'up' : 'down'}`}>▼</span>}
+          <span className="dp-icon">{cur.icon}</span>
+          <span className="dp-lbl">{cur.label}</span>
+          {!isDone && <span className={`dp-arrow ${isOpen ? 'dp-arrow--up' : ''}`}>▾</span>}
         </button>
-        
-        {isOpen && order.status !== 'delivered' && (
-          <div className="select-dropdown-menu">
-            {availableStatuses.map((option) => (
-              <button
-                key={option.value}
-                className={`select-option ${order.status === option.value ? 'selected' : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleStatusSelect(order._id, option.value);
-                }}
-              >
-                <span className="option-icon">{option.icon}</span>
-                <span className="option-label">{option.label}</span>
+
+        {isOpen && !isDone && next.length > 0 && (
+          <div className="dp-menu">
+            {next.map(opt => (
+              <button key={opt.value} className="dp-option"
+                onClick={(e) => { e.stopPropagation(); updateOrderStatus(order._id, opt.value); }}>
+                <span>{opt.icon}</span>{opt.label}
               </button>
             ))}
           </div>
@@ -295,158 +129,127 @@ const fetchOrders = async () => {
   };
 
   return (
-    <div className="orders-page">
-      <div className="page-header">
-        <h1>My Deliveries</h1>
-        <p>Manage and update delivery status for orders assigned to you</p>
+    <div className="dp-page">
+      {/* Header */}
+      <div className="dp-header">
+        <h1 className="dp-title">My Deliveries</h1>
+        <p className="dp-subtitle">Manage and update your assigned orders</p>
       </div>
 
+      {/* Profile */}
       {partnerData && (
-        <div className="profile-section">
-          <div className="profile-card">
-            <div className="profile-avatar">
-              {partnerData.name?.split(" ").map(n => n[0]).join("").slice(0,2).toUpperCase()}
-            </div>
-            <div className="profile-info">
-              <h3>{partnerData.name}</h3>
-              <p className="profile-company">{partnerData.companyName || "Delivery Partner"}</p>
-              <div className="profile-details">
-                <span>📧 {partnerData.email}</span>
-                <span>📞 {partnerData.phone}</span>
-              </div>
+        <div className="dp-profile">
+          <div className="dp-avatar">
+            {partnerData.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+          </div>
+          <div className="dp-profile-info">
+            <h3>{partnerData.name}</h3>
+            <p className="dp-company">{partnerData.companyName || 'Delivery Partner'}</p>
+            <div className="dp-contact">
+              <span>📧 {partnerData.email}</span>
+              <span>📞 {partnerData.phone}</span>
             </div>
           </div>
         </div>
       )}
 
-      <div className="stats-cards">
-        <div className="stat-card">
-          <div className="stat-icon">📋</div>
-          <div className="stat-info">
-            <h3>{pendingOrders.length}</h3>
-            <p>Active Deliveries</p>
-          </div>
+      {/* Stats */}
+      <div className="dp-stats">
+        <div className="dp-stat">
+          <div className="dp-stat-icon">📋</div>
+          <div><h3>{active.length}</h3><p>Active</p></div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon">✅</div>
-          <div className="stat-info">
-            <h3>{completedOrders.length}</h3>
-            <p>Completed</p>
-          </div>
+        <div className="dp-stat">
+          <div className="dp-stat-icon">✅</div>
+          <div><h3>{completed.length}</h3><p>Completed</p></div>
         </div>
       </div>
 
-      <div className="section-header">
+      {/* ── ACTIVE ORDERS ── */}
+      <div className="dp-section-header">
         <h2>Active Deliveries</h2>
-        <span className="badge">{pendingOrders.length} orders</span>
+        <span className="dp-badge">{active.length} orders</span>
       </div>
 
       {loading ? (
-        <div className="loading-state">
-          <div className="spinner"></div>
-          <p>Loading your deliveries...</p>
-        </div>
-      ) : pendingOrders.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">🚚</div>
+        <div className="dp-loading"><div className="dp-spinner" /><p>Loading deliveries…</p></div>
+      ) : active.length === 0 ? (
+        <div className="dp-empty">
+          <div className="dp-empty-icon">🚚</div>
           <h3>No active deliveries</h3>
           <p>When admin assigns orders to you, they'll appear here</p>
-          <button className="refresh-btn" onClick={fetchOrders}>Refresh</button>
+          <button className="dp-refresh-btn" onClick={fetchOrders}>Refresh</button>
         </div>
       ) : (
-        <div className="orders-grid">
-          {pendingOrders.map((order) => {
-            return (
-              <div key={order._id} className="order-card">
-                <div className="order-header">
-                  <div className="order-number">{order.orderNumber}</div>
-                  <div className="order-status-wrapper">
-                    {renderStatusDropdown(order)}
-                  </div>
-                </div>
-                
-                <div className="order-body">
-                  <div className="info-section">
-                    <h4>Customer Details</h4>
-                    <div className="info-row">
-                      <span className="label">Name:</span>
-                      <span>{order.customerName || "—"}</span>
-                    </div>
-                    <div className="info-row">
-                      <span className="label">Phone:</span>
-                      <span>{order.customerPhone || "—"}</span>
-                    </div>
-                  </div>
+        <div className="dp-grid">
+          {active.map(order => (
+            <div key={order._id} className="dp-card">
+              <div className="dp-card-header">
+                <span className="dp-order-num">{order.orderNumber}</span>
+                {renderDropdown(order)}
+              </div>
 
-                  <div className="info-section">
-                    <h4>Delivery Address</h4>
-                    <p className="address-line">{order.shippingAddress?.address1}</p>
-                    {order.shippingAddress?.address2 && (
-                      <p className="address-line">{order.shippingAddress.address2}</p>
-                    )}
-                    <p className="address-line">
-                      {order.shippingAddress?.city}, {order.shippingAddress?.state} - {order.shippingAddress?.pincode}
-                    </p>
-                  </div>
-
-                  <div className="info-section">
-                    <h4>Order Summary</h4>
-                    <div className="info-row">
-                      <span className="label">Items:</span>
-                      <span>{order.items?.length} item(s)</span>
-                    </div>
-                    <div className="info-row">
-                      <span className="label">Total Amount:</span>
-                      <span className="amount">₹{(order.totalAmount || 0).toLocaleString()}</span>
-                    </div>
-                    <div className="info-row">
-                      <span className="label">Payment:</span>
-                      <span className={`payment-status ${order.paymentStatus}`}>
-                        {order.paymentStatus === 'paid' ? '✅ Paid' : '⏳ Pending'}
-                      </span>
-                    </div>
-                  </div>
+              <div className="dp-card-body">
+                <div className="dp-info-block">
+                  <h4>Customer</h4>
+                  <div className="dp-row"><span>Name</span><span>{order.customerName || order.shippingAddress?.name || '—'}</span></div>
+                  <div className="dp-row"><span>Phone</span><span>{order.customerPhone || order.shippingAddress?.phone || '—'}</span></div>
                 </div>
 
-                <div className="order-actions">
-                  <button 
-                    className="action-btn details full-width"
-                    onClick={() => setSelectedOrder(order)}
-                  >
-                    View Complete Details
-                  </button>
+                <div className="dp-info-block">
+                  <h4>Delivery Address</h4>
+                  <p>{order.shippingAddress?.address1}</p>
+                  {order.shippingAddress?.address2 && <p>{order.shippingAddress.address2}</p>}
+                  <p>{[order.shippingAddress?.city, order.shippingAddress?.state].filter(Boolean).join(', ')} — {order.shippingAddress?.pincode}</p>
+                </div>
+
+                <div className="dp-info-block">
+                  <h4>Order</h4>
+                  <div className="dp-row"><span>Items</span><span>{order.items?.length} item(s)</span></div>
+                  <div className="dp-row"><span>Amount</span><span className="dp-amount">₹{(order.totalAmount || 0).toLocaleString()}</span></div>
+                  <div className="dp-row">
+                    <span>Payment</span>
+                    <span className={`dp-pay-status dp-pay-${order.paymentStatus}`}>
+                      {order.paymentStatus === 'paid' ? '✅ Paid' : '⏳ COD'}
+                    </span>
+                  </div>
                 </div>
               </div>
-            );
-          })}
+
+              <div className="dp-card-footer">
+                <button className="dp-details-btn" onClick={() => setSelectedOrder(order)}>
+                  View Full Details
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      {completedOrders.length > 0 && (
+      {/* ── COMPLETED ORDERS ── */}
+      {completed.length > 0 && (
         <>
-          <div className="section-header">
+          <div className="dp-section-header dp-section-header--completed">
             <h2>Completed Deliveries</h2>
-            <span className="badge completed">{completedOrders.length} orders</span>
+            <span className="dp-badge dp-badge--green">{completed.length} orders</span>
           </div>
-          <div className="completed-list">
-            {completedOrders.map((order) => (
-              <div key={order._id} className="completed-card">
-                <div className="completed-header">
-                  <span className="order-number">{order.orderNumber}</span>
-                  <span className="delivered-badge">✅ Delivered</span>
+
+          <div className="dp-completed-grid">
+            {completed.map(order => (
+              <div key={order._id} className="dp-completed-card">
+                <div className="dp-completed-left">
+                  <span className="dp-order-num">{order.orderNumber}</span>
+                  <span className="dp-delivered-chip">✅ Delivered</span>
                 </div>
-                <div className="completed-details">
-                  <span>{order.customerName}</span>
-                  <span>•</span>
+                <div className="dp-completed-mid">
+                  <span>{order.customerName || order.shippingAddress?.name || '—'}</span>
+                  <span className="dp-sep">·</span>
                   <span>{order.shippingAddress?.city}</span>
-                  <span>•</span>
-                  <span>₹{(order.totalAmount || 0).toLocaleString()}</span>
+                  <span className="dp-sep">·</span>
+                  <span className="dp-amount">₹{(order.totalAmount || 0).toLocaleString()}</span>
                 </div>
-                <button 
-                  className="view-details-btn"
-                  onClick={() => setSelectedOrder(order)}
-                >
-                  View Details
+                <button className="dp-view-btn" onClick={() => setSelectedOrder(order)}>
+                  Details →
                 </button>
               </div>
             ))}
@@ -454,32 +257,30 @@ const fetchOrders = async () => {
         </>
       )}
 
-      {/* Order Details Modal */}
+      {/* ── Order Detail Modal ── */}
       {selectedOrder && (
-        <div className="modal-overlay" onClick={() => setSelectedOrder(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className="dp-modal-backdrop" onClick={() => setSelectedOrder(null)}>
+          <div className="dp-modal" onClick={e => e.stopPropagation()}>
+            <div className="dp-modal-header">
               <h3>Order Details</h3>
-              <button className="close-btn" onClick={() => setSelectedOrder(null)}>✕</button>
+              <button className="dp-modal-close" onClick={() => setSelectedOrder(null)}>✕</button>
             </div>
-            <div className="modal-body">
-              <div className="detail-section">
+
+            <div className="dp-modal-body">
+              <div className="dp-detail-section">
                 <h4>Order Information</h4>
-                <p><strong>Order Number:</strong> {selectedOrder.orderNumber}</p>
-                <p><strong>Status:</strong></p>
-                <div className="modal-status-selector">
-                  {renderStatusDropdown(selectedOrder, true)}
-                </div>
-                <p><strong>Assigned At:</strong> {selectedOrder.assignedAt ? new Date(selectedOrder.assignedAt).toLocaleString() : "Not specified"}</p>
+                <p><strong>Order #:</strong> {selectedOrder.orderNumber}</p>
+                <div style={{ margin: '12px 0' }}>{renderDropdown(selectedOrder, '-modal')}</div>
+                <p><strong>Assigned At:</strong> {selectedOrder.assignedAt ? new Date(selectedOrder.assignedAt).toLocaleString() : '—'}</p>
               </div>
 
-              <div className="detail-section">
-                <h4>Customer Information</h4>
-                <p><strong>Name:</strong> {selectedOrder.customerName || "—"}</p>
-                <p><strong>Phone:</strong> {selectedOrder.customerPhone || "—"}</p>
+              <div className="dp-detail-section">
+                <h4>Customer</h4>
+                <p><strong>Name:</strong> {selectedOrder.customerName || selectedOrder.shippingAddress?.name || '—'}</p>
+                <p><strong>Phone:</strong> {selectedOrder.customerPhone || selectedOrder.shippingAddress?.phone || '—'}</p>
               </div>
 
-              <div className="detail-section">
+              <div className="dp-detail-section">
                 <h4>Shipping Address</h4>
                 <p>{selectedOrder.shippingAddress?.address1}</p>
                 {selectedOrder.shippingAddress?.address2 && <p>{selectedOrder.shippingAddress.address2}</p>}
@@ -487,43 +288,34 @@ const fetchOrders = async () => {
                 <p>Pincode: {selectedOrder.shippingAddress?.pincode}</p>
               </div>
 
-              <div className="detail-section">
+              <div className="dp-detail-section">
                 <h4>Items</h4>
-                <div className="items-list">
-                  {selectedOrder.items?.map((item, index) => (
-                    <div key={index} className="detail-item">
-                      <div className="item-info">
-                        <span className="item-name">{item.productName || item.name}</span>
-                        <span className="item-meta">
+                <div className="dp-items-list">
+                  {selectedOrder.items?.map((item, i) => (
+                    <div key={i} className="dp-item">
+                      <div className="dp-item-info">
+                        <span className="dp-item-name">{item.productName || item.name}</span>
+                        <span className="dp-item-meta">
                           {item.variant?.size && `Size: ${item.variant.size}`}
-                          {item.variant?.color && ` • Color: ${item.variant.color}`}
+                          {item.variant?.color && ` · ${item.variant.color}`}
                         </span>
                       </div>
-                      <div className="item-pricing">
+                      <div className="dp-item-price">
                         <span>Qty: {item.quantity}</span>
-                        <span>₹{item.totalPrice || (item.price * item.quantity)}</span>
+                        <span>₹{item.totalPrice || item.price * item.quantity}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="detail-section">
+              <div className="dp-detail-section">
                 <h4>Payment Summary</h4>
-                <div className="summary-row">
-                  <span>Subtotal:</span>
-                  <span>₹{(selectedOrder.subtotal || 0).toLocaleString()}</span>
-                </div>
+                <div className="dp-summary-row"><span>Subtotal</span><span>₹{(selectedOrder.subtotal || 0).toLocaleString()}</span></div>
                 {selectedOrder.discount > 0 && (
-                  <div className="summary-row discount">
-                    <span>Discount:</span>
-                    <span>-₹{selectedOrder.discount.toLocaleString()}</span>
-                  </div>
+                  <div className="dp-summary-row dp-discount"><span>Discount</span><span>-₹{selectedOrder.discount.toLocaleString()}</span></div>
                 )}
-                <div className="summary-row total">
-                  <span>Total Amount:</span>
-                  <span>₹{(selectedOrder.totalAmount || 0).toLocaleString()}</span>
-                </div>
+                <div className="dp-summary-row dp-total"><span>Total</span><span>₹{(selectedOrder.totalAmount || 0).toLocaleString()}</span></div>
               </div>
             </div>
           </div>
@@ -531,6 +323,4 @@ const fetchOrders = async () => {
       )}
     </div>
   );
-};
-
-export default Orders;
+}

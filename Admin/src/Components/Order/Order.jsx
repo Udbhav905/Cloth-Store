@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { apiFetch, clearAdminSession } from "../../utils/AdminApi";
 import styles from "./Order.module.css";
 
-// Use ONLY the status values that exist in your backend schema
 const STATUS_CONFIG = {
   pending:          { label:"Pending",          color:"#d4ac0d", bg:"rgba(212,172,13,0.12)",  icon:"⏳" },
   confirmed:        { label:"Confirmed",        color:"#5dade2", bg:"rgba(93,173,226,0.12)",  icon:"✓"  },
@@ -62,7 +61,6 @@ export default function Orders() {
   const [deliveryPartners, setDeliveryPartners] = useState([]);
   const [partnersLoading, setPartnersLoading] = useState(false);
 
-  // Refs for optimization
   const searchTimeoutRef = useRef(null);
   const isInitialMount = useRef(true);
 
@@ -126,7 +124,6 @@ export default function Orders() {
     }
   }, [page, filterStatus, filterPay, search, sortBy, onAuthFail]);
 
-  // Debounced search handler
   const handleSearchChange = useCallback((e) => {
     const value = e.target.value;
     setSearch(value);
@@ -141,28 +138,23 @@ export default function Orders() {
     }, 500);
   }, [fetchOrders]);
 
-  // Manual refresh handler
   const handleManualRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchOrders();
   }, [fetchOrders]);
 
-  // Fetch delivery partners only once on mount
   useEffect(() => {
     fetchDeliveryPartners();
   }, [fetchDeliveryPartners]);
 
-  // Fetch orders when dependencies change (with debounce for search)
   useEffect(() => {
-    // Skip initial mount to prevent double fetch
     if (isInitialMount.current) {
       isInitialMount.current = false;
       fetchOrders();
       return;
     }
     
-    // For search, debounce is handled in handleSearchChange
-    // For other filters, fetch immediately
+   
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
@@ -170,7 +162,7 @@ export default function Orders() {
     fetchOrders();
   }, [fetchOrders, page, filterStatus, filterPay, sortBy]);
 
-  // Cleanup on unmount
+  
   useEffect(() => {
     return () => {
       if (searchTimeoutRef.current) {
@@ -235,7 +227,6 @@ export default function Orders() {
     finally { setActionLoading(false); }
   }, [noteModal, adminNote, fetchOrders, onAuthFail, showToast]);
 
-  // Allow assigning to pending, confirmed, processing orders (without changing status)
   const canAssign = (o) => ["pending","confirmed","processing"].includes(o.orderStatus);
   const isAssigned = (o) => o.deliveryPartnerId || o.partnerId || o.courierName;
 

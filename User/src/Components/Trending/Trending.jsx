@@ -149,7 +149,6 @@ function ProductCard({ product, index }) {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    // Calculate rotation (-10 to 10 degrees max depends on distance from center)
     const xPct = (x / rect.width - 0.5) * 2; 
     const yPct = (y / rect.height - 0.5) * 2;
     

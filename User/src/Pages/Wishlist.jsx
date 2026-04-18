@@ -5,9 +5,7 @@ import styles from "./styles/Wishlist.module.css";
 
 const API = "http://localhost:3000/api";
 
-/* ─────────────────────────────────────────────────────────
-   Price helpers (inline — no dependency on productStore)
-───────────────────────────────────────────────────────── */
+
 function calcFinal(p) {
   if (!p) return 0;
   const base = p.basePrice ?? 0;
@@ -47,7 +45,6 @@ function useWishlistProducts(ids) {
 
     const fetchAll = async () => {
       try {
-        // Only fetch IDs we don't already have cached
         const missing = ids.filter((id) => !cache.current[id]);
 
         await Promise.all(
@@ -56,16 +53,13 @@ function useWishlistProducts(ids) {
               const res  = await fetch(`${API}/products/${id}`);
               if (!res.ok) return;                    // skip 404s gracefully
               const data = await res.json();
-              // API may return { product: {...} } or the object directly
               cache.current[id] = data.product ?? data;
             } catch {
-              // individual failures are silent — product just won't show
             }
           })
         );
 
         if (!cancelled) {
-          // Build ordered list matching wishlist order, filter nulls
           const result = ids
             .map((id) => cache.current[id])
             .filter(Boolean);
@@ -84,9 +78,6 @@ function useWishlistProducts(ids) {
   return { products, loading, error };
 }
 
-/* ─────────────────────────────────────────────────────────
-   Single card
-───────────────────────────────────────────────────────── */
 function WishlistCard({ product, index, onRemove, onMoveToCart }) {
   const ref = useRef(null);
   const [visible,  setVisible]  = useState(false);
@@ -229,25 +220,19 @@ function EmptyState() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────
-   MAIN PAGE
-───────────────────────────────────────────────────────── */
+
 export default function Wishlist() {
-  /* ── Store — wishlist is just [id, id, ...] ─────────────── */
   const wishlistIds    = useCartStore((s) => s.wishlist);         // string[]
   const toggleWishlist = useCartStore((s) => s.toggleWishlist);  // (id) => void
   const addToCart      = useCartStore((s) => s.addToCart);
 
-  /* ── Fetch full product data for each saved ID ──────────── */
   const { products, loading, error } = useWishlistProducts(wishlistIds);
 
-  /* ── Local UI state ─────────────────────────────────────── */
   const [sortBy,   setSortBy]   = useState("default");
   const [filterBy, setFilterBy] = useState("all");
   const [toast,    setToast]    = useState(null);
   const toastTimer = useRef(null);
 
-  /* ── Category chips (derived from fetched products) ─────── */
   const categories = useMemo(() => {
     const map = new Map();
     products.forEach((p) => {
@@ -259,7 +244,6 @@ export default function Wishlist() {
     return Array.from(map.values());
   }, [products]);
 
-  /* ── Filter + sort ──────────────────────────────────────── */
   const displayed = useMemo(() => {
     let list = [...products];
     if (filterBy !== "all") {
@@ -277,7 +261,6 @@ export default function Wishlist() {
     return list;
   }, [products, sortBy, filterBy]);
 
-  /* ── Totals ─────────────────────────────────────────────── */
   const totalSaved = useMemo(() =>
     products.reduce((acc, p) =>
       isDiscounted(p) ? acc + (p.basePrice - calcFinal(p)) : acc, 0),
@@ -285,21 +268,18 @@ export default function Wishlist() {
 
   const inStockCount = displayed.filter((p) => p.totalStock > 0).length;
 
-  /* ── Toast ──────────────────────────────────────────────── */
   const showToast = (msg, type = "success") => {
     clearTimeout(toastTimer.current);
     setToast({ msg, type });
     toastTimer.current = setTimeout(() => setToast(null), 2800);
   };
 
-  /* ── Handlers ───────────────────────────────────────────── */
   const handleRemove = (id) => {
     toggleWishlist(id);
     showToast("Removed from wishlist", "neutral");
   };
 
   const handleMoveToCart = (product) => {
-    // Cart expects { productId, name, price, size, color, image }
     const variant = product.variants?.find((v) => v.isActive && v.stock > 0);
     addToCart({
       productId: product._id,
@@ -322,10 +302,8 @@ export default function Wishlist() {
     if (count) showToast(`${count} pieces added to cart`);
   };
 
-  /* ─────────────────────────────────────────────────────── */
   return (
     <div className={styles.page}>
-
       {/* Toast */}
       <div className={`${styles.toast} ${toast ? styles.toastVisible : ""}`}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

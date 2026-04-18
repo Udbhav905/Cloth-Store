@@ -1,9 +1,7 @@
 import Wishlist from "../model/Wishlist.js";
 import Product from "../model/Product.js";
 
-// @desc    Get user wishlist
-// @route   GET /api/wishlist
-// @access  Private
+
 export const getWishlist = async (req, res) => {
   try {
     let wishlist = await Wishlist.findOne({ userId: req.user._id })
@@ -20,14 +18,11 @@ export const getWishlist = async (req, res) => {
   }
 };
 
-// @desc    Add to wishlist
-// @route   POST /api/wishlist/add
-// @access  Private
+
 export const addToWishlist = async (req, res) => {
   try {
     const { productId } = req.body;
 
-    // Check if product exists
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
@@ -39,7 +34,6 @@ export const addToWishlist = async (req, res) => {
       wishlist = new Wishlist({ userId: req.user._id, items: [] });
     }
 
-    // Check if already in wishlist
     const alreadyExists = wishlist.items.some(
       item => item.productId.toString() === productId
     );
@@ -60,9 +54,7 @@ export const addToWishlist = async (req, res) => {
   }
 };
 
-// @desc    Remove from wishlist
-// @route   DELETE /api/wishlist/remove/:productId
-// @access  Private
+
 export const removeFromWishlist = async (req, res) => {
   try {
     const { productId } = req.params;
@@ -87,9 +79,7 @@ export const removeFromWishlist = async (req, res) => {
   }
 };
 
-// @desc    Clear wishlist
-// @route   DELETE /api/wishlist/clear
-// @access  Private
+
 export const clearWishlist = async (req, res) => {
   try {
     const wishlist = await Wishlist.findOne({ userId: req.user._id });

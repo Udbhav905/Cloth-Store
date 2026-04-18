@@ -35,22 +35,18 @@ export const getDashboardStats = async (req, res) => {
       orderStatusCounts,
     ] = await Promise.all([
 
-      // ── Customers ──
       User.countDocuments({ role: "user" }),
       User.countDocuments({ role: "user", createdAt: { $gte: thisMonth } }),
       User.countDocuments({ role: "user", createdAt: { $gte: lastMonth, $lte: lastMonthEnd } }),
 
-      // ── Products ──
       Product.countDocuments({}),
       Product.countDocuments({ createdAt: { $gte: thisMonth } }),
       Product.countDocuments({ createdAt: { $gte: lastMonth, $lte: lastMonthEnd } }),
 
-      // ── Orders ──
       Order.countDocuments({}),
       Order.countDocuments({ createdAt: { $gte: thisMonth } }),
       Order.countDocuments({ createdAt: { $gte: lastMonth, $lte: lastMonthEnd } }),
 
-      // ── Revenue this month (exclude cancelled/returned/refunded) ──
       Order.aggregate([
         {
           $match: {
@@ -61,7 +57,6 @@ export const getDashboardStats = async (req, res) => {
         { $group: { _id: null, total: { $sum: "$totalAmount" } } },
       ]),
 
-      // ── Revenue last month ──
       Order.aggregate([
         {
           $match: {
@@ -72,20 +67,17 @@ export const getDashboardStats = async (req, res) => {
         { $group: { _id: null, total: { $sum: "$totalAmount" } } },
       ]),
 
-      // ── 5 most recent orders ──
       Order.find({})
         .sort({ createdAt: -1 })
         .limit(5)
         .populate("userId", "name email")
         .lean(),
 
-      // ── Order count by status (for breakdown) ──
       Order.aggregate([
         { $group: { _id: "$orderStatus", count: { $sum: 1 } } },
       ]),
     ]);
 
-    /* ── Derived values ── */
     const revThis = revenueThisMonth[0]?.total || 0;
     const revLast = revenueLastMonth[0]?.total || 0;
 
@@ -95,7 +87,6 @@ export const getDashboardStats = async (req, res) => {
       return `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`;
     };
 
-    // Convert status array → easy lookup object
     const statusMap = {};
     orderStatusCounts.forEach(({ _id, count }) => { statusMap[_id] = count; });
 

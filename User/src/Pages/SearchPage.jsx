@@ -7,18 +7,15 @@ export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [inputValue, setInputValue]     = useState(searchParams.get("q") || "");
 
-  // ── Store ────────────────────────────────────────────────────
   const searchResults    = useProductStore((s) => s.searchResults);
   const searchLoading    = useProductStore((s) => s.searchLoading);
   const searchError      = useProductStore((s) => s.searchError);
   const searchTotal      = useProductStore((s) => s.searchTotal);
   const fetchSearchResults = useProductStore((s) => s.fetchSearchResults);
   const clearSearch      = useProductStore((s) => s.clearSearch);
-  // ────────────────────────────────────────────────────────────
 
   const query = searchParams.get("q") || "";
 
-  // Fetch whenever the URL query changes
   useEffect(() => {
     if (query) {
       fetchSearchResults(query);
@@ -27,7 +24,6 @@ export default function SearchPage() {
     }
   }, [query]);
 
-  // Sync input when URL changes (browser back/forward)
   useEffect(() => {
     setInputValue(searchParams.get("q") || "");
   }, [searchParams]);

@@ -219,11 +219,9 @@ export default function Cart() {
   const discountAmount = promoDiscount > 0 ? Math.round(subtotal * promoDiscount / 100) : 0;
   const afterDiscount = subtotal - discountAmount;
   
-  // GST calculation: 5% if total < 1000, else 12%
   const gstRate = afterDiscount < 1000 ? 0.05 : 0.12;
   const gst = Math.round(afterDiscount * gstRate);
   
-  // No shipping charges
   const shipping = 0;
   const total = afterDiscount + gst;
 
@@ -248,7 +246,6 @@ export default function Cart() {
     await removeFromCart(itemId);
   };
 
-  // Save order summary to sessionStorage when navigating to checkout
   const handleCheckout = () => {
     const orderSummary = {
       items: cart,
