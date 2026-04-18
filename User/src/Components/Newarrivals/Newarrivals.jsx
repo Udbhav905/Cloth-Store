@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import useProductStore, { calcFinalPrice, formatPrice, hasDiscount } from "../../store/useProductStore";
-import styles from "./NewArrivals.module.css";
+import styles from "./Newarrivals.module.css";
 
 const FALLBACK_IMGS = [
   "https://images.unsplash.com/photo-1566479179817-0b1c6a6f5c9b?w=800&q=85&auto=format&fit=crop&crop=top",
