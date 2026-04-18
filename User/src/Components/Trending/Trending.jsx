@@ -7,7 +7,7 @@ import useProductStore, {
   getBadge,
   getTag,
   getSoldText,
-} from "../../Store/useProductStore";
+} from "../../store/useProductStore";
 import styles from "./Trending.module.css";
 
 /* ─────────────────────────────────────────────

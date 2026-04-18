@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import useProductStore, { calcFinalPrice, formatPrice, hasDiscount } from "../../Store/useProductStore";
+import useProductStore, { calcFinalPrice, formatPrice, hasDiscount } from "../../store/useProductStore";
 import styles from "./NewArrivals.module.css";
 
 const FALLBACK_IMGS = [
@@ -12,7 +12,7 @@ const FALLBACK_IMGS = [
   "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=800&q=85&auto=format&fit=crop&crop=top",
 ];
 
-/* ── Scroll reveal ── */
+
 function useInView(threshold = 0.1) {
   const ref = useRef(null);
   const [inView, setInView] = useState(false);
