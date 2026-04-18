@@ -39,6 +39,8 @@ app.use(cookieParser());
 
 const ALLOWED_ORIGINS = [
   "https://luxuria-clothing.vercel.app/" ,
+  "luxuria-clothing-git-main-udbhav905s-projects.vercel.app",
+  "luxuria-clothing-po8pkqsbb-udbhav905s-projects.vercel.app",
   "http://localhost:5173",  
   "http://localhost:5174",  
   "http://localhost:5175", 
