@@ -1,3 +1,5 @@
+/* DeliveryPartner.module.css – Fully Responsive */
+
 .container {
   padding: 2rem;
   max-width: 1400px;
@@ -306,7 +308,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Error State */
@@ -544,30 +548,180 @@
   border-radius: 4px;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .container {
-    padding: 1rem;
-  }
-  
-  .formRow {
-    grid-template-columns: 1fr;
-  }
-  
+/* ============================================ */
+/*            RESPONSIVE MEDIA QUERIES          */
+/* ============================================ */
+
+/* Tablet (768px - 1024px) */
+@media (max-width: 1024px) {
   .statsGrid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .partnersGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   }
-  
+
+  .modalContent {
+    max-width: 90%;
+    margin: 1rem;
+  }
+}
+
+/* Mobile (up to 767px) */
+@media (max-width: 767px) {
+  .container {
+    padding: 1rem;
+  }
+
   .header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: 1rem;
   }
-  
+
+  .addButton {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .statCard {
+    padding: 1rem;
+  }
+
+  .statInfo h3 {
+    font-size: 1.5rem;
+  }
+
   .filters {
     flex-direction: column;
+  }
+
+  .searchInput,
+  .filterSelect {
+    width: 100%;
+  }
+
+  .partnersGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .partnerCard {
+    padding: 1rem;
+  }
+
+  .cardHeader {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .partnerInfo {
+    flex: 1;
+  }
+
+  .statusBadge {
+    align-self: flex-start;
+  }
+
+  .cardActions {
+    flex-direction: column;
+  }
+
+  .statusSelect,
+  .deleteBtn {
+    width: 100%;
+    padding: 0.75rem;
+  }
+
+  .pagination {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .pageBtn {
+    padding: 0.5rem 1rem;
+    min-width: 80px;
+  }
+
+  /* Modal fullscreen on small phones */
+  .modal {
+    padding: 0;
+    align-items: flex-start;
+  }
+
+  .modalContent {
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  .modalHeader {
+    padding: 1rem;
+  }
+
+  .form {
+    padding: 1rem;
+  }
+
+  .formRow {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .formGroup input,
+  .formGroup select {
+    padding: 0.75rem;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  .modalFooter {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .cancelBtn,
+  .submitBtn {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+/* Small mobile (<= 480px) */
+@media (max-width: 480px) {
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .statCard {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .detailRow {
+    font-size: 0.85rem;
+    flex-wrap: wrap;
+    word-break: break-word;
+  }
+
+  .avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
+
+  .partnerName {
+    font-size: 1rem;
+  }
+
+  .modalHeader h2 {
+    font-size: 1.2rem;
   }
 }

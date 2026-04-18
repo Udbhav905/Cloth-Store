@@ -1,4 +1,4 @@
-/* AdminReviews.module.css */
+/* AdminReviews.module.css – Fully Responsive */
 
 .page {
   --gold: #c9a84c;
@@ -248,12 +248,205 @@
 .panelBtnDanger  { background: rgba(236,112,99,0.1); color: var(--danger); border: 1px solid rgba(236,112,99,0.3) !important; }
 .panelBtnDanger:hover:not(:disabled)  { background: rgba(236,112,99,0.2); }
 
-@media (max-width: 768px) {
-  .pageHeader { padding: 24px; }
-  .filterTabs { padding: 0 24px; }
-  .tableWrap  { padding: 0 24px; }
-  .pagination { padding: 20px 24px; }
+/* ============================================ */
+/*            RESPONSIVE MEDIA QUERIES          */
+/* ============================================ */
+
+/* Tablet (768px – 1023px) */
+@media (max-width: 1023px) {
+  .pageHeader {
+    padding: 28px 24px 20px;
+  }
+  .pageTitle {
+    font-size: 1.7rem;
+  }
+  .filterTabs {
+    padding: 0 24px;
+  }
+  .tableWrap {
+    padding: 0 24px;
+  }
+  .pagination {
+    padding: 20px 24px;
+  }
+  .detailPanel {
+    width: 85vw;
+  }
+  .panelHeader, .panelSection, .panelFooter {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  /* Hide less important columns on tablet */
   .table th:nth-child(5),
-  .table td:nth-child(5) { display: none; }
-  .detailPanel { width: 100%; }
+  .table td:nth-child(5) { display: none; } /* Verified column */
+  .reviewPreview {
+    max-width: 160px;
+  }
+  .productName {
+    max-width: 100px;
+  }
+}
+
+/* Mobile (up to 767px) */
+@media (max-width: 767px) {
+  .pageHeader {
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 16px;
+  }
+  .headerStat {
+    align-items: flex-start;
+    flex-direction: row;
+    gap: 12px;
+  }
+  .statNum {
+    font-size: 1.2rem;
+  }
+  .pageTitle {
+    font-size: 1.5rem;
+  }
+  .filterTabs {
+    padding: 0 16px;
+  }
+  .filterTab {
+    padding: 10px 12px;
+    font-size: 0.65rem;
+  }
+  .tableWrap {
+    padding: 0 16px;
+    overflow-x: auto;
+  }
+  .table th, .table td {
+    padding: 10px 8px;
+  }
+  /* Hide multiple columns on mobile */
+  .table th:nth-child(4), .table td:nth-child(4),   /* Review preview */
+  .table th:nth-child(5), .table td:nth-child(5),   /* Verified */
+  .table th:nth-child(7), .table td:nth-child(7) {  /* Date */
+    display: none;
+  }
+  .productCell {
+    min-width: 140px;
+  }
+  .productName {
+    max-width: 90px;
+  }
+  .customerCell {
+    min-width: 100px;
+  }
+  .ratingCell {
+    min-width: 70px;
+  }
+  .actionBtns {
+    min-width: 70px;
+  }
+  .pagination {
+    gap: 12px;
+    padding: 16px;
+    flex-wrap: wrap;
+  }
+  .pageBtn {
+    padding: 6px 14px;
+    font-size: 0.7rem;
+  }
+  .loadState, .errorState, .emptyState {
+    padding: 60px 24px;
+  }
+  /* Detail panel – full width on mobile */
+  .detailPanel {
+    width: 100%;
+    right: 0;
+  }
+  .panelHeader {
+    padding: 16px;
+  }
+  .panelTitle {
+    font-size: 1rem;
+  }
+  .panelSection {
+    padding: 16px;
+  }
+  .panelFooter {
+    padding: 12px 16px;
+    gap: 6px;
+  }
+  .panelBtn {
+    min-width: 70px;
+    padding: 8px 10px;
+    font-size: 0.65rem;
+  }
+  .infoGrid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .infoGrid label {
+    margin-top: 6px;
+  }
+  .panelProductRow {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .reviewImages {
+    justify-content: center;
+  }
+}
+
+/* Very small devices (<= 480px) */
+@media (max-width: 480px) {
+  .pageTitle {
+    font-size: 1.3rem;
+  }
+  .pageSubtitle {
+    font-size: 0.6rem;
+  }
+  .filterTab {
+    padding: 8px 10px;
+    font-size: 0.6rem;
+  }
+  .table th, .table td {
+    font-size: 0.7rem;
+  }
+  .productThumb {
+    width: 28px;
+    height: 36px;
+  }
+  .productName {
+    font-size: 0.7rem;
+  }
+  .customerName {
+    font-size: 0.7rem;
+  }
+  .customerEmail {
+    font-size: 0.6rem;
+  }
+  .ratingCell .stars {
+    transform: scale(0.85);
+  }
+  .actionBtn {
+    width: 26px;
+    height: 26px;
+  }
+  .actionBtn svg {
+    width: 11px;
+    height: 11px;
+  }
+  .pagination {
+    gap: 8px;
+  }
+  .pageBtn {
+    padding: 4px 10px;
+  }
+  .panelHeader {
+    padding: 12px;
+  }
+  .panelSection {
+    padding: 12px;
+  }
+  .panelFooter {
+    flex-direction: column;
+  }
+  .panelBtn {
+    width: 100%;
+  }
 }
