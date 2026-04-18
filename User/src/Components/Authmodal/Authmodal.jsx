@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import useAuthStore from "../../store/Useauthstore";
 import styles from "./AuthModal.module.css";
+import useApiStore from "../../store/others";
 
+const API = useApiStore.getState().API;
 /* ─────────────────────────────────────────────
    ICON COMPONENT (Responsive)
 ───────────────────────────────────────────── */
@@ -89,7 +91,7 @@ function ForgotPasswordModalContent({ onClose, onBackToLogin }) {
     setMessage(null);
 
     try {
-      const response = await fetch("http://localhost:3000/api/auth/forgot-password", {
+      const response = await fetch(`${API}/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

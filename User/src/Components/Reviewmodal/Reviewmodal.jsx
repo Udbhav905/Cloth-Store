@@ -12,7 +12,9 @@
 import { useState, useEffect, useRef } from "react";
 import styles from "./ReviewModal.module.css";
 
-const API = "http://localhost:3000/api";
+import useApiStore from "../../store/others";
+const API = useApiStore.getState().API;
+// const API = "http://localhost:3000/api";
 
 function authHeader() {
   const token = localStorage.getItem("userToken");

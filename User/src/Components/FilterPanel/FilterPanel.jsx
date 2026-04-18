@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import styles from "./FilterPanel.module.css";
-
-const API = "http://localhost:3000/api";
+import useApiStore from "../../store/others";
+const API = useApiStore.getState().API;
+// const API = "http://localhost:3000/api";
 
 const SIZES = ["XS","S","M","L","XL","XXL","28","30","32","34","36","38","40","FREE"];
 

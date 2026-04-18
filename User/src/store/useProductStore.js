@@ -1,10 +1,8 @@
 import { create } from "zustand";
+import useApiStore from "../store/others";
+const API = useApiStore.getState().API;
+// const API = "http://localhost:3000/api";
 
-const API = "http://localhost:3000/api";
-
-/* ─────────────────────────────────────────────────
-   PRICE HELPERS  — match your Product schema virtuals
-─────────────────────────────────────────────────── */
 export function calcFinalPrice(product) {
   const base = product.basePrice ?? 0;
   if (product.discountType === "percentage" && product.discountValue > 0) {

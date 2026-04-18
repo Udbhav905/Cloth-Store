@@ -2,7 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import styles from "../Pages/styles/CategoryPage.module.css";
 
-const API = "http://localhost:3000/api";
+import useApiStore from "../store/others";
+const API = useApiStore.getState().API;
+
+// const API = "http://localhost:3000/api";
 
 /* ── Price helpers ── */
 function calcPrice(p) {

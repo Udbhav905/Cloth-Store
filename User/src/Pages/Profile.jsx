@@ -3,7 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import useAuthStore from "../store/Useauthstore";
 import styles from "./styles/Profile.module.css";
 
-const API = "http://localhost:3000/api";
+import useApiStore from "../store/others";
+const API = useApiStore.getState().API;
+
+// const API = "http://localhost:3000/api";
 
 /* ─── helpers ───────────────────────────────────────────── */
 const getInitials = (name = "") =>
@@ -638,7 +641,7 @@ export default function ProfilePage() {
                       <span className={styles.orderTotal}>
                         {formatCurrency(order.totalAmount)}
                       </span>
-                      <Link to={`/orders/${order._id}`} className={styles.orderViewBtn}>
+                      <Link to={`/my-orders`} className={styles.orderViewBtn}>
                         View Details
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
                           <polyline points="9 18 15 12 9 6"/>

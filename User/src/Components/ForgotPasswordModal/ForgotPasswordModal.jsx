@@ -1,5 +1,7 @@
 import { useState } from "react";
 import styles from "../Authmodal/AuthModal.module.css";
+import useApiStore from "../../store/others";
+const API = useApiStore.getState().API;
 
 export default function ForgotPasswordModal({ onClose, onBackToLogin }) {
   const [email, setEmail] = useState("");
@@ -15,7 +17,7 @@ export default function ForgotPasswordModal({ onClose, onBackToLogin }) {
     setMessage(null);
 
     try {
-      const response = await fetch("http://localhost:3000/api/auth/forgot-password", {
+      const response = await fetch(`${API}/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

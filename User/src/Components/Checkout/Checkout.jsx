@@ -3,8 +3,9 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 import useAuthStore from "../../store/Useauthstore";
 import useCartStore from "../../store/Usecartstore";
 import styles from "./Checkout.module.css";
-
-const API = "http://localhost:3000/api";
+import useApiStore from "../../store/others";
+const API = useApiStore.getState().API;
+// const API = "http://localhost:3000/api";
 
 function authHeader() {
   const token = useAuthStore.getState()?.accessToken || "";

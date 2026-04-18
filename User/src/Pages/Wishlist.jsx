@@ -2,8 +2,10 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import useCartStore from "../store/Usecartstore";
 import styles from "./styles/Wishlist.module.css";
+import useApiStore from "../store/others";
+const API = useApiStore.getState().API;
 
-const API = "http://localhost:3000/api";
+// const API = "http://localhost:3000/api";
 
 
 function calcFinal(p) {
@@ -25,11 +27,7 @@ function isDiscounted(p) {
   return p && p.discountType !== "none" && p.discountValue > 0;
 }
 
-/* ─────────────────────────────────────────────────────────
-   Hook: fetch full product objects for an array of IDs
-   Calls GET /api/products/:id for each ID in wishlist.
-   Results are cached in a local ref so re-renders are cheap.
-───────────────────────────────────────────────────────── */
+
 function useWishlistProducts(ids) {
   const [products, setProducts] = useState([]);
   const [loading,  setLoading]  = useState(false);

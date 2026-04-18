@@ -1,6 +1,8 @@
 import { create } from "zustand";
+import useApiStore from "../store/others";
+const API = useApiStore.getState().API;
 
-const API = "http://localhost:3000/api";
+// const API = "http://localhost:3000/api";
 
 /* ─────────────────────────────────────────────────
    VISUAL CONFIG

@@ -73,9 +73,9 @@ app.use('/api/delivery-partners', deliveryPartnerRoutes);
 
 app.use('/api/delivery-partner', deliveryPartnerAuthRoutes)
 
-app.get("/api/health", (_, res) =>
-  res.json({ status: "OK", timestamp: new Date().toISOString() })
-);
+// app.get("/api/health", (_, res) =>
+//   res.json({ status: "OK", timestamp: new Date().toISOString() })
+// );
 
 app.get("/", (_, res) => res.json({ message: "Clothing Store API v1.0" }));
 
@@ -88,8 +88,8 @@ const connectDB = async () => {
     console.log("MongoDB Connected");
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
-      console.log(`Server → http://localhost:${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV}`);
+      // console.log(`Server → http://localhost:${PORT}`);
+      // console.log(`Environment: ${process.env.NODE_ENV}`);
     });
   } catch (err) {
     console.error(`DB Error: ${err.message}`);

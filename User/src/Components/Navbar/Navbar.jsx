@@ -5,7 +5,10 @@ import useCartStore from "../../store/Usecartstore";
 import axios from "axios";
 import styles from "./Navbar.module.css";
 
-const API_URL = "http://localhost:3000/api";
+import useApiStore from "../../store/others";
+const API_URL = useApiStore.getState().API;
+// const API_URL = "http://localhost:3000/api";
+
 const getInitials = (name = "") =>
   name
     .split(" ")
@@ -46,8 +49,7 @@ export default function Navbar() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
-  
-  const drawerTimerRef = useRef(null);
+  const drawerTimerRef = useRef(null);  
   const searchRef = useRef(null);
   const profileRef = useRef(null);
   const cursorRef = useRef(null);
@@ -249,11 +251,10 @@ export default function Navbar() {
   };
 
   const handleDrawerLeave = () => {
-    drawerTimerRef.current = setTimeout(() => setDrawerOpen(false), 120);
-  };
+  drawerTimerRef.current = setTimeout(() => setDrawerOpen(false), 250); // was 120
+};
 
-  const handleDrawerEnter = () => clearTimeout(drawerTimerRef.current);
-
+const handleDrawerEnter = () => clearTimeout(drawerTimerRef.current);
   const handleLogout = async () => {
     setProfileOpen(false);
     await logout();

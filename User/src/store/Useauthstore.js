@@ -1,8 +1,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import useCartStore from "./Usecartstore";
-
-const API = "http://localhost:3000/api";
+import useApiStore from "./others.js";
+const API = useApiStore.getState().API;
+// const API = "http://localhost:3000/api";
 
 function extractUserAndToken(data) {
   const payload = data?.data ?? data;

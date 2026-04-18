@@ -5,7 +5,9 @@ import useCartStore from "../../store/Usecartstore";
 import useAuthStore from "../../store/Useauthstore";
 import styles from "./ProductDetail.module.css";
 
-const API = "http://localhost:3000/api";
+import useApiStore from "../../store/others";
+const API = useApiStore.getState().API;
+// const API = "http://localhost:3000/api";
 
 function fmtPrice(n) {
   if (n == null) return "—";

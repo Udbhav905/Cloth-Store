@@ -3,8 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import useAuthStore from "../store/Useauthstore";
 import ReviewModal from "../Components/Reviewmodal/Reviewmodal";
 import styles from "./styles/MyOrders.module.css";
+import useApiStore from "../store/others";
+const API = useApiStore.getState().API;
 
-const API = "http://localhost:3000/api";
+// const API = "http://localhost:3000/api";
 
 function authHeader() {
   const token = localStorage.getItem("userToken") || useAuthStore.getState()?.accessToken;

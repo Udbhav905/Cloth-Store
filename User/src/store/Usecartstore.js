@@ -2,7 +2,10 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import useAuthStore from "./Useauthstore";
 
-const API = "http://localhost:3000/api";
+import useApiStore from "../store/others";
+const API = useApiStore.getState().API;
+
+// const API = "http://localhost:3000/api";
 
 const getAuthToken = () => {
   const { accessToken } = useAuthStore.getState();
