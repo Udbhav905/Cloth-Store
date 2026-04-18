@@ -1,3 +1,4 @@
+// ProductDetail.jsx (revised)
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import useCartStore from "../../store/Usecartstore";
@@ -161,12 +162,25 @@ export default function ProductDetail() {
   const [adding,    setAdding]    = useState(false);
   const [toast,     setToast]     = useState({ msg: "", visible: false });
 
+  // --- Review states ---
+  const [reviews, setReviews] = useState([]);
+  const [avgRating, setAvgRating] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
+  const [ratingsBreakdown, setRatingsBreakdown] = useState({ 5:0,4:0,3:0,2:0,1:0 });
+  const [canReview, setCanReview] = useState(false);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+
+  // Fetch product and reviews
   useEffect(() => {
     if (!id) return;
     setLoading(true); setError(null);
     setProduct(null); setSelColor(null); setSelSize(null); setQty(1);
     window.scrollTo({ top: 0, behavior: "smooth" });
 
+    // Fetch product
     fetch(`${API}/products/${id}`)
       .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json(); })
       .then(data => {
@@ -188,103 +202,67 @@ export default function ProductDetail() {
       .catch(e => { setError(e.message); setLoading(false); });
   }, [id]);
 
-  if (loading) return (
-    <div className={styles.page}>
-      <div className={styles.skWrap}>
-        <div className={styles.skGallery}>
-          <div className={`${styles.skBlock} ${styles.skMainImg}`}/>
-          <div className={styles.skThumbs}>{[0,1,2,3].map(i=><div key={i} className={`${styles.skBlock} ${styles.skThumb}`}/>)}</div>
-        </div>
-        <div className={styles.skInfo}>
-          {[["40%",10],["80%",44],["30%",26],["100%",1],["55%",12],["100%",44],["60%",12],["100%",52],["100%",52]].map(([w,h],i)=>(
-            <div key={i} className={styles.skBlock} style={{width:w,height:h,marginTop:i===0?0:i===3?24:12,borderRadius:i===3?0:3}}/>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  // Fetch reviews for this product (public endpoint)
+  // Inside ProductDetail.jsx, replace the review fetch useEffect
+// Inside ProductDetail component
 
-  if (error || !product) return (
-    <div className={styles.page}>
-      <div className={styles.errFull}>
-        <span className={styles.errDia}>◆</span>
-        <h2>Product not found</h2><p>{error}</p>
-        <button onClick={() => navigate(-1)} className={styles.errBack}>← Go Back</button>
-      </div>
-    </div>
-  );
+useEffect(() => {
+  if (!id) return;
 
-  /* ── Derived ── */
-  const allImages  = [product.mainImage, ...(product.galleryImages || [])].filter(Boolean);
-  const colorOpts  = [...new Map(
-    (product.variants || []).filter(v => v.isActive !== false)
-      .map(v => [v.color, { name: v.color, code: v.colorCode }])
-  ).values()];
-  const sizeOpts   = selColor
-    ? (product.variants || []).filter(v => v.color === selColor && v.isActive !== false)
-        .map(v => ({ size: v.size, stock: v.stock }))
-    : [];
-  const selVariant = selColor && selSize
-    ? (product.variants || []).find(v => v.color === selColor && v.size === selSize)
-    : null;
+  const fetchReviews = async () => {
+    try {
+      const res = await fetch(`${API}/reviews/product/${id}`);
+      if (!res.ok) throw new Error("Failed to fetch reviews");
+      const data = await res.json();
 
-  /* ════════════════════════════════════════════════════════
-     PRICE FIX — show per-variant price, not product basePrice
+      // 1. Reviews array
+      setReviews(data.reviews || []);
 
-     Priority:
-     1. Variant fully selected (color + size) → exact variant price
-     2. Only color selected → lowest price for that color
-     3. No selection → product-level basePrice + discount
-  ════════════════════════════════════════════════════════ */
-  const variantsForColor = selColor
-    ? (product.variants || []).filter(v => v.color === selColor && v.isActive !== false)
-    : [];
+      // 2. Average rating
+      setAvgRating(data.averageRating || 0);
 
-  let finalPrice, origPrice, hasDis, disc;
+      // 3. Total number of reviews
+      setTotalReviews(data.total || 0);
 
-  if (selVariant) {
-    /* Both color + size selected — use exact variant prices */
-    if (selVariant.discountedPrice && selVariant.discountedPrice < selVariant.price) {
-      finalPrice = selVariant.discountedPrice;
-      origPrice  = selVariant.price;
-      hasDis     = true;
-      disc       = Math.round(((selVariant.price - selVariant.discountedPrice) / selVariant.price) * 100);
-    } else {
-      finalPrice = selVariant.price;
-      origPrice  = null;
-      hasDis     = false;
-      disc       = null;
+      // 4. Convert ratingDistribution (array) to ratingsBreakdown (object)
+      const breakdown = { 5:0, 4:0, 3:0, 2:0, 1:0 };
+      if (data.ratingDistribution) {
+        data.ratingDistribution.forEach(item => {
+          breakdown[item.rating] = item.count;
+        });
+      }
+      setRatingsBreakdown(breakdown);
+    } catch (err) {
+      console.error("Review fetch error:", err);
     }
-  } else if (variantsForColor.length > 0) {
-    /* Color selected, no size yet — show lowest price for that color */
-    const lowestVariant = variantsForColor.reduce((min, v) =>
-      (v.discountedPrice || v.price) < (min.discountedPrice || min.price) ? v : min
-    );
-    if (lowestVariant.discountedPrice && lowestVariant.discountedPrice < lowestVariant.price) {
-      finalPrice = lowestVariant.discountedPrice;
-      origPrice  = lowestVariant.price;
-      hasDis     = true;
-      disc       = Math.round(((lowestVariant.price - lowestVariant.discountedPrice) / lowestVariant.price) * 100);
-    } else {
-      finalPrice = lowestVariant.price;
-      origPrice  = null;
-      hasDis     = false;
-      disc       = null;
-    }
-  } else {
-    /* No selection — fallback to product-level pricing */
-    finalPrice = calcFinal(product);
-    origPrice  = (product.discountType !== "none" && product.discountValue > 0) ? product.basePrice : null;
-    hasDis     = product.discountType !== "none" && product.discountValue > 0;
-    disc       = discPct(product);
-  }
+  };
 
-  const wishlisted  = isWishlisted(product._id);
-  const stockCount  = selVariant?.stock ?? product?.totalStock ?? 0;
-  const inStock     = selVariant ? selVariant.stock > 0 : product?.totalStock > 0;
-  const lowStock    = stockCount > 0 && stockCount <= (product?.lowStockThreshold ?? 5);
-  const occasionList = safeArray(product.occasion);
-  const seasonList   = safeArray(product.season);
+  fetchReviews();
+}, [id]);
+
+  // Check if logged-in user can review this product
+  useEffect(() => {
+    if (!isLoggedIn || !id) {
+      setCanReview(false);
+      return;
+    }
+    const checkCanReview = async () => {
+      try {
+        const res = await fetch(`${API}/reviews/can-review/${id}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } // adjust token key as needed
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCanReview(data.canReview === true);
+        } else {
+          setCanReview(false);
+        }
+      } catch (err) {
+        setCanReview(false);
+      }
+    };
+    checkCanReview();
+  }, [isLoggedIn, id]);
 
   const showToast = (msg) => {
     setToast({ msg, visible: true });
@@ -334,6 +312,143 @@ export default function ProductDetail() {
     showToast(wishlisted ? "Removed from wishlist" : "Saved to wishlist ♡");
   };
 
+  // Submit a new review
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (!isLoggedIn) {
+      openAuthModal("login");
+      return;
+    }
+    if (!reviewComment.trim()) {
+      showToast("Please write a review comment");
+      return;
+    }
+    setReviewLoading(true);
+    try {
+      const res = await fetch(`${API}/reviews`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          productId: id,
+          rating: reviewRating,
+          review: reviewComment,
+        }),
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || "Failed to submit review");
+      }
+      const newReview = await res.json();
+      // Refresh reviews after submission
+      const refreshRes = await fetch(`${API}/reviews/product/${id}`);
+      const refreshData = await refreshRes.json();
+      setReviews(refreshData.reviews || []);
+      setAvgRating(refreshData.averageRating || 0);
+      setTotalReviews(refreshData.totalReviews || 0);
+      setRatingsBreakdown(refreshData.ratingsBreakdown || { 5:0,4:0,3:0,2:0,1:0 });
+      setShowReviewForm(false);
+      setReviewComment("");
+      setReviewRating(5);
+      setCanReview(false); // user cannot review again
+      showToast("Thank you for your review!");
+    } catch (err) {
+      showToast(err.message);
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
+  if (loading) return (
+    <div className={styles.page}>
+      <div className={styles.skWrap}>
+        <div className={styles.skGallery}>
+          <div className={`${styles.skBlock} ${styles.skMainImg}`}/>
+          <div className={styles.skThumbs}>{[0,1,2,3].map(i=><div key={i} className={`${styles.skBlock} ${styles.skThumb}`}/>)}</div>
+        </div>
+        <div className={styles.skInfo}>
+          {[["40%",10],["80%",44],["30%",26],["100%",1],["55%",12],["100%",44],["60%",12],["100%",52],["100%",52]].map(([w,h],i)=>(
+            <div key={i} className={styles.skBlock} style={{width:w,height:h,marginTop:i===0?0:i===3?24:12,borderRadius:i===3?0:3}}/>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  if (error || !product) return (
+    <div className={styles.page}>
+      <div className={styles.errFull}>
+        <span className={styles.errDia}>◆</span>
+        <h2>Product not found</h2><p>{error}</p>
+        <button onClick={() => navigate(-1)} className={styles.errBack}>← Go Back</button>
+      </div>
+    </div>
+  );
+
+  /* ── Derived ── */
+  const allImages  = [product.mainImage, ...(product.galleryImages || [])].filter(Boolean);
+  const colorOpts  = [...new Map(
+    (product.variants || []).filter(v => v.isActive !== false)
+      .map(v => [v.color, { name: v.color, code: v.colorCode }])
+  ).values()];
+  const sizeOpts   = selColor
+    ? (product.variants || []).filter(v => v.color === selColor && v.isActive !== false)
+        .map(v => ({ size: v.size, stock: v.stock }))
+    : [];
+  const selVariant = selColor && selSize
+    ? (product.variants || []).find(v => v.color === selColor && v.size === selSize)
+    : null;
+
+  /* PRICE FIX — see variant pricing */
+  const variantsForColor = selColor
+    ? (product.variants || []).filter(v => v.color === selColor && v.isActive !== false)
+    : [];
+
+  let finalPrice, origPrice, hasDis, disc;
+
+  if (selVariant) {
+    if (selVariant.discountedPrice && selVariant.discountedPrice < selVariant.price) {
+      finalPrice = selVariant.discountedPrice;
+      origPrice  = selVariant.price;
+      hasDis     = true;
+      disc       = Math.round(((selVariant.price - selVariant.discountedPrice) / selVariant.price) * 100);
+    } else {
+      finalPrice = selVariant.price;
+      origPrice  = null;
+      hasDis     = false;
+      disc       = null;
+    }
+  } else if (variantsForColor.length > 0) {
+    const lowestVariant = variantsForColor.reduce((min, v) =>
+      (v.discountedPrice || v.price) < (min.discountedPrice || min.price) ? v : min
+    );
+    if (lowestVariant.discountedPrice && lowestVariant.discountedPrice < lowestVariant.price) {
+      finalPrice = lowestVariant.discountedPrice;
+      origPrice  = lowestVariant.price;
+      hasDis     = true;
+      disc       = Math.round(((lowestVariant.price - lowestVariant.discountedPrice) / lowestVariant.price) * 100);
+    } else {
+      finalPrice = lowestVariant.price;
+      origPrice  = null;
+      hasDis     = false;
+      disc       = null;
+    }
+  } else {
+    finalPrice = calcFinal(product);
+    origPrice  = (product.discountType !== "none" && product.discountValue > 0) ? product.basePrice : null;
+    hasDis     = product.discountType !== "none" && product.discountValue > 0;
+    disc       = discPct(product);
+  }
+
+  const wishlisted  = isWishlisted(product._id);
+  const stockCount  = selVariant?.stock ?? product?.totalStock ?? 0;
+  const inStock     = selVariant ? selVariant.stock > 0 : product?.totalStock > 0;
+  const lowStock    = stockCount > 0 && stockCount <= (product?.lowStockThreshold ?? 5);
+  const occasionList = safeArray(product.occasion);
+  const seasonList   = safeArray(product.season);
+
   return (
     <div className={styles.page}>
       <Toast msg={toast.msg} visible={toast.visible}/>
@@ -379,11 +494,12 @@ export default function ProductDetail() {
 
           <h1 className={styles.pName}>{product.name}</h1>
 
-          {product.averageRating > 0 && (
-            <Stars rating={product.averageRating} count={product.totalReviews}/>
+          {/* Use fetched average rating & total */}
+          {avgRating > 0 && (
+            <Stars rating={avgRating} count={totalReviews}/>
           )}
 
-          {/* ── Price block — now shows variant price ── */}
+          {/* ── Price block ── */}
           <div className={styles.priceBlock}>
             <span className={styles.finalPrice}>{fmtPrice(finalPrice)}</span>
             {hasDis && origPrice && (
@@ -392,7 +508,6 @@ export default function ProductDetail() {
             {hasDis && origPrice && (
               <span className={styles.saveTag}>Save {fmtPrice(origPrice - finalPrice)}</span>
             )}
-            {/* Hint when no color is selected yet and variants exist */}
             {!selColor && colorOpts.length > 1 && (
               <span className={styles.priceNote}>Select colour to see price</span>
             )}
@@ -410,7 +525,6 @@ export default function ProductDetail() {
               </div>
               <div className={styles.colorRow}>
                 {colorOpts.map(c => {
-                  /* Show the price for each color option as a hint */
                   const cv = (product.variants || []).filter(v => v.color === c.name && v.isActive !== false);
                   const lowest = cv.length
                     ? cv.reduce((m, v) => (v.discountedPrice || v.price) < (m.discountedPrice || m.price) ? v : m)
@@ -442,7 +556,6 @@ export default function ProductDetail() {
               </div>
               <div className={styles.sizeRow}>
                 {sizeOpts.map(({ size, stock }) => {
-                  /* Show variant price per size if prices differ */
                   const sv = (product.variants || []).find(v => v.color === selColor && v.size === size);
                   const sp = sv ? (sv.discountedPrice || sv.price) : null;
                   return (
@@ -533,12 +646,12 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs - Reviews now use fetched data */}
       <div className={styles.tabsSection}>
         <div className={styles.tabBar}>
           {[
             { key:"details",    label:"Description" },
-            { key:"reviews",    label:`Reviews (${product.totalReviews})` },
+            { key:"reviews",    label:`Reviews (${totalReviews})` },
             { key:"size-guide", label:"Size Guide" },
           ].map(t => (
             <button key={t.key}
@@ -575,36 +688,82 @@ export default function ProductDetail() {
           )}
           {activeTab === "reviews" && (
             <div className={styles.reviewsTab}>
-              {product.totalReviews === 0 ? (
+              {totalReviews === 0 ? (
                 <div className={styles.noReviews}>
                   <span className={styles.nrDia}>◆</span>
                   <p>No reviews yet. Be the first to review this piece.</p>
+                  {canReview && !showReviewForm && (
+                    <button className={styles.writeReviewBtn} onClick={() => setShowReviewForm(true)}>
+                      Write a Review
+                    </button>
+                  )}
                 </div>
               ) : (
                 <>
                   <div className={styles.revSummary}>
                     <div className={styles.revBig}>
-                      <span className={styles.revNum}>{product.averageRating.toFixed(1)}</span>
-                      <Stars rating={product.averageRating} count={product.totalReviews}/>
+                      <span className={styles.revNum}>{avgRating.toFixed(1)}</span>
+                      <Stars rating={avgRating} count={totalReviews}/>
                     </div>
                     <div className={styles.revBars}>
                       {[5,4,3,2,1].map(n => {
-                        const c  = (product.ratings||[]).filter(r=>Math.round(r.rating)===n).length;
-                        const pct = product.totalReviews > 0 ? (c/product.totalReviews)*100 : 0;
+                        const count = ratingsBreakdown[n] || 0;
+                        const pct = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
                         return (
                           <div key={n} className={styles.revBarRow}>
                             <span className={styles.revBarLabel}>{n}★</span>
                             <div className={styles.revBarTrack}><div className={styles.revBarFill} style={{ width:`${pct}%` }}/></div>
-                            <span className={styles.revBarCount}>{c}</span>
+                            <span className={styles.revBarCount}>{count}</span>
                           </div>
                         );
                       })}
                     </div>
                   </div>
-                  {(product.ratings||[]).slice(0,5).map((r,i) => (
+
+                  {canReview && !showReviewForm && (
+                    <button className={styles.writeReviewBtn} onClick={() => setShowReviewForm(true)}>
+                      Write a Review
+                    </button>
+                  )}
+
+                  {showReviewForm && (
+                    <form className={styles.reviewForm} onSubmit={handleSubmitReview}>
+                      <h4>Share your experience</h4>
+                      <div className={styles.formGroup}>
+                        <label>Rating</label>
+                        <div className={styles.ratingInput}>
+                          {[1,2,3,4,5].map(star => (
+                            <span key={star}
+                              className={star <= reviewRating ? styles.starSelected : styles.starUnselected}
+                              onClick={() => setReviewRating(star)}>★</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Your review</label>
+                        <textarea
+                          rows="4"
+                          value={reviewComment}
+                          onChange={(e) => setReviewComment(e.target.value)}
+                          placeholder="What did you like or dislike? What about the fit, fabric, quality?"
+                          required
+                        />
+                      </div>
+                      <div className={styles.formActions}>
+                        <button type="button" onClick={() => setShowReviewForm(false)} className={styles.cancelBtn}>Cancel</button>
+                        <button type="submit" disabled={reviewLoading} className={styles.submitBtn}>
+                          {reviewLoading ? "Submitting..." : "Submit Review"}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
+                  {reviews.slice(0, 5).map((r, i) => (
                     <div key={i} className={styles.reviewCard}>
                       <div className={styles.revCardTop}>
-                        <span className={styles.revUser}>Verified Customer</span>
+                        <span className={styles.revUser}>
+                          {r.user?.name || "Verified Customer"}
+                        </span>
                         <Stars rating={r.rating} count={0}/>
                         <span className={styles.revDate}>
                           {new Date(r.createdAt).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}
@@ -613,6 +772,11 @@ export default function ProductDetail() {
                       {r.review && <p className={styles.revText}>{r.review}</p>}
                     </div>
                   ))}
+                  {reviews.length > 5 && (
+                    <div className={styles.viewMore}>
+                      <button className={styles.viewMoreBtn}>Load more reviews</button>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -678,4 +842,3 @@ export default function ProductDetail() {
     </div>
   );
 }
-

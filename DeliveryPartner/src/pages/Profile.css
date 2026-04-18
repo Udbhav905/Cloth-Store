@@ -145,3 +145,6 @@
   color: var(--gray);
   font-style: italic;
 }
+h1,h2{
+  color: #ece6e6;
+}
