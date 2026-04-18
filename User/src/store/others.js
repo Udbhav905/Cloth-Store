@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 const useApiStore = create(() => ({
-  API: "http://localhost:3000/api",
+  API: "https://cloth-store-backend-qe63.onrender.com/api"
 }));
 
 export default useApiStore;
