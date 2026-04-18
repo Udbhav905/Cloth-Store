@@ -49,14 +49,27 @@ const ALLOWED_ORIGINS = [
 ];
 
 app.use(cors({
-  origin: (origin, callback) => {
-    /* Allow requests with no origin (curl, mobile, Postman) */
+  origin: function (origin, callback) {
     if (!origin) return callback(null, true);
-    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-    callback(new Error(`CORS: origin ${origin} not allowed`));
+
+    if (ALLOWED_ORIGINS.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error("CORS not allowed"));
+    }
   },
   credentials: true,
 }));
+
+// app.use(cors({
+//   origin: (origin, callback) => {
+//     /* Allow requests with no origin (curl, mobile, Postman) */
+//     if (!origin) return callback(null, true);
+//     if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+//     callback(new Error(`CORS: origin ${origin} not allowed`));
+//   },
+//   credentials: true,
+// }));
 
 if (process.env.NODE_ENV === "development") app.use(morgan("dev"));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
