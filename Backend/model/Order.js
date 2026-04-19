@@ -1,8 +1,5 @@
 import mongoose from "mongoose";
 
-/* ─────────────────────────────────────────────
-   Order Item Schema
-───────────────────────────────────────────── */
 const orderItemSchema = new mongoose.Schema({
   productId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -35,9 +32,7 @@ const orderItemSchema = new mongoose.Schema({
   image: String
 });
 
-/* ─────────────────────────────────────────────
-   Main Order Schema
-───────────────────────────────────────────── */
+
 const orderSchema = new mongoose.Schema({
 
   orderNumber: {
@@ -49,7 +44,7 @@ const orderSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
-    index: true  // ✅ ADDED: Index for faster user order queries
+    index: true  
   },
 
   items: [orderItemSchema],
@@ -61,7 +56,7 @@ const orderSchema = new mongoose.Schema({
   totalAmount:    { type: Number, required: true },
 
   shippingAddress: {
-    name: String,      // ✅ ADDED: Customer name in shipping address
+    name: String,      
     address1: String,
     address2: String,
     landmark: String,
@@ -105,32 +100,28 @@ const orderSchema = new mongoose.Schema({
       "out_for_delivery", "delivered", "cancelled", "returned", "refunded"
     ],
     default: "pending",
-    index: true   // ✅ ADDED: Index for status filtering
+    index: true  
   },
 
   deliveryPartnerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "DeliveryPartner",
     default: null,
-    index: true   // ✅ ADDED: Index for partner queries
+    index: true  
   },
 
   deliveryPartnerName: String,
-
   trackingNumber:    String,
   courierName:       String,
   estimatedDelivery: Date,
   deliveredAt:       Date,
-
   assignedAt: Date,
-
   statusHistory: [{
     status:    String,
     note:      String,
     changedAt: { type: Date, default: Date.now },
     changedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
   }],
-
   cancellationReason: String,
   cancelledAt:        Date,
   returnReason:       String,
@@ -139,16 +130,10 @@ const orderSchema = new mongoose.Schema({
   adminNotes:         String
 
 }, { timestamps: true });
-
-
-/* ─────────────────────────────────────────────
-   Auto-generate orderNumber with proper error handling
-───────────────────────────────────────────── */
 orderSchema.pre("save", async function() {
   if (!this.isNew || this.orderNumber) {
     return;
   }
-
   try {
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
@@ -172,12 +157,9 @@ orderSchema.pre("save", async function() {
     this.orderNumber = `ORD${Date.now().toString().slice(-8)}`;
   }
 });
-
-/* ── Indexes ── */
 orderSchema.index({ userId: 1, createdAt: -1 });
 orderSchema.index({ orderStatus: 1 });
 orderSchema.index({ paymentStatus: 1 });
 orderSchema.index({ createdAt: -1 });
 orderSchema.index({ deliveryPartnerId: 1, createdAt: -1 });
-
 export default mongoose.model("Order", orderSchema);

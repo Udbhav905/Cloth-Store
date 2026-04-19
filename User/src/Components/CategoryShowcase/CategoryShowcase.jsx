@@ -37,7 +37,6 @@ const CategoryCard = ({ category, index, isVisible }) => {
     <Link 
       to={`/collections/${category.slug}`} 
       className={`${styles.categoryCard} ${isVisible ? styles.cardVisible : ""}`}
-      style={{ animationDelay: `${index * 0.15}s` }}
     >
       <div className={styles.cardInner}>
         {/* Image Container */}
@@ -128,11 +127,7 @@ export default function CategoryShowcase() {
           ))}
         </div>
 
-        {/* Decorative Background Elements */}
-        <div className={styles.bgDecoration}>
-          <div className={styles.blob1} />
-          <div className={styles.blob2} />
-        </div>
+
       </div>
     </section>
   );

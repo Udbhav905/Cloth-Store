@@ -99,58 +99,29 @@ export default function Navbar() {
 
         console.log("Categories data:", categoriesData);
 
-        const menSubcategories = categoriesData
-          .filter(
-            (cat) =>
-              cat.parentCategory === "699d7d23a7f166db0aabd088" ||
-              cat.name === "Shirt" ||
-              cat.name === "T-shirts" ||
-              cat.name === "Jacket" ||
-              cat.name === "Pants",
-          )
-          .map((cat) => ({
-            _id: cat._id,
-            name: cat.name,
-            slug: cat.slug,
-            subcategories: [],
-          }));
+        // Robust tree builder to dynamically get all categories from the database
+        const idMap = new Map();
+        const rootCategories = [];
 
-        console.log("Men subcategories:", menSubcategories);
+        categoriesData.forEach(cat => {
+            idMap.set(cat._id.toString(), {
+                _id: cat._id,
+                name: cat.name,
+                slug: cat.slug,
+                subcategories: []
+            });
+        });
 
-        const structuredCategories = [
-          {
-            _id: "men",
-            name: "Men",
-            slug: "men",
-            subcategories:
-              menSubcategories.length > 0
-                ? menSubcategories
-                : [
-                    { _id: "shirt", name: "Shirt", slug: "shirt" },
-                    { _id: "tshirts", name: "T-shirts", slug: "t-shirts" },
-                    { _id: "jacket", name: "Jacket", slug: "jacket" },
-                    { _id: "pants", name: "Pants", slug: "pants" },
-                  ],
-          },
-          {
-            _id: "women",
-            name: "Women",
-            slug: "women",
-            subcategories: [],
-          },
-          {
-            _id: "couture",
-            name: "Couture",
-            slug: "couture",
-            subcategories: [],
-          },
-          {
-            _id: "season",
-            name: "Season",
-            slug: "season",
-            subcategories: [],
-          },
-        ];
+        categoriesData.forEach(cat => {
+            const pid = cat.parentCategory?._id || cat.parentCategory;
+            if (pid && idMap.has(pid.toString())) {
+                idMap.get(pid.toString()).subcategories.push(idMap.get(cat._id.toString()));
+            } else {
+                rootCategories.push(idMap.get(cat._id.toString()));
+            }
+        });
+
+        const structuredCategories = rootCategories;
 
         setCategories([
           {
@@ -578,7 +549,14 @@ export default function Navbar() {
                     className={styles.drawerCol}
                     style={{ "--col-delay": `${si * 0.06}s` }}
                   >
-                    <h3 className={styles.drawerColTitle}>{sub.name}</h3>
+                    <h3 className={styles.drawerColTitle}>
+                      <button 
+                         onClick={() => handleCategoryClick(sub.slug, sub.name)} 
+                         className={styles.drawerColTitleBtn}
+                      >
+                         {sub.name}
+                      </button>
+                    </h3>
                     <ul className={styles.drawerList}>
                       {sub.subcategories && sub.subcategories.length > 0 ? (
                         sub.subcategories.map((item, ii) => (
@@ -679,7 +657,17 @@ export default function Navbar() {
                 className={styles.mobileSection}
                 style={{ "--delay": `${si * 0.08}s` }}
               >
-                <h4 className={styles.mobileSectionTitle}>{sub.name}</h4>
+                <h4 className={styles.mobileSectionTitle}>
+                  <button 
+                     onClick={() => {
+                       navigate(`/collections/${sub.slug}`);
+                       setMenuOpen(false);
+                     }} 
+                     className={styles.mobileSectionTitleBtn}
+                  >
+                     {sub.name}
+                  </button>
+                </h4>
                 <div className={styles.mobileSectionItems}>
                   {sub.subcategories && sub.subcategories.length > 0 ? (
                     sub.subcategories.map((item) => (
@@ -707,17 +695,25 @@ export default function Navbar() {
           <div className={styles.mobileMenuFooter}>
             {isLoggedIn && user ? (
               <div className={styles.mobileUserInfo}>
-                <span className={styles.mobileUserName}>{user.name}</span>
-                <button
-                  className={styles.mobileSignOut}
-                  onClick={() => {
-                    setMenuOpen(false);
-                    logout();
-                  }}
-                >
-                  Sign Out
-                </button>
+              <span className={styles.mobileUserName}>{user.name}</span>
+              <div className={styles.mobileProfileLinks}>
+                <Link to="/profile" onClick={() => setMenuOpen(false)}>Profile</Link>
+                <Link to="/my-orders" onClick={() => setMenuOpen(false)}>My Orders</Link>
+                <Link to="/wishlist" onClick={() => setMenuOpen(false)}>Wishlist</Link>
+                {user.role === "admin" && (
+                  <Link to="/admin" onClick={() => setMenuOpen(false)}>Admin Panel</Link>
+                )}
               </div>
+              <button
+                className={styles.mobileSignOut}
+                onClick={() => {
+                  setMenuOpen(false);
+                  logout();
+                }}
+              >
+                Sign Out
+              </button>
+            </div>
             ) : (
               <button
                 className={styles.mobileSignIn}

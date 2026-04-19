@@ -320,9 +320,16 @@
 .drawerOpen .drawerCol { opacity: 1; transform: translateY(0); }
 .drawerColTitle {
   font-family: var(--sans); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
-  color: var(--text-dim); padding-bottom: 12px; margin-bottom: 20px;
+  color: var(--accent); padding-bottom: 12px; margin-bottom: 20px;
   border-bottom: 1px solid var(--border-subtle);
 }
+.drawerColTitleBtn {
+  background: none; border: none; padding: 0; margin: 0;
+  font-family: inherit; font-size: inherit; font-weight: inherit;
+  letter-spacing: inherit; text-transform: inherit; color: inherit;
+  cursor: pointer; transition: color 0.3s;
+}
+.drawerColTitleBtn:hover { color: var(--text-light); }
 .drawerList { list-style: none; display: flex; flex-direction: column; gap: 6px; }
 .drawerList li {
   opacity: 0; transform: translateX(-10px);
@@ -372,6 +379,13 @@
 .mobileSearchIcon { width: 18px; height: 18px; color: var(--text-dim); }
 .mobileSection { padding: 20px 0; border-top: 1px solid var(--border-subtle); }
 .mobileSectionTitle { font-family: var(--sans); font-size: 11px; letter-spacing: 0.2em; color: var(--accent); margin-bottom: 20px; text-transform: uppercase; }
+.mobileSectionTitleBtn {
+  background: none; border: none; padding: 0; margin: 0;
+  font-family: inherit; font-size: inherit; font-weight: inherit;
+  letter-spacing: inherit; text-transform: inherit; color: inherit;
+  cursor: pointer; transition: color 0.3s;
+}
+.mobileSectionTitleBtn:hover { color: var(--text-light); }
 .mobileSectionItems { display: grid; grid-template-columns: 1fr; gap: 16px; }
 .mobileSectionLink {
   background: none; border: none; text-align: left; font-family: var(--serif);
@@ -388,9 +402,12 @@
   margin-bottom: 16px;
 }
 .mobileSignIn:hover { background: var(--accent); color: var(--black); }
-.mobileUserInfo { border: 1px solid var(--border-subtle); border-radius: 16px; padding: 20px; margin-bottom: 16px; text-align: center; }
-.mobileUserName { display: block; font-family: var(--serif); font-size: 20px; color: var(--text-light); margin-bottom: 12px; }
-.mobileSignOut { background: rgba(184,65,65,0.1); border: 1px solid #b84141; border-radius: 30px; color: #b84141; padding: 12px 24px; font-family: var(--sans); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.3s; }
+.mobileUserInfo { background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 20px; margin-bottom: 16px; text-align: center; display: flex; flex-direction: column; gap: 16px; }
+.mobileUserName { display: block; font-family: var(--serif); font-size: 20px; color: var(--text-light); }
+.mobileProfileLinks { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.mobileProfileLinks a { color: var(--text-light); text-decoration: none; font-family: var(--sans); font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; transition: color 0.2s; }
+.mobileProfileLinks a:hover { color: var(--accent); }
+.mobileSignOut { background: rgba(184,65,65,0.1); border: 1px solid #b84141; border-radius: 30px; color: #b84141; padding: 12px 24px; font-family: var(--sans); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.3s; margin-top: 8px; }
 .mobileSignOut:hover { background: #b84141; color: #fff; }
 .mobileFooterCities { font-family: var(--sans); font-size: 10px; letter-spacing: 0.2em; color: var(--text-dim); text-align: center; text-transform: uppercase; margin-top: 20px; }
 
@@ -404,13 +421,15 @@
   .drawerCategories { grid-template-columns: repeat(2, 1fr); padding: 40px; gap: 30px; }
 }
 @media (max-width: 860px) {
-  .navInner { padding: 0 1.5rem; display: flex; justify-content: space-between; }
+  .navInner { padding: 0 1.5rem; display: flex; justify-content: space-between; align-items: center; }
   .collectionsBtn, .drawer, .signInBtn span { display: none; }
   .navLeft { display: none; }
-  .navCenter { justify-content: flex-start; }
+  .navCenter { flex: auto; max-width: 50%; }
+  .navRight { flex: 1; justify-content: flex-end; gap: 8px; }
+  /* .profileWrap is restored so user can use the button */
   .signInBtn { padding: 8px; border-radius: 50%; }
   .hamburger { display: flex; }
-  .searchWrapOpen .searchInput { width: 140px; }
+  .searchWrapOpen .searchInput { width: 120px; }
   .navScrolled { width: calc(100% - 20px); left: 10px; }
 }
 @media (max-width: 640px) {
@@ -419,6 +438,17 @@
   .searchWrap { display: none; }
   .navInner { padding: 0 1rem; }
   .navScrolled { border-radius: 16px; }
+  
+  /* Make the profile dropdown responsive so it doesn't break mobile */
+  .profileDropdown {
+    position: fixed;
+    top: 90px;
+    right: 15px;
+    width: 250px;
+    max-width: calc(100vw - 30px);
+    z-index: 1000;
+    box-sizing: border-box;
+  }
 }
 @media (max-width: 380px) {
   :root { --nav-h: 56px; }
