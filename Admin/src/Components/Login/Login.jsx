@@ -6,9 +6,10 @@ import { API_BASE_URL } from "../../config";
 import styles from "./Login.module.css";
 
 const Login = ({ onLogin }) => {
-  const [creds,     setCreds]     = useState({ email: "", password: "" });
-  const [error,     setError]     = useState("");
+  const [creds, setCreds] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // 👈 NEW
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -16,25 +17,29 @@ const Login = ({ onLogin }) => {
     if (error) setError("");
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(prev => !prev);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
     try {
-      const res  = await fetch(`${API_BASE_URL}/auth/login`, {
-        method:      "POST",
-        headers:     { "Content-Type": "application/json" },
-        body:        JSON.stringify({ email: creds.email, password: creds.password }),
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: creds.email, password: creds.password }),
         credentials: "include",
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Login failed");
 
       /* Flexible extraction */
-      const user  = data?.user ?? data?.data?.user ?? (data?._id ? data : null);
+      const user = data?.user ?? data?.data?.user ?? (data?._id ? data : null);
       const token = data?.token ?? data?.accessToken ?? data?.data?.token ?? data?.data?.accessToken ?? null;
 
-      if (!user)  throw new Error("Unexpected server response — no user returned");
+      if (!user) throw new Error("Unexpected server response — no user returned");
       if (user.role !== "admin" && user.role !== "superadmin")
         throw new Error("Unauthorized: Admin access only");
 
@@ -82,6 +87,7 @@ const Login = ({ onLogin }) => {
                 value={creds.email} onChange={handleChange}
                 className={styles.input} required autoComplete="email"/>
             </div>
+
             <div className={styles.inputWrapper}>
               <svg className={styles.inputIcon} viewBox="0 0 24 24" fill="none">
                 <rect x="5" y="11" width="14" height="11" rx="2" stroke="currentColor" strokeWidth="1.5"/>
@@ -89,9 +95,36 @@ const Login = ({ onLogin }) => {
                   stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                 <circle cx="12" cy="16" r="1.5" fill="currentColor"/>
               </svg>
-              <input type="password" name="password" placeholder="Password"
-                value={creds.password} onChange={handleChange}
-                className={styles.input} required autoComplete="current-password"/>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Password"
+                value={creds.password}
+                onChange={handleChange}
+                className={styles.input}
+                required
+                autoComplete="current-password"
+              />
+              {/* 👇 Password toggle button */}
+              <button
+                type="button"
+                className={styles.passwordToggle}
+                onClick={togglePasswordVisibility}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                    <line x1="3" y1="3" x2="21" y2="21" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
+              </button>
             </div>
           </div>
 
@@ -108,11 +141,11 @@ const Login = ({ onLogin }) => {
           <button type="submit" className={styles.loginButton} disabled={isLoading}>
             {isLoading ? (<><span className={styles.loader}/><span>Signing in…</span></>) : <span>Enter Atelier</span>}
           </button>
-          {/* <div className={styles.forgotPassword}><a href="/forgot-password">Forgot Password?</a></div> */}
         </form>
         <div className={styles.footer}><p>Authorised Access Only</p></div>
       </div>
     </div>
   );
 };
+
 export default Login;

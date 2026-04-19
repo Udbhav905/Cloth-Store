@@ -86,7 +86,6 @@
   to   { opacity: 1; transform: scale(1); }
 }
 
-
 .loginContainer > *:first-child::before {
   content: 'LUXURIA';
   position: fixed;
@@ -255,6 +254,7 @@
   color: var(--mist);
   pointer-events: none;
   transition: color 0.3s;
+  z-index: 1;
 }
 
 .inputWrapper:focus-within .inputIcon {
@@ -266,13 +266,18 @@
   background: var(--smoke);
   border: 1px solid var(--ash);
   border-radius: 0;
-  padding: 16px 18px 16px 50px;
+  padding: 16px 18px 16px 50px;   /* left padding for icon */
   font-family: var(--font-body);
   font-size: 1.05rem;
   color: var(--cream);
   outline: none;
   transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
   letter-spacing: 0.03em;
+}
+
+/* Special case: password input needs extra right padding for toggle button */
+.inputWrapper:has(.passwordToggle) .input {
+  padding-right: 52px;   /* space for eye icon */
 }
 
 .input::placeholder {
@@ -293,6 +298,39 @@
   -webkit-box-shadow: 0 0 0 100px var(--smoke) inset !important;
   -webkit-text-fill-color: var(--cream) !important;
   caret-color: var(--cream);
+}
+
+/* 👇 PASSWORD TOGGLE BUTTON (NEW) */
+.passwordToggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mist);
+  transition: color 0.2s ease;
+  z-index: 2;
+}
+
+.passwordToggle svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.5;
+}
+
+.passwordToggle:hover {
+  color: var(--gold);
+}
+
+.passwordToggle:focus-visible {
+  outline: 1px solid var(--gold);
+  border-radius: 2px;
 }
 
 /* ── Error Message ── */
@@ -389,7 +427,7 @@
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── Forgot Password ── */
+/* ── Forgot Password ── (commented out in JSX, but style kept) */
 .forgotPassword {
   text-align: center;
 }
@@ -448,6 +486,8 @@
   .welcomeText { font-size: 1.4rem; }
   .loginContainer::before,
   .loginContainer::after { width: 80px; height: 80px; }
+  .passwordToggle { right: 10px; }
+  .passwordToggle svg { width: 16px; height: 16px; }
 }
 
 @media (max-width: 360px) {
