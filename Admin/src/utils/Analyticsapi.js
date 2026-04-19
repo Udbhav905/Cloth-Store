@@ -1,9 +1,10 @@
+import { API_BASE_URL } from "../config";
+import { ADMIN_TOKEN_KEY } from "./AdminApi";
 
-const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:3000/api";
-
+const BASE_URL = API_BASE_URL;
 
 const getAuthToken = () => {
-  return localStorage.getItem("token") || localStorage.getItem("authToken");
+  return localStorage.getItem(ADMIN_TOKEN_KEY) || "";
 };
 
 

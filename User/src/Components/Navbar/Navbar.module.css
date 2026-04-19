@@ -175,11 +175,13 @@
 .iconBtn:hover svg { transform: scale(1.1); }
 
 .badge {
-  position: absolute; top: 8px; right: 6px;
+  position: absolute; top: 4px; right: 4px;
   background: #fff; color: var(--black);
-  font-family: var(--sans); font-size: 9px; font-weight: 500;
-  width: 16px; height: 16px; border-radius: 50%;
+  font-family: var(--sans); font-size: 8px; font-weight: 600;
+  width: 15px; height: 15px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
 .badgeHeart { background: #b84141; color: #fff; }
 
@@ -356,7 +358,12 @@
   position: fixed; inset: 0; background: rgba(10,10,10,0.98);
   backdrop-filter: blur(30px); z-index: 450;
   transform: translateY(100%); opacity: 0; pointer-events: none;
-  transition: all 0.6s var(--smooth); overflow-y: auto;
+  transition: all 0.6s var(--smooth); 
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  height: 100vh;
+  width: 100%;
 }
 .mobileMenuOpen { transform: translateY(0); opacity: 1; pointer-events: auto; }
 .mobileCloseBtn {
@@ -459,67 +466,46 @@
   }
 
   .navInner { padding: 0 0.75rem; }
+  .navRight { gap: 4px; }
 
   .iconBtn { width: 32px; height: 32px; }
   .iconBtn svg { width: 14px; height: 14px; }
-
-  .mobileMenuInner { padding: 70px 14px 40px; }
-  .mobileSectionLink { font-size: 15px; }
-  .mobileSectionTitle { font-size: 8px; }
-  .mobileSignIn { font-size: 9px; padding: 10px; letter-spacing: 0.2em; }
-  .mobileFooterCities { font-size: 8px; letter-spacing: 0.2em; }
-
-}
-/* 320px */
-@media (max-width: 320px) {
-  :root { --nav-h: 52px; }
-
-  .logoText { font-size: 12px; letter-spacing: 0.14em; }
-  .navInner { padding: 0 0.6rem; }
-
-  .iconBtn { width: 28px; height: 28px; }
-  .iconBtn svg { width: 12px; height: 12px; }
-
-  .mobileMenuInner { padding: 70px 12px 40px; }
-  .mobileSectionLink { font-size: 14px; }
-  .mobileSignIn { font-size: 8px; letter-spacing: 0.16em; }
-}
-
-/* removed */
-@media (max-width: 380px) {
-  :root { --nav-h: 56px; }
-
-  .logoText {
-    font-size: 14px;
-    letter-spacing: 0.18em;
+  
+  .badge {
+    width: 12px; height: 12px;
+    font-size: 7px;
+    top: 2px; right: 2px;
   }
 
-  .navInner { padding: 0 0.75rem; }
-
-  .iconBtn { width: 32px; height: 32px; }
-  .iconBtn svg { width: 14px; height: 14px; }
-
   .mobileMenuInner { padding: 70px 14px 40px; }
   .mobileSectionLink { font-size: 15px; }
   .mobileSectionTitle { font-size: 8px; }
   .mobileSignIn { font-size: 9px; padding: 10px; letter-spacing: 0.2em; }
   .mobileFooterCities { font-size: 8px; letter-spacing: 0.2em; }
-}
 
-/* 320px */
+}
 @media (max-width: 320px) {
   :root { --nav-h: 52px; }
 
   .logoText { font-size: 12px; letter-spacing: 0.14em; }
-  .navInner { padding: 0 0.6rem; }
+  .navInner { padding: 0 0.5rem; }
+  .navRight { gap: 2px; }
 
   .iconBtn { width: 28px; height: 28px; }
   .iconBtn svg { width: 12px; height: 12px; }
+  
+  .badge {
+    width: 11px; height: 11px;
+    font-size: 6px;
+    top: 1px; right: 1px;
+  }
 
-  .mobileMenuInner { padding: 70px 12px 40px; }
+  .mobileMenuInner { padding: 70px 10px 40px; }
   .mobileSectionLink { font-size: 14px; }
   .mobileSignIn { font-size: 8px; letter-spacing: 0.16em; }
 }
+
+
 
 /* removed */
 

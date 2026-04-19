@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
 import styles from "./Categories.module.css";
+import { API_BASE_URL, IMAGE_BASE_URL } from "../../config";
+import { ADMIN_TOKEN_KEY } from "../../utils/AdminApi";
+import React, { useState, useEffect } from "react";
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);
@@ -31,8 +33,8 @@ const Categories = () => {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:3000/api/categories", {
+      const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+      const response = await fetch(`${API_BASE_URL}/categories`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -87,7 +89,7 @@ const Categories = () => {
     e.preventDefault();
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem(ADMIN_TOKEN_KEY);
       const formDataToSend = new FormData();
 
       const appendIfExists = (key, value) => {
@@ -117,8 +119,8 @@ const Categories = () => {
       }
 
       const url = editingId
-        ? `http://localhost:3000/api/categories/${editingId}`
-        : "http://localhost:3000/api/categories";
+        ? `${API_BASE_URL}/categories/${editingId}`
+        : `${API_BASE_URL}/categories`;
 
       const method = editingId ? "PUT" : "POST";
 
@@ -170,9 +172,9 @@ const Categories = () => {
       return;
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem(ADMIN_TOKEN_KEY);
       const response = await fetch(
-        `http://localhost:3000/api/categories/${id}`,
+        `${API_BASE_URL}/categories/${id}`,
         {
           method: "DELETE",
           headers: {
@@ -248,7 +250,7 @@ const Categories = () => {
               src={
                 category.image.startsWith("http")
                   ? category.image
-                  : `http://localhost:3000${category.image}`
+                  : `${IMAGE_BASE_URL}${category.image}`
               }
               alt={category.name}
               className={styles.categoryImage}
@@ -553,7 +555,7 @@ const Categories = () => {
                   src={
                     selectedCategory.image.startsWith("http")
                       ? selectedCategory.image
-                      : `http://localhost:3000${selectedCategory.image}`
+                      : `${IMAGE_BASE_URL}${selectedCategory.image}`
                   }
                   alt={selectedCategory.name}
                   className={styles.modalImage}

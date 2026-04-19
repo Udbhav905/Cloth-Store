@@ -5,6 +5,8 @@ import {
 } from "recharts";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { API_BASE_URL } from "../../config";
+import { ADMIN_TOKEN_KEY } from "../../utils/AdminApi";
 import styles from "./Analytics.module.css";
 
 export default function Analytics() {
@@ -22,8 +24,8 @@ export default function Analytics() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch("/api/orders/admin/all?limit=1000", {
-        headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+      const response = await fetch(`${API_BASE_URL}/orders/admin/all?limit=1000`, {
+        headers: { "Authorization": `Bearer ${localStorage.getItem(ADMIN_TOKEN_KEY)}` }
       });
 
       if (!response.ok) throw new Error("Failed to fetch orders");
@@ -46,8 +48,8 @@ export default function Analytics() {
 
   const fetchProductAnalytics = useCallback(async () => {
     try {
-      const response = await fetch("/api/products?limit=1000", {
-        headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+      const response = await fetch(`${API_BASE_URL}/products?limit=1000`, {
+        headers: { "Authorization": `Bearer ${localStorage.getItem(ADMIN_TOKEN_KEY)}` }
       });
 
       if (!response.ok) throw new Error("Failed to fetch products");

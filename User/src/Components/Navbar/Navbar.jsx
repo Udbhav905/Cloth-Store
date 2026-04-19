@@ -204,6 +204,19 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
+  // Lock body scroll when menu or mega drawer is open
+  useEffect(() => {
+    if (drawerOpen || menuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [drawerOpen, menuOpen]);
+
   const handleCollectionsEnter = () => {
     clearTimeout(drawerTimerRef.current);
     setDrawerOpen(true);

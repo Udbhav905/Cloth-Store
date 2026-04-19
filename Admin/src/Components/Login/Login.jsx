@@ -1,7 +1,8 @@
 /* Components/Login/Login.jsx — ADMIN */
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ADMIN_USER_KEY, ADMIN_TOKEN_KEY } from "../../utils/Adminapi";
+import { ADMIN_USER_KEY, ADMIN_TOKEN_KEY } from "../../utils/AdminApi";
+import { API_BASE_URL } from "../../config";
 import styles from "./Login.module.css";
 
 const Login = ({ onLogin }) => {
@@ -20,7 +21,7 @@ const Login = ({ onLogin }) => {
     setIsLoading(true);
     setError("");
     try {
-      const res  = await fetch("http://localhost:3000/api/auth/login", {
+      const res  = await fetch(`${API_BASE_URL}/auth/login`, {
         method:      "POST",
         headers:     { "Content-Type": "application/json" },
         body:        JSON.stringify({ email: creds.email, password: creds.password }),

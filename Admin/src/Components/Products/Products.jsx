@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import styles from "./Products.module.css";
+import { API_BASE_URL } from "../../config";
 
 /* ── Admin token key — must match adminApi.js ── */
 const ADMIN_TOKEN_KEY = "luxuria_admin_token";
@@ -134,9 +135,7 @@ const Products = () => {
   }, [showAddForm]);
 
   /* ══════════════════════════════════════════════════════
-     BUG 1 FIX: query params were built but never sent.
-     The URL was always `http://localhost:3000/api/products`
-     without `?${q}` appended.
+     The URL is dynamically set via API_BASE_URL
   ══════════════════════════════════════════════════════ */
   const fetchProducts = async () => {
     try {
@@ -150,8 +149,8 @@ const Products = () => {
         ...(filters.isFeatured !== "" && { isFeatured: filters.isFeatured }),
       });
 
-      /* FIX: was `api/products` — query string was never appended */
-      const res = await fetch(`http://localhost:3000/api/products?${q}`, {
+      /* FIX: query string appended */
+      const res = await fetch(`${API_BASE_URL}/products?${q}`, {
         headers: { Authorization: `Bearer ${token}` },
         /* NO credentials:"include" */
       });
@@ -168,7 +167,7 @@ const Products = () => {
   const fetchCategories = async () => {
     try {
       const token = getToken();
-      const res = await fetch("http://localhost:3000/api/categories", {
+      const res = await fetch(`${API_BASE_URL}/categories`, {
         headers: { Authorization: `Bearer ${token}` },
         /* NO credentials:"include" */
       });
@@ -360,8 +359,8 @@ const Products = () => {
       });
 
       const url = editingId
-        ? `http://localhost:3000/api/products/${editingId}`
-        : "http://localhost:3000/api/products";
+        ? `${API_BASE_URL}/products/${editingId}`
+        : `${API_BASE_URL}/products`;
       const method = editingId ? "PUT" : "POST";
 
       const res = await fetch(url, {
@@ -399,7 +398,7 @@ const Products = () => {
       /* Fetch full product details — list endpoint omits many fields */
       const token = getToken();
       const res = await fetch(
-        `http://localhost:3000/api/products/${product._id}`,
+        `${API_BASE_URL}/products/${product._id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
@@ -462,7 +461,7 @@ const Products = () => {
     if (!window.confirm("Remove this product from the catalogue?")) return;
     try {
       const token = getToken();
-      const res = await fetch(`http://localhost:3000/api/products/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/products/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

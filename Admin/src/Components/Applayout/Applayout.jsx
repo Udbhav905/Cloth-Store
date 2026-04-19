@@ -1,7 +1,7 @@
 /* Components/AppLayout/AppLayout.jsx */
 import React, { useState, useEffect, useCallback } from "react";
 import Sidebar from "../Sidebar/Sidebar";
-import styles from "./AppLayout.module.css";
+import styles from "./Applayout.module.css";
 
 export default function AppLayout({ children, user, onLogout }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

@@ -9,7 +9,8 @@ import AdminReviews from "./Components/AdminReviews/Adminreviews";
 
 import Products   from "./Components/Products/Products";
 import Orders     from "./Components/Order/Order";
-import { ADMIN_USER_KEY, ADMIN_TOKEN_KEY, clearAdminSession, getAdminToken } from "./utils/Adminapi";
+import { ADMIN_USER_KEY, ADMIN_TOKEN_KEY, clearAdminSession, getAdminToken } from "./utils/AdminApi";
+import { API_BASE_URL } from "./config";
 import "./App.css";
 import AppLayout from "./Components/Applayout/Applayout";
 import DeliveryPartner from "../src/Components/DeliveryPartner/DeliveryPartner";
@@ -40,7 +41,7 @@ function App() {
   const handleLogout = async () => {
     try {
       const token = getAdminToken();
-      await fetch("http://localhost:3000/api/auth/logout", {
+      await fetch(`${API_BASE_URL}/auth/logout`, {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         credentials: "include",

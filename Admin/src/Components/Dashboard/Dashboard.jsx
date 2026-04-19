@@ -1,7 +1,7 @@
 /* Components/Dashboard/Dashboard.jsx */
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiFetch, clearAdminSession } from "../../utils/Adminapi";
+import { apiFetch, clearAdminSession } from "../../utils/AdminApi";
 import styles from "./Dashboard.module.css";
 
 function fmt(n) {

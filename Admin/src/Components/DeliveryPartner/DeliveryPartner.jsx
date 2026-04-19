@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { API_BASE_URL } from '../../config';
+import { ADMIN_TOKEN_KEY } from '../../utils/AdminApi';
 import styles from './DeliveryPartner.module.css';
-
+import React, { useState, useEffect } from "react";
+import axios from 'axios'
 export default function DeliveryPartner() {
   const [registrationResult, setRegistrationResult] = useState(null);
   const [partners, setPartners] = useState([]);
@@ -25,7 +26,7 @@ export default function DeliveryPartner() {
   });
 
   const getAuthConfig = () => ({
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    headers: { Authorization: `Bearer ${localStorage.getItem(ADMIN_TOKEN_KEY)}` }
   });
 
   const fetchPartners = async () => {
@@ -35,8 +36,8 @@ export default function DeliveryPartner() {
       if (filters.status) params.append('status', filters.status);
       if (filters.search) params.append('search', filters.search);
       if (filters.page) params.append('page', filters.page);
-      
-      const response = await axios.get(`/api/delivery-partners?${params}`, getAuthConfig());
+
+      const response = await axios.get(`${API_BASE_URL}/delivery-partners?${params}`, getAuthConfig());
       setPartners(response.data.data);
       setPagination(response.data.pagination);
       setError(null);
@@ -49,7 +50,7 @@ export default function DeliveryPartner() {
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get('/api/delivery-partners/stats', getAuthConfig());
+      const response = await axios.get(`${API_BASE_URL}/delivery-partners/stats`, getAuthConfig());
       setStats(response.data.data);
     } catch (err) {
       console.error('Failed to fetch stats:', err);
@@ -61,29 +62,29 @@ export default function DeliveryPartner() {
     fetchStats();
   }, [filters]);
 
-  
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    const response = await axios.post('/api/delivery-partners/register', formData, getAuthConfig());
-    setShowModal(false);
-    resetForm();
-    fetchPartners();
-    fetchStats();
-    
-    if (response.data.data && response.data.data.defaultPassword) {
-      alert(`Delivery partner registered successfully!\n\nLogin Credentials:\nEmail: ${formData.email}\nPassword: ${response.data.data.defaultPassword}\n\nPlease share these credentials with the delivery partner.`);
-    } else {
-      alert('Delivery partner registered successfully!');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post(`${API_BASE_URL}/delivery-partners/register`, formData, getAuthConfig());
+      setShowModal(false);
+      resetForm();
+      fetchPartners();
+      fetchStats();
+
+      if (response.data.data && response.data.data.defaultPassword) {
+        alert(`Delivery partner registered successfully!\n\nLogin Credentials:\nEmail: ${formData.email}\nPassword: ${response.data.data.defaultPassword}\n\nPlease share these credentials with the delivery partner.`);
+      } else {
+        alert('Delivery partner registered successfully!');
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to register');
     }
-  } catch (err) {
-    alert(err.response?.data?.message || 'Failed to register');
-  }
-};
+  };
 
   const handleStatusChange = async (id, status) => {
     try {
-      await axios.patch(`/api/delivery-partners/${id}/status`, { status }, getAuthConfig());
+      await axios.patch(`${API_BASE_URL}/delivery-partners/${id}/status`, { status }, getAuthConfig());
       fetchPartners();
       fetchStats();
     } catch (err) {
@@ -94,7 +95,7 @@ const handleSubmit = async (e) => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure?')) {
       try {
-        await axios.delete(`/api/delivery-partners/${id}`, getAuthConfig());
+        await axios.delete(`${API_BASE_URL}/delivery-partners/${id}`, getAuthConfig());
         fetchPartners();
         fetchStats();
         alert('Deleted successfully!');
