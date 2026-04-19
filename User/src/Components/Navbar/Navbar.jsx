@@ -204,16 +204,19 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  // Lock body scroll when menu or mega drawer is open
+  // Lock body scroll and stop Lenis when menu or mega drawer is open
   useEffect(() => {
     if (drawerOpen || menuOpen) {
       document.body.style.overflow = "hidden";
+      window.lenis?.stop();
     } else {
       document.body.style.overflow = "unset";
+      window.lenis?.start();
     }
     
     return () => {
       document.body.style.overflow = "unset";
+      window.lenis?.start();
     };
   }, [drawerOpen, menuOpen]);
 
@@ -513,6 +516,7 @@ export default function Navbar() {
           className={`${styles.drawer} ${drawerOpen ? styles.drawerOpen : ""}`}
           onMouseEnter={handleDrawerEnter}
           onMouseLeave={handleDrawerLeave}
+          data-lenis-prevent
         >
           <div className={styles.drawerInner}>
             <div className={styles.drawerEditorial}>
@@ -616,6 +620,7 @@ export default function Navbar() {
       {/* MOBILE MENU */}
       <div
         className={`${styles.mobileMenu} ${menuOpen ? styles.mobileMenuOpen : ""}`}
+        data-lenis-prevent
       >
         <button
           className={styles.mobileCloseBtn}

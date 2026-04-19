@@ -362,6 +362,7 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  touch-action: pan-y;
   height: 100vh;
   width: 100%;
 }
