@@ -1,7 +1,10 @@
 import { sendEmail } from "./sendEmail.js";
 
 export const sendPasswordResetEmail = async (email, resetToken, userName) => {
-  const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+  const baseUrl = process.env.FRONTEND_URL.endsWith('/') 
+    ? process.env.FRONTEND_URL.slice(0, -1) 
+    : process.env.FRONTEND_URL;
+  const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
