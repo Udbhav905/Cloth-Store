@@ -37,6 +37,26 @@ const SLIDES = [
 
 const DURATION = 6000;
 
+const SplitText = ({ text, delayOffset = 0 }) => {
+  return (
+    <span className={styles.splitText}>
+      {text.split("").map((char, i) => (
+        <span 
+          key={i} 
+          className={styles.charWrapper}
+        >
+          <span 
+              className={styles.char}
+              style={{ animationDelay: `${delayOffset + i * 0.03}s` }}
+          >
+              {char === " " ? "\u00A0" : char}
+          </span>
+        </span>
+      ))}
+    </span>
+  );
+};
+
 export default function Herosection() {
   const [current, setCurrent] = useState(0);
   const [prev, setPrev] = useState(null);
@@ -44,7 +64,6 @@ export default function Herosection() {
   
   const timerRef = useRef(null);
   const heroRef = useRef(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const changeSlide = useCallback((nextIdx) => {
     if (isTransitioning || nextIdx === current) return;
@@ -75,27 +94,8 @@ export default function Herosection() {
     const { width, height, left, top } = heroRef.current.getBoundingClientRect();
     const x = (e.clientX - left) / width - 0.5;
     const y = (e.clientY - top) / height - 0.5;
-    setMousePos({ x, y });
-  };
-
-  const SplitText = ({ text, delayOffset = 0 }) => {
-    return (
-      <span className={styles.splitText}>
-        {text.split("").map((char, i) => (
-          <span 
-            key={i} 
-            className={styles.charWrapper}
-          >
-            <span 
-                className={styles.char}
-                style={{ animationDelay: `${delayOffset + i * 0.03}s` }}
-            >
-                {char === " " ? "\u00A0" : char}
-            </span>
-          </span>
-        ))}
-      </span>
-    );
+    heroRef.current.style.setProperty('--mouse-x', x);
+    heroRef.current.style.setProperty('--mouse-y', y);
   };
 
   return (
@@ -122,7 +122,7 @@ export default function Herosection() {
                                 backgroundImage: `url(${slide.img})`,
                                 backgroundPosition: slide.pos,
                                 transform: isActive 
-                                    ? `scale(1.05) translate(${mousePos.x * 15}px, ${mousePos.y * 15}px)` 
+                                    ? `scale(1.05) translate(calc(var(--mouse-x, 0) * 15px), calc(var(--mouse-y, 0) * 15px))` 
                                     : `scale(1.15) translate(0,0)`
                             }} 
                         />

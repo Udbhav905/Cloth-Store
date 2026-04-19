@@ -52,8 +52,9 @@
   width: 600px;
   height: 600px;
   border-radius: 50%;
-  filter: blur(120px);
   opacity: 0.15;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .blob1 {

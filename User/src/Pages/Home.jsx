@@ -1,8 +1,8 @@
 import { lazy, Suspense } from "react";
 
 import HeroSection from "../Components/Herosection/Herosection";
+import CategoryShowcase from "../Components/CategoryShowcase/CategoryShowcase";
 
-const CategoryShowcase = lazy(() => import("../Components/CategoryShowcase/CategoryShowcase"));
 const Trending         = lazy(() => import("../Components/Trending/Trending"));
 const NewArrivals      = lazy(() => import("../Components/Newarrivals/Newarrivals"));
 const ShopByCategory   = lazy(() => import("../Components/ShopByCategory/ShopByCategory"));
@@ -33,10 +33,7 @@ const Home = () => {
       {/* Hero — eager, no Suspense needed */}
       <HeroSection />
 
-      {/* All below-fold sections are now lazy */}
-      <Suspense fallback={<SectionSkeleton height="480px" />}>
-        <CategoryShowcase />
-      </Suspense>
+      <CategoryShowcase />
       
       <Suspense fallback={<SectionSkeleton height="500px" />}>
         <Trending />
