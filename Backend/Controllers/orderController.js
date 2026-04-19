@@ -121,6 +121,16 @@ export const createOrder = async (req, res) => {
     }
 
     const populatedOrder = await Order.findById(order._id).populate("userId", "name email mobileNo");
+
+    // Send order confirmation/received email
+    try {
+      if (populatedOrder && populatedOrder.userId) {
+        await sendOrderConfirmationEmail(populatedOrder.userId.email, populatedOrder);
+      }
+    } catch (emailErr) {
+      console.error("Error sending initial order email:", emailErr);
+    }
+
     res.status(201).json(populatedOrder);
   } catch (error) {
     console.error("Order creation error:", error);
@@ -201,10 +211,22 @@ export const updateOrderStatus = async (req, res) => {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Order not found" });
 
+    const prev = order.orderStatus;
     order.orderStatus = status;
     order.statusHistory.push({ status, note, changedAt: new Date(), changedBy: req.user._id });
 
     if (status === "delivered") order.deliveredAt = new Date();
+
+    if (status === "confirmed" && prev !== "confirmed") {
+      try {
+        const populatedOrder = await Order.findById(order._id).populate("userId", "email name");
+        if (populatedOrder && populatedOrder.userId) {
+          await sendOrderConfirmationEmail(populatedOrder.userId.email, populatedOrder);
+        }
+      } catch (emailErr) {
+        console.error("Error sending order email in updateOrderStatus:", emailErr);
+      }
+    }
 
     if (status === "cancelled") {
       order.cancelledAt = new Date();
