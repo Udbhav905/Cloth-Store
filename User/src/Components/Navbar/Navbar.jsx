@@ -52,7 +52,6 @@ export default function Navbar() {
   const drawerTimerRef = useRef(null);  
   const searchRef = useRef(null);
   const profileRef = useRef(null);
-  const cursorRef = useRef(null);
 
   useEffect(() => {
     console.log("🛒 Cart updated in Navbar:");
@@ -222,17 +221,6 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const move = (e) => {
-      if (cursorRef.current) {
-        cursorRef.current.style.left = `${e.clientX}px`;
-        cursorRef.current.style.top = `${e.clientY}px`;
-      }
-    };
-    window.addEventListener("mousemove", move, { passive: true });
-    return () => window.removeEventListener("mousemove", move);
-  }, []);
-
-  useEffect(() => {
     if (searchOpen && searchRef.current) searchRef.current.focus();
   }, [searchOpen]);
 
@@ -251,10 +239,10 @@ export default function Navbar() {
   };
 
   const handleDrawerLeave = () => {
-  drawerTimerRef.current = setTimeout(() => setDrawerOpen(false), 250); // was 120
-};
+    drawerTimerRef.current = setTimeout(() => setDrawerOpen(false), 500); 
+  };
 
-const handleDrawerEnter = () => clearTimeout(drawerTimerRef.current);
+  const handleDrawerEnter = () => clearTimeout(drawerTimerRef.current);
   const handleLogout = async () => {
     setProfileOpen(false);
     await logout();
@@ -312,8 +300,6 @@ const handleDrawerEnter = () => clearTimeout(drawerTimerRef.current);
 
   return (
     <>
-      <div className={styles.cursor} ref={cursorRef} />
-
       <div className={styles.marqueeStrip}>
         <div className={styles.marqueeTrack}>
           {Array(8)

@@ -23,19 +23,6 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-.cursor {
-  position: fixed;
-  width: 12px;
-  height: 12px;
-  background: var(--accent);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 99999;
-  transform: translate(-50%, -50%);
-  transition: width 0.2s, height 0.2s;
-  mix-blend-mode: difference;
-}
-
 .marqueeStrip {
   background: var(--text-light);
   height: var(--strip-h);
@@ -417,8 +404,10 @@
   .drawerCategories { grid-template-columns: repeat(2, 1fr); padding: 40px; gap: 30px; }
 }
 @media (max-width: 860px) {
-  .navInner { padding: 0 1.5rem; }
+  .navInner { padding: 0 1.5rem; display: flex; justify-content: space-between; }
   .collectionsBtn, .drawer, .signInBtn span { display: none; }
+  .navLeft { display: none; }
+  .navCenter { justify-content: flex-start; }
   .signInBtn { padding: 8px; border-radius: 50%; }
   .hamburger { display: flex; }
   .searchWrapOpen .searchInput { width: 140px; }
@@ -466,16 +455,7 @@
   .mobileSignIn { font-size: 8px; letter-spacing: 0.16em; }
 }
 
-/* Custom cursor - only on desktop */
-@media (min-width: 860px) {
-  body {
-    cursor: none;
-  }
-  
-  a, button, [role="button"], .drawerLink, .mobileSectionLink {
-    cursor: pointer;
-  }
-}
+/* removed */
 @media (max-width: 380px) {
   :root { --nav-h: 56px; }
 
@@ -511,16 +491,7 @@
   .mobileSignIn { font-size: 8px; letter-spacing: 0.16em; }
 }
 
-/* Custom cursor - only on desktop */
-@media (min-width: 860px) {
-  body {
-    cursor: none;
-  }
-  
-  a, button, [role="button"], .drawerLink, .mobileSectionLink {
-    cursor: pointer;
-  }
-}
+/* removed */
 
 /* Add to your CSS file - ensure proper z-index and positioning */
 
