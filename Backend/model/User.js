@@ -2,9 +2,6 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-/* ─────────────────────────────────────────────
-   Address Schema
-───────────────────────────────────────────── */
 const addressSchema = new mongoose.Schema({
   address1:  { type: String, required: true, trim: true },
   address2:  { type: String, trim: true },
@@ -15,9 +12,6 @@ const addressSchema = new mongoose.Schema({
   isDefault: { type: Boolean, default: false },
 }, { _id: true });
 
-/* ─────────────────────────────────────────────
-   Cart Item Schema
-───────────────────────────────────────────── */
 const cartItemSchema = new mongoose.Schema({
   productId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -32,9 +26,7 @@ const cartItemSchema = new mongoose.Schema({
   image:    String,
 }, { _id: false });
 
-/* ─────────────────────────────────────────────
-   User Schema
-───────────────────────────────────────────── */
+
 const userSchema = new mongoose.Schema({
 
   name: {

@@ -107,7 +107,7 @@ const Login = ({ onLogin }) => {
           <button type="submit" className={styles.loginButton} disabled={isLoading}>
             {isLoading ? (<><span className={styles.loader}/><span>Signing in…</span></>) : <span>Enter Atelier</span>}
           </button>
-          <div className={styles.forgotPassword}><a href="/forgot-password">Forgot Password?</a></div>
+          {/* <div className={styles.forgotPassword}><a href="/forgot-password">Forgot Password?</a></div> */}
         </form>
         <div className={styles.footer}><p>Authorised Access Only</p></div>
       </div>
