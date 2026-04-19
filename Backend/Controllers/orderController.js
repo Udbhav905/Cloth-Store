@@ -2,6 +2,7 @@ import Order from "../model/Order.js";
 import Cart from "../model/Cart.js";
 import Product from "../model/Product.js";
 import DeliveryPartner from "../model/DeliveryPartner.js";
+import { sendOrderConfirmationEmail } from "../utils/emailService.js";
 
 /* ═══════════════════════════════════════════════════════════
    CUSTOMER CONTROLLERS
@@ -466,6 +467,19 @@ export const adminUpdateStatus = async (req, res) => {
     }
 
     await order.save();
+
+    // Send order confirmation email if status is confirmed
+    if (orderStatus === "confirmed" && prev !== "confirmed") {
+      try {
+        const populatedOrder = await Order.findById(order._id).populate("userId", "email name");
+        if (populatedOrder && populatedOrder.userId) {
+          await sendOrderConfirmationEmail(populatedOrder.userId.email, populatedOrder);
+        }
+      } catch (emailErr) {
+        console.error("Error sending order confirmation email by admin:", emailErr);
+      }
+    }
+
     const updated = await Order.findById(order._id)
       .populate("userId", "name email mobileNo")
       .lean();

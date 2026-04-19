@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import Order from "../model/Order.js";
+import { sendOrderConfirmationEmail } from "../utils/emailService.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -91,6 +92,16 @@ export const verifyPayment = async (req, res) => {
           changedBy: req.user._id,
         });
         await order.save();
+
+        // Send order confirmation email
+        try {
+          const populatedOrder = await Order.findById(order._id).populate("userId", "email name");
+          if (populatedOrder && populatedOrder.userId) {
+            await sendOrderConfirmationEmail(populatedOrder.userId.email, populatedOrder);
+          }
+        } catch (emailErr) {
+          console.error("Error sending order confirmation email:", emailErr);
+        }
       }
     }
 
@@ -150,6 +161,16 @@ export const stripeWebhook = async (req, res) => {
           });
           await order.save();
           console.log(`[webhook] Order ${order.orderNumber} marked paid.`);
+
+          // Send order confirmation email
+          try {
+            const populatedOrder = await Order.findById(order._id).populate("userId", "email name");
+            if (populatedOrder && populatedOrder.userId) {
+              await sendOrderConfirmationEmail(populatedOrder.userId.email, populatedOrder);
+            }
+          } catch (emailErr) {
+            console.error("Error sending order confirmation email in webhook:", emailErr);
+          }
         }
         break;
       }
