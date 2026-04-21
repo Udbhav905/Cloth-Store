@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import img1 from "../../assets/men.png";
-import img2 from "../../assets/women.jpg";
+import img2 from "../../assets/women-cat.jpg";
 import img3 from "../../assets/medium-shot-man-posing-outdoors.jpg";
 import styles from "./Herosection.module.css";
 import { Link } from "react-router-dom";

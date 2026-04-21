@@ -66,13 +66,10 @@ function PageSkeleton() {
   );
 }
 
-// ── Smooth Scroll Wrapper with Optimized Settings for Quick Clicks ──────────
-// ── Smooth Scroll Wrapper with Optimized Settings for Quick Clicks ──────────
 function ScrollProvider({ children }) {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    // Initialize Lenis with OPTIMIZED settings for better click responsiveness
     const lenis = new Lenis({
       duration: 1.5, // increased duration for smoother follow-through
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // slightly sharper easing
@@ -87,10 +84,8 @@ function ScrollProvider({ children }) {
       syncTouch: true,
     });
 
-    // Expose lenis globally so other components can control it
     window.lenis = lenis;
 
-    // RAF loop for smooth scroll
     let rafId;
     function raf(time) {
       lenis.raf(time);
@@ -98,7 +93,6 @@ function ScrollProvider({ children }) {
     }
     rafId = requestAnimationFrame(raf);
 
-    // Scroll to top on route change
     setTimeout(() => {
       lenis.scrollTo(0, { 
         immediate: false,
@@ -117,7 +111,6 @@ function ScrollProvider({ children }) {
   return <div className={styles.appContainer}>{children}</div>;
 }
 
-// ── Error Boundary for better UX ───────────────────────────────────────────
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -154,15 +147,11 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// ── Analytics Wrapper (optional - add your analytics) ─────────────────────
 function AnalyticsProvider({ children }) {
   const location = useLocation();
 
   useEffect(() => {
-    // Track page views
     console.log(`Page viewed: ${location.pathname}`);
-    // You can add Google Analytics, Mixpanel, etc. here
-    // Example: gtag('config', 'GA_MEASUREMENT_ID', { page_path: location.pathname });
   }, [location]);
 
   return <>{children}</>;
