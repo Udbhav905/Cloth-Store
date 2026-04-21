@@ -123,6 +123,23 @@ function Card({ product: p, idx, onPause, onResume }) {
   );
 }
 
+/* ── Error state ── */
+function ErrorState({ message, onRetry }) {
+  return (
+    <div className={styles.errorWrap}>
+      <span className={styles.errorDiamond}>◆</span>
+      <p className={styles.errorText}>{message}</p>
+      <button className={styles.retryBtn} onClick={onRetry}>
+        Retry
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <polyline points="1 4 1 10 7 10" />
+          <path d="M3.51 15a9 9 0 1 0 .49-3" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 /* ════════════════════════════════════
    MAIN COMPONENT
 ════════════════════════════════════ */
@@ -130,12 +147,23 @@ export default function NewArrivals() {
   const [sectionRef, inView] = useInView(0.05);
 
   /* ── Real data from store ── */
-  const { newArrivals, newArrivalsLoading, fetchNewArrivals } = useProductStore();
+  const { 
+    newArrivals, 
+    newArrivalsLoading, 
+    newArrivalsError, 
+    fetchLandingPageData 
+  } = useProductStore();
 
-  /* Fetch eagerly on mount — 5-min cache prevents redundant calls */
-  useEffect(() => { fetchNewArrivals(); }, []);
+  /* Fetch eagerly on mount — store caches for 5 min automatically */
+  useEffect(() => { 
+    fetchLandingPageData(); 
+  }, [fetchLandingPageData]);
 
   const isLoading = newArrivalsLoading && newArrivals.length === 0;
+  const hasError  = !newArrivalsLoading && !!newArrivalsError && newArrivals.length === 0;
+  const isEmpty   = !newArrivalsLoading && !newArrivalsError && newArrivals.length === 0 && !isLoading;
+
+  const onRetry = () => fetchLandingPageData({ force: true });
 
   /* Double the array for seamless infinite loop */
   const ITEMS = [...newArrivals, ...newArrivals];
@@ -223,20 +251,27 @@ export default function NewArrivals() {
         <div className={`${styles.fade} ${styles.fadeL}`} />
         <div className={`${styles.fade} ${styles.fadeR}`} />
 
-        <div ref={trackRef} className={styles.track}>
-          {isLoading
-            ? Array.from({ length: 6 }, (_, i) => <SkeletonCard key={i} />)
-            : ITEMS.map((p, i) => (
-                <Card
-                  key={`${p._id}-${i}`}
-                  product={p}
-                  idx={i % newArrivals.length}
-                  onPause={pause}
-                  onResume={resume}
-                />
-              ))
-          }
-        </div>
+        {hasError || isEmpty ? (
+          <ErrorState 
+            message={hasError ? newArrivalsError : "No new arrivals currently available."} 
+            onRetry={onRetry}
+          />
+        ) : (
+          <div ref={trackRef} className={styles.track}>
+            {isLoading
+              ? Array.from({ length: 6 }, (_, i) => <SkeletonCard key={i} />)
+              : ITEMS.map((p, i) => (
+                  <Card
+                    key={`${p._id}-${i}`}
+                    product={p}
+                    idx={i % newArrivals.length}
+                    onPause={pause}
+                    onResume={resume}
+                  />
+                ))
+            }
+          </div>
+        )}
       </div>
 
       {/* Bottom ornament */}

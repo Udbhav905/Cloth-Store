@@ -10,7 +10,11 @@ const LIST_SELECT  = "name slug mainImage basePrice discountType discountValue a
 const CARD_SELECT  = "name slug mainImage basePrice discountType discountValue averageRating totalReviews totalStock category";
 
 const bustProductCache = () => {
-  ["featured", "new-arrivals", "best-sellers"].forEach((k) => cache.del(k));
+  try {
+    ["featured", "new-arrivals", "best-sellers", "home-data"].forEach((k) => cache.del(k));
+  } catch (err) {
+    console.error("Cache busting error:", err);
+  }
 };
 
 export const createProduct = async (req, res) => {
@@ -118,7 +122,6 @@ export const getProducts = async (req, res) => {
   }
 };
 
-
 export const getProductById = async (req, res) => {
   try {
     const [product, reviews] = await Promise.all([
@@ -189,13 +192,8 @@ export const getProductsByCategory = async (req, res) => {
       return res.status(404).json({ message: "Category not found" });
     }
     
-    console.log(`🔍 Found category: ${category.name} (ID: ${category._id})`);
-    console.log(`🔍 Parent category: ${category.parentCategory}`);
-    
     const subCategories = await Category.find({ parentCategory: category._id }).lean();
     const subCategoryIds = subCategories.map(sc => sc._id);
-    
-    console.log(`📁 Found ${subCategories.length} subcategories:`, subCategories.map(sc => sc.name));
     
     const query = {
       isActive: true,
@@ -209,13 +207,10 @@ export const getProductsByCategory = async (req, res) => {
       query.$or.push({ subCategory: { $in: subCategoryIds } });
     }
     
-    console.log("📝 Query:", JSON.stringify(query, null, 2));
-    
-    
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const products = await Product.find(query)
       .lean()
-      .select("name slug mainImage basePrice discountType discountValue averageRating totalReviews isBestSeller isNewArrival isFeatured totalStock category subCategory")
+      .select(LIST_SELECT)
       .populate('category', 'name slug')
       .populate('subCategory', 'name slug')
       .sort(sort)
@@ -223,9 +218,6 @@ export const getProductsByCategory = async (req, res) => {
       .limit(parseInt(limit));
     
     const total = await Product.countDocuments(query);
-    
-    console.log(`✅ Found ${products.length} products for category: ${category.name}`);
-    console.log("📦 Products:", products.map(p => ({ name: p.name, category: p.category?.name, subCategory: p.subCategory?.name })));
     
     res.json({
       success: true,
@@ -257,14 +249,6 @@ export const getProductsByCategory = async (req, res) => {
   }
 };
 
-/* ─────────────────────────────────────────────
-   GET PRODUCTS BY SUBCATEGORY
-   GET /api/products/subcategory/:slug
-───────────────────────────────────────────── */
-/* ─────────────────────────────────────────────
-   GET PRODUCTS BY SUBCATEGORY
-   GET /api/products/subcategory/:slug
-───────────────────────────────────────────── */
 export const getProductsBySubCategory = async (req, res) => {
   try {
     const { slug } = req.params;
@@ -275,8 +259,6 @@ export const getProductsBySubCategory = async (req, res) => {
     if (!subCategory) {
       return res.status(404).json({ message: "Subcategory not found" });
     }
-    
-    console.log(`🔍 Found subcategory: ${subCategory.name} (ID: ${subCategory._id})`);
     
     let parentCategory = null;
     if (subCategory.parentCategory) {
@@ -289,7 +271,7 @@ export const getProductsBySubCategory = async (req, res) => {
       isActive: true 
     })
       .lean()
-      .select("name slug mainImage basePrice discountType discountValue averageRating totalReviews isBestSeller isNewArrival isFeatured totalStock category subCategory")
+      .select(LIST_SELECT)
       .populate('category', 'name slug')
       .populate('subCategory', 'name slug')
       .sort(sort)
@@ -297,8 +279,6 @@ export const getProductsBySubCategory = async (req, res) => {
       .limit(parseInt(limit));
     
     const total = await Product.countDocuments({ subCategory: subCategory._id, isActive: true });
-    
-    console.log(`✅ Found ${products.length} products for subcategory: ${subCategory.name}`);
     
     res.json({
       success: true,
@@ -498,67 +478,141 @@ export const searchProducts = async (req, res) => {
     const skip    = (Number(page) - 1) * Number(limit);
     const keyword = q
       .replace(/(?:under|below|less\s*than|over|above|more\s*than)\s*₹?\$?\d+/gi, "")
-      .trim()
-      .toLowerCase();
+      .trim();
 
-    if (keyword) {
-      filter.$text = { $search: keyword };
+    if (!keyword) {
+      // No keyword — return all active products
+      const [products, total] = await Promise.all([
+        Product.find(filter)
+          .lean()
+          .select(LIST_SELECT)
+          .populate("category",    "name slug")
+          .populate("subCategory", "name slug")
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(Number(limit)),
+        Product.countDocuments(filter),
+      ]);
+
+      return res.status(200).json({
+        products,
+        total,
+        page:  Number(page),
+        limit: Number(limit),
+      });
     }
+
+    // Escape special regex characters for safety
+    const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex   = new RegExp(escaped, "i"); // case-insensitive partial match
+
+    // Step 1: Find categories whose name matches the keyword (e.g. "women", "men")
+    const matchingCategories = await Category.find({
+      name: { $regex: regex },
+    }).lean().select("_id");
+
+    const categoryIds = matchingCategories.map((c) => c._id);
+
+    // Step 2: Build a big $or query for partial matching across all fields
+    const searchFilter = {
+      ...filter,
+      $or: [
+        { name:             { $regex: regex } },
+        { brand:            { $regex: regex } },
+        { fabric:           { $regex: regex } },
+        { description:      { $regex: regex } },
+        { shortDescription: { $regex: regex } },
+        { occasion:         { $regex: regex } },
+        { season:           { $regex: regex } },
+        // Match by category/subcategory ObjectId if their name matches
+        ...(categoryIds.length > 0
+          ? [
+              { category:    { $in: categoryIds } },
+              { subCategory: { $in: categoryIds } },
+            ]
+          : []),
+      ],
+    };
 
     const [products, total] = await Promise.all([
-      Product.find(filter)
+      Product.find(searchFilter)
         .lean()
         .select(LIST_SELECT)
         .populate("category",    "name slug")
         .populate("subCategory", "name slug")
-        .sort(keyword ? { score: { $meta: "textScore" } } : { createdAt: -1 })
+        .sort({ createdAt: -1 })
         .skip(skip)
         .limit(Number(limit)),
-      Product.countDocuments(filter),
+      Product.countDocuments(searchFilter),
     ]);
 
-    let results = products;
-    if (keyword) {
-      const directMatches = new Set(products.map((p) => p._id.toString()));
-
-      const extraProducts = await Product.find({
-        isActive: true,
-        ...(filter.basePrice ? { basePrice: filter.basePrice } : {}),
-        $or: [
-          { brand:   { $regex: keyword, $options: "i" } },
-          { fabric:  { $regex: keyword, $options: "i" } },
-          { occasion:{ $regex: keyword, $options: "i" } },
-          { season:  { $regex: keyword, $options: "i" } },
-        ],
-      })
-        .lean()
-        .select(LIST_SELECT)
-        .populate("category",    "name slug")
-        .populate("subCategory", "name slug")
-        .limit(Number(limit));
-
-      const merged = extraProducts.filter(
-        (p) =>
-          !directMatches.has(p._id.toString()) &&
-          (p.category?.name?.toLowerCase().includes(keyword) ||
-            p.subCategory?.name?.toLowerCase().includes(keyword) ||
-            p.brand?.toLowerCase().includes(keyword) ||
-            p.fabric?.toLowerCase().includes(keyword) ||
-            (p.occasion || []).some((o) => o.toLowerCase().includes(keyword)) ||
-            (p.season   || []).some((s) => s.toLowerCase().includes(keyword)))
-      );
-
-      results = [...products, ...merged];
-    }
-
     return res.status(200).json({
-      products: results,
-      total:    results.length,
-      page:     Number(page),
-      limit:    Number(limit),
+      products,
+      total,
+      page:  Number(page),
+      limit: Number(limit),
     });
   } catch (error) {
     console.error("[searchProducts] error:", error);
     res.status(500).json({ message: error.message });
+  }
+};
+
+export const getHomeData = async (req, res) => {
+  try {
+    const CACHE_KEY = "home-data";
+    let cached = null;
+    try {
+      cached = cache.get(CACHE_KEY);
+    } catch (e) {
+      console.error("Cache read error in getHomeData:", e);
+    }
+    
+    if (cached) return res.json(cached);
+
+    console.log("Fetching landing page data from DB...");
+
+    const [trending, newArrivals, featured, categories] = await Promise.all([
+      Product.find({ isBestSeller: true, isActive: true })
+        .lean()
+        .select(LIST_SELECT)
+        .populate("category", "name slug")
+        .sort({ totalSold: -1 })
+        .limit(10),
+      Product.find({ isNewArrival: true, isActive: true })
+        .lean()
+        .select(LIST_SELECT)
+        .populate("category", "name slug")
+        .sort({ createdAt: -1 })
+        .limit(10),
+      Product.find({ isFeatured: true, isActive: true })
+        .lean()
+        .select(LIST_SELECT)
+        .populate("category", "name slug")
+        .sort({ createdAt: -1 })
+        .limit(10),
+      Category.find({ parentCategory: null, isActive: true })
+        .lean()
+        .select("name slug image description")
+        .sort({ sortOrder: 1 })
+        .limit(10),
+    ]);
+
+    const data = { trending, newArrivals, featured, categories };
+    
+    try {
+      cache.set(CACHE_KEY, data);
+    } catch (e) {
+      console.error("Cache write error in getHomeData:", e);
+    }
+
+    return res.json(data);
+  } catch (error) {
+    console.error("CRITICAL ERROR IN GET HOME DATA:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Internal Server Error fetching landing page data",
+      error: error.message 
+    });
   }
 };

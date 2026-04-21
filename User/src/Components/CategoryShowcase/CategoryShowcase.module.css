@@ -27,6 +27,7 @@
   padding: 140px 0;
   background: var(--black);
   overflow: hidden;
+  contain: layout; /* Isolate this section for paint/layout performance */
 }
 
 .container {
@@ -97,6 +98,7 @@
   text-decoration: none;
   position: relative;
   height: 100%;
+  will-change: transform, opacity; /* Promote to GPU layer for smoother scroll */
 }
 
 .cardVisible {

@@ -244,14 +244,15 @@ useEffect(() => {
 
   // Check if logged-in user can review this product
   useEffect(() => {
-    if (!isLoggedIn || !id) {
+    const token = localStorage.getItem("token");
+    if (!isLoggedIn || !id || !token) {
       setCanReview(false);
       return;
     }
     const checkCanReview = async () => {
       try {
         const res = await fetch(`${API}/reviews/can-review/${id}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } // adjust token key as needed
+          headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {
           const data = await res.json();
@@ -259,7 +260,7 @@ useEffect(() => {
         } else {
           setCanReview(false);
         }
-      } catch (err) {
+      } catch {
         setCanReview(false);
       }
     };

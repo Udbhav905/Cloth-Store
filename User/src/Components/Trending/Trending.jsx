@@ -145,22 +145,35 @@ function ProductCard({ product, index }) {
 
   const handleMouseMove = (e) => {
     if (!innerRef.current) return;
-    const rect = innerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
     
-    const xPct = (x / rect.width - 0.5) * 2; 
-    const yPct = (y / rect.height - 0.5) * 2;
+    // Throttle using requestAnimationFrame
+    if (innerRef.current.rafId) return;
     
-    innerRef.current.style.setProperty('--rx', `${-yPct * 8}deg`);
-    innerRef.current.style.setProperty('--ry', `${xPct * 8}deg`);
-    innerRef.current.style.setProperty('--gx', `${x}px`);
-    innerRef.current.style.setProperty('--gy', `${y}px`);
+    innerRef.current.rafId = requestAnimationFrame(() => {
+      if (!innerRef.current) return;
+      const rect = innerRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const xPct = (x / rect.width - 0.5) * 2; 
+      const yPct = (y / rect.height - 0.5) * 2;
+      
+      innerRef.current.style.setProperty('--rx', `${-yPct * 8}deg`);
+      innerRef.current.style.setProperty('--ry', `${xPct * 8}deg`);
+      innerRef.current.style.setProperty('--gx', `${x}px`);
+      innerRef.current.style.setProperty('--gy', `${y}px`);
+      
+      innerRef.current.rafId = null;
+    });
   };
 
   const handleMouseLeave = () => {
     setHovered(false);
     if (!innerRef.current) return;
+    if (innerRef.current.rafId) {
+      cancelAnimationFrame(innerRef.current.rafId);
+      innerRef.current.rafId = null;
+    }
     innerRef.current.style.setProperty('--rx', `0deg`);
     innerRef.current.style.setProperty('--ry', `0deg`);
   };
@@ -266,17 +279,19 @@ export default function Trending() {
     trending,
     trendingLoading,
     trendingError,
-    fetchTrending,
-    refreshTrending,
+    fetchLandingPageData,
+    landingPageError,
   } = useProductStore();
 
   useEffect(() => {
-    fetchTrending();
-  }, [fetchTrending]);
+    fetchLandingPageData();
+  }, [fetchLandingPageData]);
 
   const isLoading = trendingLoading && trending.length === 0;
-  const hasError  = !trendingLoading && !!trendingError && trending.length === 0;
-  const isEmpty   = !trendingLoading && !trendingError && trending.length === 0;
+  const hasError  = !trendingLoading && (!!trendingError || !!landingPageError) && trending.length === 0;
+  const isEmpty   = !trendingLoading && !trendingError && !landingPageError && trending.length === 0 && !isLoading;
+
+  const onRetry = () => fetchLandingPageData({ force: true });
 
   const TICKER = "TRENDING NOW · THE NEW STANDARD · LUXURY REDEFINED · ";
 
@@ -343,10 +358,10 @@ export default function Trending() {
         <ErrorState
           message={
             hasError
-              ? trendingError
+              ? (trendingError || landingPageError)
               : "No trending products right now. Stay tuned for our latest drops."
           }
-          onRetry={refreshTrending}
+          onRetry={onRetry}
         />
       ) : (
         <div className={styles.grid}>

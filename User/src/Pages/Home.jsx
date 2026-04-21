@@ -1,8 +1,10 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
+import useProductStore from "../store/useProductStore";
 
 import HeroSection from "../Components/Herosection/Herosection";
 import CategoryShowcase from "../Components/CategoryShowcase/CategoryShowcase";
 
+// Lazy components
 const Trending         = lazy(() => import("../Components/Trending/Trending"));
 const NewArrivals      = lazy(() => import("../Components/Newarrivals/Newarrivals"));
 const ShopByCategory   = lazy(() => import("../Components/ShopByCategory/ShopByCategory"));
@@ -28,6 +30,16 @@ function SectionSkeleton({ height = "400px" }) {
 }
 
 const Home = () => {
+  // Use selector for better stability
+  const fetchLandingPageData = useProductStore(state => state.fetchLandingPageData);
+
+  useEffect(() => {
+    if (fetchLandingPageData) {
+      console.log("🚀 Initializing landing page data fetch...");
+      fetchLandingPageData();
+    }
+  }, [fetchLandingPageData]);
+
   return (
     <>
       {/* Hero — eager, no Suspense needed */}

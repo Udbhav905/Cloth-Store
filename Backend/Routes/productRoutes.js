@@ -4,14 +4,15 @@ import {
   getProducts,
   getProductById,
   getProductBySlug,
-  getProductsByCategory ,
+  getProductsByCategory,
   getProductsBySubCategory,
   updateProduct,
   deleteProduct,
   getFeaturedProducts,
   getNewArrivals,
   getBestSellers,
-  searchProducts
+  searchProducts,
+  getHomeData,
 } from "../Controllers/productController.js";
 import { protect, admin } from "../Middleware/authMiddleware.js";
 import upload from "../Middleware/uploadMiddleware.js";
@@ -21,10 +22,11 @@ const router = express.Router();
 router.get("/featured", getFeaturedProducts);
 router.get("/new-arrivals", getNewArrivals);
 router.get("/best-sellers", getBestSellers);
+router.get("/landing-page", getHomeData);
 router.get("/slug/:slug", getProductBySlug);
 router.get("/category/:slug", getProductsByCategory);
 router.get("/subcategory/:slug", getProductsBySubCategory);
-router.get("/search",       searchProducts); 
+router.get("/search", searchProducts);
 
 router.route("/")
   .get(getProducts)
@@ -42,8 +44,8 @@ router.route("/")
 router.route("/:id")
   .get(getProductById)
   .put(
-    protect, 
-    admin, 
+    protect,
+    admin,
     upload.fields([
       { name: "mainImage", maxCount: 1 },
       { name: "galleryImages", maxCount: 5 },

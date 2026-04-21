@@ -37,7 +37,24 @@ const SLIDES = [
 
 const DURATION = 6000;
 
-const SplitText = ({ text, delayOffset = 0 }) => {
+const SplitText = ({ text, delayOffset = 0, splitType = "word" }) => {
+  if (splitType === "word") {
+    return (
+      <span className={styles.splitText}>
+        {text.split(" ").map((word, i) => (
+          <span key={i} className={styles.wordWrapper}>
+            <span 
+              className={styles.word}
+              style={{ animationDelay: `${delayOffset + i * 0.1}s` }}
+            >
+              {word}&nbsp;
+            </span>
+          </span>
+        ))}
+      </span>
+    );
+  }
+  
   return (
     <span className={styles.splitText}>
       {text.split("").map((char, i) => (
@@ -83,20 +100,39 @@ export default function Herosection() {
   }, [current, isTransitioning]);
 
   useEffect(() => {
+    // Preload next images
+    SLIDES.forEach(slide => {
+      const img = new Image();
+      img.src = slide.img;
+    });
+
     timerRef.current = setInterval(() => {
         changeSlide((current + 1) % SLIDES.length);
     }, DURATION);
     return () => clearInterval(timerRef.current);
   }, [changeSlide, current]);
 
+  const rafIdRef = useRef(null);
+
   const handleMouseMove = (e) => {
     if (!heroRef.current) return;
-    const { width, height, left, top } = heroRef.current.getBoundingClientRect();
-    const x = (e.clientX - left) / width - 0.5;
-    const y = (e.clientY - top) / height - 0.5;
-    heroRef.current.style.setProperty('--mouse-x', x);
-    heroRef.current.style.setProperty('--mouse-y', y);
+    
+    if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+    
+    rafIdRef.current = requestAnimationFrame(() => {
+      const { width, height, left, top } = heroRef.current.getBoundingClientRect();
+      const x = (e.clientX - left) / width - 0.5;
+      const y = (e.clientY - top) / height - 0.5;
+      heroRef.current.style.setProperty('--mouse-x', x);
+      heroRef.current.style.setProperty('--mouse-y', y);
+    });
   };
+
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+    };
+  }, []);
 
   return (
     <section 
@@ -121,6 +157,7 @@ export default function Herosection() {
                             style={{ 
                                 backgroundImage: `url(${slide.img})`,
                                 backgroundPosition: slide.pos,
+                                willChange: isActive ? "transform" : "auto",
                                 transform: isActive 
                                     ? `scale(1.05) translate(calc(var(--mouse-x, 0) * 15px), calc(var(--mouse-y, 0) * 15px))` 
                                     : `scale(1.15) translate(0,0)`
@@ -143,11 +180,11 @@ export default function Herosection() {
                     <div key={`content-${slide.id}`} className={`${styles.textWrap} ${isActive ? styles.textActive : styles.textPrev}`}>
                         <div className={styles.tagWrap}>
                             <div className={styles.tagLine} />
-                            <p className={styles.tag}><SplitText text={slide.tag} delayOffset={0.2} /></p>
+                        <p className={styles.tag}><SplitText text={slide.tag} delayOffset={0.2} splitType="char" /></p>
                         </div>
                         
                         <h1 className={styles.title}>
-                            <SplitText text={slide.title} delayOffset={0.4} />
+                            <SplitText text={slide.title} delayOffset={0.4} splitType="word" />
                         </h1>
                         
                         <div className={styles.subWrap}>

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import useCategoryStore from "../../store/Usecategorystore";
+import useProductStore from "../../store/useProductStore";
 import styles from "./ShopByCategory.module.css";
 
 /* ─────────────────────────────────────────────
@@ -220,16 +221,19 @@ export default function ShopByCategory() {
   const [sectionRef, inView]  = useInView(0.08);
   const [headerRef,  headerIn] = useInView(0.2);
 
-  const { categories, loading, error, fetchCategories, refresh } = useCategoryStore();
+  const { fetchLandingPageData, landingPageError, landingPageLoading } = useProductStore();
+  const { categories, loading, error, fetchCategories } = useCategoryStore();
 
   /* Fetch on mount — store caches for 5 min automatically */
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    fetchLandingPageData();
+  }, [fetchLandingPageData]);
 
-  const isLoading = loading && categories.length === 0;
-  const hasError  = !loading && !!error && categories.length === 0;
-  const isEmpty   = !loading && !error && categories.length === 0;
+  const isLoading = (loading || landingPageLoading) && categories.length === 0;
+  const hasError  = (!loading && !landingPageLoading) && (!!error || !!landingPageError) && categories.length === 0;
+  const isEmpty   = (!loading && !landingPageLoading) && !error && !landingPageError && categories.length === 0 && !isLoading;
+
+  const onRetry = () => fetchLandingPageData({ force: true });
 
   /* Grid items — real data or skeletons */
   const gridItems = isLoading
@@ -299,8 +303,8 @@ export default function ShopByCategory() {
       {/* ── Content ── */}
       {hasError || isEmpty ? (
         <ErrorState
-          message={hasError ? error : "No categories found. Add some from your admin panel."}
-          onRetry={refresh}
+          message={hasError ? (error || landingPageError) : "No categories found. Add some from your admin panel."}
+          onRetry={onRetry}
         />
       ) : (
         <div className={styles.grid}>{gridItems}</div>

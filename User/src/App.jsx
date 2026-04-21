@@ -74,14 +74,14 @@ function ScrollProvider({ children }) {
   useEffect(() => {
     // Initialize Lenis with OPTIMIZED settings for better click responsiveness
     const lenis = new Lenis({
-      duration: 0.4,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -8 * t)),
+      duration: 1.2, // increased duration for smoother follow-through
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // slightly sharper easing
       direction: "vertical",
       gestureDirection: "vertical",
       smooth: true,
       smoothTouch: false,
-      touchMultiplier: 0.9,
-      wheelMultiplier: 0.5,
+      touchMultiplier: 2,
+      wheelMultiplier: 1, // Reset to standard for predictable scroll speed
       infinite: false,
       orientation: "vertical",
       syncTouch: true,
