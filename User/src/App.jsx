@@ -74,7 +74,7 @@ function ScrollProvider({ children }) {
   useEffect(() => {
     // Initialize Lenis with OPTIMIZED settings for better click responsiveness
     const lenis = new Lenis({
-      duration: 1.2, // increased duration for smoother follow-through
+      duration: 1.5, // increased duration for smoother follow-through
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // slightly sharper easing
       direction: "vertical",
       gestureDirection: "vertical",
