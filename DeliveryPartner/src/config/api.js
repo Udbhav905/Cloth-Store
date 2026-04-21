@@ -1,3 +1,3 @@
-const API_BASE_URL = 'http://localhost:3000'; // Your backend port
+const API_BASE_URL = "https://cloth-store-backend-qe63.onrender.com";
 
 export default API_BASE_URL;
