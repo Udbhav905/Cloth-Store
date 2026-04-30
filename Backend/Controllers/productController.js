@@ -555,9 +555,6 @@ export const searchProducts = async (req, res) => {
   } catch (error) {
     console.error("[searchProducts] error:", error);
     res.status(500).json({ message: error.message });
-  }
-};
-
 export const getHomeData = async (req, res) => {
   try {
     const CACHE_KEY = "home-data";
@@ -570,38 +567,83 @@ export const getHomeData = async (req, res) => {
     
     if (cached) return res.json(cached);
 
-    console.log("Fetching landing page data from DB...");
+    console.log("🚀 Fetching landing page data via Aggregation Facets...");
 
-    const [trending, newArrivals, featured, categories] = await Promise.all([
-      Product.find({ isBestSeller: true, isActive: true })
-        .lean()
-        .select(LIST_SELECT)
-        .populate("category", "name slug")
-        .sort({ totalSold: -1 })
-        .limit(10),
-      Product.find({ isNewArrival: true, isActive: true })
-        .lean()
-        .select(LIST_SELECT)
-        .populate("category", "name slug")
-        .sort({ createdAt: -1 })
-        .limit(10),
-      Product.find({ isFeatured: true, isActive: true })
-        .lean()
-        .select(LIST_SELECT)
-        .populate("category", "name slug")
-        .sort({ createdAt: -1 })
-        .limit(10),
-      Category.find({ parentCategory: null, isActive: true })
-        .lean()
-        .select("name slug image description")
-        .sort({ sortOrder: 1 })
-        .limit(10),
+    // Fields to include in product cards to keep payload small
+    const projectFields = {
+      name: 1, slug: 1, mainImage: 1, basePrice: 1, 
+      discountType: 1, discountValue: 1, averageRating: 1, 
+      totalReviews: 1, isBestSeller: 1, isNewArrival: 1, 
+      isFeatured: 1, totalStock: 1, category: 1
+    };
+
+    const results = await Product.aggregate([
+      { $match: { isActive: true } },
+      {
+        $facet: {
+          trending: [
+            { $match: { isBestSeller: true } },
+            { $sort: { totalSold: -1 } },
+            { $limit: 10 },
+            { $project: projectFields }
+          ],
+          newArrivals: [
+            { $match: { isNewArrival: true } },
+            { $sort: { createdAt: -1 } },
+            { $limit: 10 },
+            { $project: projectFields }
+          ],
+          featured: [
+            { $match: { isFeatured: true } },
+            { $sort: { createdAt: -1 } },
+            { $limit: 10 },
+            { $project: projectFields }
+          ]
+        }
+      }
     ]);
 
-    const data = { trending, newArrivals, featured, categories };
+    // Fetch categories separately as it's a different collection
+    const categories = await Category.find({ parentCategory: null, isActive: true })
+      .lean()
+      .select("name slug image description")
+      .sort({ sortOrder: 1 })
+      .limit(10);
+
+    const { trending, newArrivals, featured } = results[0];
+
+    // Manually populate categories for products to avoid Mongoose overhead
+    // We can fetch unique category IDs from all three sections
+    const allCatIds = [
+      ...new Set([
+        ...trending.map(p => p.category),
+        ...newArrivals.map(p => p.category),
+        ...featured.map(p => p.category)
+      ].filter(id => id))
+    ];
+
+    const categoryMap = {};
+    if (allCatIds.length > 0) {
+      const dbCats = await Category.find({ _id: { $in: allCatIds } })
+        .lean()
+        .select("name slug");
+      dbCats.forEach(c => { categoryMap[c._id.toString()] = c; });
+    }
+
+    const populate = (list) => list.map(p => ({
+      ...p,
+      category: p.category ? categoryMap[p.category.toString()] : null
+    }));
+
+    const data = {
+      trending:    populate(trending),
+      newArrivals: populate(newArrivals),
+      featured:    populate(featured),
+      categories
+    };
     
     try {
-      cache.set(CACHE_KEY, data);
+      cache.set(CACHE_KEY, data, 600); // 10 minutes cache
     } catch (e) {
       console.error("Cache write error in getHomeData:", e);
     }

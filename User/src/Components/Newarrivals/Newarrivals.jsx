@@ -155,9 +155,7 @@ export default function NewArrivals() {
   } = useProductStore();
 
   /* Fetch eagerly on mount — store caches for 5 min automatically */
-  useEffect(() => { 
-    fetchLandingPageData(); 
-  }, [fetchLandingPageData]);
+  // Data is fetched once by the parent Home page
 
   const isLoading = newArrivalsLoading && newArrivals.length === 0;
   const hasError  = !newArrivalsLoading && !!newArrivalsError && newArrivals.length === 0;

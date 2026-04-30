@@ -225,9 +225,7 @@ export default function ShopByCategory() {
   const { categories, loading, error, fetchCategories } = useCategoryStore();
 
   /* Fetch on mount — store caches for 5 min automatically */
-  useEffect(() => {
-    fetchLandingPageData();
-  }, [fetchLandingPageData]);
+  // Data is fetched once by the parent Home page
 
   const isLoading = (loading || landingPageLoading) && categories.length === 0;
   const hasError  = (!loading && !landingPageLoading) && (!!error || !!landingPageError) && categories.length === 0;

@@ -58,7 +58,6 @@ export default function Herosection() {
   const [current, setCurrent] = useState(0);
   const [prev, setPrev] = useState(null);
 
-  // Use refs to avoid stale closures in setInterval
   const currentRef = useRef(0);
   const lockedRef = useRef(false);
   const timerRef = useRef(null);

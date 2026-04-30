@@ -279,13 +279,10 @@ export default function Trending() {
     trending,
     trendingLoading,
     trendingError,
-    fetchLandingPageData,
     landingPageError,
   } = useProductStore();
 
-  useEffect(() => {
-    fetchLandingPageData();
-  }, [fetchLandingPageData]);
+  // Data is fetched once by the parent Home page
 
   const isLoading = trendingLoading && trending.length === 0;
   const hasError  = !trendingLoading && (!!trendingError || !!landingPageError) && trending.length === 0;
