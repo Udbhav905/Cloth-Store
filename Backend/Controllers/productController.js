@@ -555,6 +555,9 @@ export const searchProducts = async (req, res) => {
   } catch (error) {
     console.error("[searchProducts] error:", error);
     res.status(500).json({ message: error.message });
+  }
+};
+
 export const getHomeData = async (req, res) => {
   try {
     const CACHE_KEY = "home-data";
