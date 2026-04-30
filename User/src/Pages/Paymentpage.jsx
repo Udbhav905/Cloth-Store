@@ -112,7 +112,7 @@ export default function PaymentPage() {
   const [cardExpiry,    setCardExpiry]    = useState("");
   const [cvcLength,     setCvcLength]     = useState(0);
   const [cardName,      setCardName]      = useState(
-    useAuthStore.getState()?.user?.name?.toUpperCase() || ""
+    (useAuthStore.getState()?.user?.name || "").toUpperCase()
   );
   const [flipped,       setFlipped]       = useState(false);
   const [focusedField,  setFocused]       = useState("");
@@ -139,6 +139,12 @@ export default function PaymentPage() {
   const expiryDisplay = cardExpiry || "MM / YY";
 
   const displayGSTPercent = gstRate ? Math.round(gstRate * 100) : 0;
+
+  const focusElement = (elementType) => {
+    if (!elements) return;
+    const element = elements.getElement(elementType);
+    if (element) element.focus();
+  };
 
   const handlePay = async () => {
     if (!stripe || !elements) { setError("Stripe not ready."); return; }
@@ -346,6 +352,8 @@ export default function PaymentPage() {
                 className={`${styles.stripeBox} ${
                   focusedField === "number" ? styles.stripeBoxFocused : ""
                 }`}
+                style={{ height: '42px', minHeight: '42px', maxHeight: '42px' }}
+                onClick={() => focusElement(CardNumberElement)}
               >
                 <CardNumberElement
                   options={{ ...stripeStyle, showIcon: true }}
@@ -354,15 +362,16 @@ export default function PaymentPage() {
                   onChange={(e) => {
                     setNumComplete(e.complete);
                     if (e.brand) setStripeBrand(e.brand);
-                    const isAmex   = e.brand === "amex";
-                    const maxGroups = isAmex ? 3 : 4;
-                    if (e.empty)     setFilledGroups(0);
-                    else if (e.complete) setFilledGroups(maxGroups);
-                    else {
-                      setFilledGroups((prev) => {
-                        return Math.max(1, Math.min(prev, maxGroups - 1));
-                      });
+                    
+                    if (e.empty) {
+                      setFilledGroups(0);
+                    } else if (e.complete) {
+                      setFilledGroups(4); // Max groups for display
+                    } else {
+                      // If not empty but not complete, show as "filling" (2 groups)
+                      setFilledGroups(2);
                     }
+
                     if (e.error) setError(e.error.message);
                     else setError("");
                   }}
@@ -378,6 +387,8 @@ export default function PaymentPage() {
                   className={`${styles.stripeBox} ${
                     focusedField === "expiry" ? styles.stripeBoxFocused : ""
                   }`}
+                  style={{ height: '42px', minHeight: '42px', maxHeight: '42px' }}
+                  onClick={() => focusElement(CardExpiryElement)}
                 >
                   <CardExpiryElement
                     options={stripeStyle}
@@ -385,15 +396,10 @@ export default function PaymentPage() {
                     onBlur={()  => setFocused("")}
                     onChange={(e) => {
                       setExpComplete(e.complete);
-                      if (e.value?.month && e.value?.year) {
-                        const mm = String(e.value.month).padStart(2, "0");
-                        const yy = String(e.value.year).slice(-2);
-                        setCardExpiry(`${mm} / ${yy}`);
-                      } else if (e.empty) {
+                      if (e.empty) {
                         setCardExpiry("");
-                      } else if (e.value?.month && !e.value?.year) {
-                        const mm = String(e.value.month).padStart(2, "0");
-                        setCardExpiry(`${mm} / ··`);
+                      } else if (e.complete) {
+                        setCardExpiry("•• / ••");
                       } else {
                         setCardExpiry("·· / ··");
                       }
@@ -413,6 +419,8 @@ export default function PaymentPage() {
                   className={`${styles.stripeBox} ${
                     focusedField === "cvc" ? styles.stripeBoxFocused : ""
                   }`}
+                  style={{ height: '42px', minHeight: '42px', maxHeight: '42px' }}
+                  onClick={() => focusElement(CardCvcElement)}
                 >
                   <CardCvcElement
                     options={stripeStyle}
@@ -443,7 +451,7 @@ export default function PaymentPage() {
                 placeholder="As printed on card"
                 onFocus={() => setFocused("name")}
                 onBlur={()  => setFocused("")}
-                onChange={(e) => setCardName(e.target.value.toUpperCase())}
+                onChange={(e) => setCardName(e.target.value)}
                 autoComplete="cc-name"
                 spellCheck={false}
               />

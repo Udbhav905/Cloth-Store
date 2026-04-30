@@ -392,10 +392,10 @@
   width: 100%;
   background: var(--bg2);
   border: 1px solid var(--border);
-  padding: 32px 36px;
+  padding: 24px 28px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
   box-sizing: border-box;
 }
 
@@ -413,7 +413,7 @@
 .formTitle svg { width: 17px; height: 17px; color: var(--gold); flex-shrink: 0; }
 
 /* ── Field base ── */
-.field    { display: flex; flex-direction: column; gap: 7px; }
+.field    { display: flex; flex-direction: column; gap: 5px; }
 .fieldRow { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
 .label {
@@ -436,9 +436,11 @@
 .stripeBox {
   background: var(--bg3);
   border: 1px solid var(--border);
-  padding: 13px 14px;
+  padding: 10px 12px;
   transition: border-color var(--transition), box-shadow var(--transition);
-  height: 45px;
+  height: 42px;
+  box-sizing: border-box;
+  cursor: text;
 }
 .stripeBoxFocused {
   border-color: var(--gold-b);
@@ -454,9 +456,9 @@
   outline: none;
   color: var(--text);
   font-family: var(--sans);
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   letter-spacing: 0.04em;
-  padding: 13px 14px;
+  padding: 10px 12px;
   transition: border-color var(--transition), box-shadow var(--transition);
   text-transform: uppercase;
 }
