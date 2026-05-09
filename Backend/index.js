@@ -42,6 +42,7 @@ const ALLOWED_ORIGINS = [
   "https://luxuria-clothing-git-main-udbhav905s-projects.vercel.app",
   "https://luxuria-clothing-75a8cthih-udbhav905s-projects.vercel.app",
   "https://luxuriaclothingadmin.vercel.app",
+  "https://cloth-store-oblxlyub3-udbhav905s-projects.vercel.app",
   "https://luxuriaclothingadmin-9k76d7hll-udbhav905s-projects.vercel.app",
   "cloth-store-one.vercel.app",
   "http://localhost:5173",
