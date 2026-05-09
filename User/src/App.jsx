@@ -157,32 +157,8 @@ function AnalyticsProvider({ children }) {
   return <>{children}</>;
 }
 
-// ── Preload Links for Better Performance ───────────────────────────────────
-function PreloadLinks() {
-  useEffect(() => {
-    // Preload critical resources
-    const preloadImages = () => {
-      const images = [
-        '/assets/hero-bg.jpg',
-        '/assets/logo.svg'
-      ];
-      
-      images.forEach(img => {
-        const link = document.createElement('link');
-        link.rel = 'preload';
-        link.as = 'image';
-        link.href = img;
-        document.head.appendChild(link);
-      });
-    };
-
-    preloadImages();
-  }, []);
-
-  return null;
-}
-
 // ── 404 Not Found Component ────────────────────────────────────────────────
+
 function NotFound() {
   const navigate = useNavigate();
   
@@ -207,7 +183,6 @@ const App = () => {
       <BrowserRouter>
         <AnalyticsProvider>
           <ScrollProvider>
-            <PreloadLinks />
             
             {/* Global UI */}
             <Navbar />

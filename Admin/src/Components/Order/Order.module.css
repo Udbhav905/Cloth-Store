@@ -1130,17 +1130,57 @@ page {
    MODALS
 ════════════════════════════════════════════════════════ */
 .modalOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  z-index: 1000;
+  position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 1000;
+  display: flex; align-items: center; justify-content: center; animation: fadeIn 0.3s ease both;
+}
+
+/* ── Live Tracking ── */
+.liveHeader {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 24px;
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  animation: fadeIn 0.2s ease both;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.liveIndicator {
+  background: rgba(236, 112, 99, 0.1);
+  color: #ec7063;
+  border: 1px solid rgba(236, 112, 99, 0.2);
+  font-family: var(--sans);
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.adminMapContainer {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg3);
+}
+
+.mapTimestamp {
+  padding: 8px 12px;
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin: 0;
+  border-top: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Fix for Leaflet z-index */
+:global(.leaflet-container) {
+  z-index: 1 !important;
 }
 
 .modal {

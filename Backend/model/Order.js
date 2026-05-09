@@ -127,7 +127,12 @@ const orderSchema = new mongoose.Schema({
   returnReason:       String,
   returnedAt:         Date,
   customerNotes:      String,
-  adminNotes:         String
+  adminNotes:         String,
+  liveLocation: {
+    lat: Number,
+    lng: Number,
+    lastUpdated: Date
+  },
 
 }, { timestamps: true });
 orderSchema.pre("save", async function() {
@@ -158,7 +163,6 @@ orderSchema.pre("save", async function() {
   }
 });
 orderSchema.index({ userId: 1, createdAt: -1 });
-orderSchema.index({ orderStatus: 1 });
 orderSchema.index({ paymentStatus: 1 });
 orderSchema.index({ createdAt: -1 });
 orderSchema.index({ deliveryPartnerId: 1, createdAt: -1 });

@@ -49,10 +49,13 @@ export const admin = (req, res, next) => {
         });
       }
       req.user = await DeliveryPartner.findById(decoded.id).select('-password');
-      next();
+      if (!req.user) {
+        return res.status(401).json({ success: false, message: 'Partner not found' });
+      }
+      return next();
     } catch (error) {
-      console.error(error);
-      res.status(401).json({
+      console.error('Auth error:', error);
+      return res.status(401).json({
         success: false,
         message: 'Not authorized, token failed',
       });
@@ -60,7 +63,7 @@ export const admin = (req, res, next) => {
   }
 
   if (!token) {
-    res.status(401).json({
+    return res.status(401).json({
       success: false,
       message: 'Not authorized, no token',
     });

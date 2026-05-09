@@ -93,15 +93,13 @@ export const verifyPayment = async (req, res) => {
         });
         await order.save();
 
-        // Send order confirmation email
-        try {
-          const populatedOrder = await Order.findById(order._id).populate("userId", "email name");
+        // Send order confirmation email (Non-blocking)
+        Order.findById(order._id).populate("userId", "email name").then(populatedOrder => {
           if (populatedOrder && populatedOrder.userId) {
-            await sendOrderConfirmationEmail(populatedOrder.userId.email, populatedOrder);
+            sendOrderConfirmationEmail(populatedOrder.userId.email, populatedOrder)
+              .catch(emailErr => console.error("Error sending order confirmation email:", emailErr));
           }
-        } catch (emailErr) {
-          console.error("Error sending order confirmation email:", emailErr);
-        }
+        }).catch(err => console.error("Error populating order for email in verifyPayment:", err));
       }
     }
 
@@ -162,15 +160,13 @@ export const stripeWebhook = async (req, res) => {
           await order.save();
           console.log(`[webhook] Order ${order.orderNumber} marked paid.`);
 
-          // Send order confirmation email
-          try {
-            const populatedOrder = await Order.findById(order._id).populate("userId", "email name");
+          // Send order confirmation email (Non-blocking)
+          Order.findById(order._id).populate("userId", "email name").then(populatedOrder => {
             if (populatedOrder && populatedOrder.userId) {
-              await sendOrderConfirmationEmail(populatedOrder.userId.email, populatedOrder);
+              sendOrderConfirmationEmail(populatedOrder.userId.email, populatedOrder)
+                .catch(emailErr => console.error("Error sending order confirmation email in webhook:", emailErr));
             }
-          } catch (emailErr) {
-            console.error("Error sending order confirmation email in webhook:", emailErr);
-          }
+          }).catch(err => console.error("Error populating order for webhook email:", err));
         }
         break;
       }

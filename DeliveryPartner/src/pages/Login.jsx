@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 import API_BASE_URL from '../config/api';
 import './Login.css';
@@ -18,18 +17,25 @@ const Login = () => {
     setLoading(true);
 
     try {
-      console.log('Logging in to:', `${API_BASE_URL}/api/delivery-partner/login`);
-      const response = await axios.post(`${API_BASE_URL}/api/delivery-partner/login`, formData);
-      
-      if (response.data.success) {
-        localStorage.setItem('partnerToken', response.data.data.token);
-        localStorage.setItem('partnerData', JSON.stringify(response.data.data));
+      console.log('Logging in to:', `${API_BASE_URL}/api/partner/login`);
+      const response = await fetch(`${API_BASE_URL}/api/partner/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (response.ok && data.success) {
+        localStorage.setItem('partnerToken', data.data.token);
+        localStorage.setItem('partnerData', JSON.stringify(data.data));
         toast.success('Login successful!');
         navigate('/dashboard');
+      } else {
+        toast.error(data.message || 'Login failed');
       }
     } catch (error) {
-      console.error('Login error:', error.response?.data || error.message);
-      toast.error(error.response?.data?.message || 'Login failed');
+      console.error('Login error:', error.message);
+      toast.error('Login failed. Please check your connection.');
     } finally {
       setLoading(false);
     }

@@ -1,8 +1,18 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
 import useAuthStore from "../store/Useauthstore";
 import ReviewModal from "../Components/Reviewmodal/Reviewmodal";
 import styles from "./styles/MyOrders.module.css";
+
+// Fix Leaflet icon issue
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 import useApiStore from "../store/others";
 const API = useApiStore.getState().API;
 
@@ -95,16 +105,37 @@ function OrderTracker({ status }) {
   );
 }
 
-function OrderDrawer({ order, onClose, onCancel, onReview }) {
+function OrderDrawer({ order: initialOrder, onClose, onCancel, onReview }) {
+  const [order, setOrder] = useState(initialOrder);
   const [cancelling, setCancelling] = useState(false);
   const drawerBodyRef = useRef(null);
+  const pollInterval = useRef(null);
+
   const cfg = S[order.orderStatus] || { label: order.orderStatus, cls: "gold" };
   const canCancel  = ["pending", "confirmed"].includes(order.orderStatus);
   const isDelivered = order.orderStatus === "delivered";
+  const isTracking = ["shipped", "out_for_delivery"].includes(order.orderStatus);
   const isCOD = order.paymentMethod === "cod";
   const gstPercent = order.tax && order.subtotal
     ? Math.round((order.tax / (order.subtotal - (order.discount || 0))) * 100)
     : 18;
+
+  // Poll for live location if tracking is active
+  useEffect(() => {
+    if (isTracking) {
+      pollInterval.current = setInterval(async () => {
+        try {
+          const updated = await apiFetch(`/orders/${order._id}`);
+          if (updated) setOrder(updated);
+        } catch (e) {
+          console.error("Poll error:", e);
+        }
+      }, 10000); // Poll every 10s
+    }
+    return () => {
+      if (pollInterval.current) clearInterval(pollInterval.current);
+    };
+  }, [isTracking, order._id]);
 
   useEffect(() => {
     const handleKey = (e) => { if (e.key === "Escape") onClose(); };
@@ -166,6 +197,39 @@ function OrderDrawer({ order, onClose, onCancel, onReview }) {
               <OrderTracker status={order.orderStatus} />
             )}
           </section>
+
+          {/* Live Map Tracking */}
+          {isTracking && (
+            <section className={styles.drawerSection}>
+              <div className={styles.mapHeader}>
+                <h3 className={styles.drawerSectionTitle}>Live Tracking</h3>
+                <span className={styles.liveBadge}>LIVE</span>
+              </div>
+              
+              {order.liveLocation?.lat ? (
+                <div className={styles.mapContainer}>
+                  <MapContainer 
+                    center={[order.liveLocation.lat, order.liveLocation.lng]} 
+                    zoom={14} 
+                    style={{ height: '240px', width: '100%', borderRadius: '8px', zIndex: 1 }}
+                  >
+                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    <Marker position={[order.liveLocation.lat, order.liveLocation.lng]}>
+                      <Popup>Your delivery partner is here</Popup>
+                    </Marker>
+                  </MapContainer>
+                  <p className={styles.mapHint}>Delivery partner is currently on their way to you.</p>
+                </div>
+              ) : (
+                <div className={styles.mapWaiting}>
+                  <div className={styles.mapWaitingIcon}>📡</div>
+                  <p>Waiting for delivery partner to share live location...</p>
+                  <span>Tracking will appear automatically once they start their journey.</span>
+                </div>
+              )}
+            </section>
+          )}
+
 
           {/* Items */}
           <section className={styles.drawerSection}>

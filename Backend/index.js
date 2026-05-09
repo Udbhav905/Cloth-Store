@@ -46,6 +46,8 @@ const ALLOWED_ORIGINS = [
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:5175",
+  "http://localhost:5176",
+  "http://localhost:5177",
   "http://localhost:3000"
 ];
 
@@ -75,14 +77,14 @@ app.use("/api/reviews",    reviewRoutes);
 app.use("/api/coupons",    couponRoutes);
 app.use("/api/admin",      adminRoutes);
 app.use("/api/payments",   paymentRoutes);
+app.use('/api/partner', deliveryPartnerAuthRoutes);
 app.use('/api/delivery-partners', deliveryPartnerRoutes);
-
-app.use('/api/delivery-partner', deliveryPartnerAuthRoutes)
 
 // app.get("/api/health", (_, res) =>
 //   res.json({ status: "OK", timestamp: new Date().toISOString() })
 // );
 
+app.get("/test-deploy", (req, res) => res.json({ status: "Backend is updated", timestamp: new Date().toISOString() }));
 app.get("/", (_, res) => res.json({ message: "Clothing Store API v1.0" }));
 
 app.use(notFound);

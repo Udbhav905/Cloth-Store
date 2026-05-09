@@ -100,38 +100,44 @@ export const createOrder = async (req, res) => {
     console.log(`✅ Order created for user: ${req.user.email} (${req.user.name})`);
     console.log(`Order ID: ${order._id}, Order Number: ${order.orderNumber}`);
 
-    for (const item of processedItems) {
-      const product = await Product.findById(item.productId);
-      if (product) {
-        const variant = product.variants?.find(
-          (v) => v.size === item.variant.size && v.color === item.variant.color
-        );
-        if (variant) {
-          variant.stock -= item.quantity;
-          await product.save();
+    // backgroundTasks function is now more efficient with updateOne
+    const backgroundTasks = async () => {
+      try {
+        // 1. Update Stock atomically in parallel
+        await Promise.all(processedItems.map((item) => 
+          Product.updateOne(
+            { 
+              _id: item.productId, 
+              "variants.size": item.variant.size, 
+              "variants.color": item.variant.color 
+            },
+            { $inc: { "variants.$.stock": -item.quantity } }
+          )
+        ));
+
+        // 2. Clear Cart if needed
+        if (paymentMethod === "cod" || !req.body.fromBuyNow) {
+          await Cart.findOneAndUpdate(
+            { userId: req.user._id },
+            { $set: { items: [] } }
+          );
         }
+
+        // 3. Send order confirmation email
+        // We use the 'order' object directly, which is already available
+        if (req.user.email) {
+          await sendOrderConfirmationEmail(req.user.email, order);
+        }
+      } catch (bgError) {
+        console.error("Background task error in createOrder:", bgError);
       }
-    }
+    };
 
-    if (paymentMethod === "cod" || !req.body.fromBuyNow) {
-      await Cart.findOneAndUpdate(
-        { userId: req.user._id },
-        { $set: { items: [] } }
-      );
-    }
+    // Execute background tasks without awaiting them to speed up response
+    backgroundTasks();
 
-    const populatedOrder = await Order.findById(order._id).populate("userId", "name email mobileNo");
+    res.status(201).json(order);
 
-    // Send order confirmation/received email
-    try {
-      if (populatedOrder && populatedOrder.userId) {
-        await sendOrderConfirmationEmail(populatedOrder.userId.email, populatedOrder);
-      }
-    } catch (emailErr) {
-      console.error("Error sending initial order email:", emailErr);
-    }
-
-    res.status(201).json(populatedOrder);
   } catch (error) {
     console.error("Order creation error:", error);
     res.status(500).json({ message: error.message });
@@ -218,14 +224,13 @@ export const updateOrderStatus = async (req, res) => {
     if (status === "delivered") order.deliveredAt = new Date();
 
     if (status === "confirmed" && prev !== "confirmed") {
-      try {
-        const populatedOrder = await Order.findById(order._id).populate("userId", "email name");
+      // Non-blocking email
+      Order.findById(order._id).populate("userId", "email name").then(populatedOrder => {
         if (populatedOrder && populatedOrder.userId) {
-          await sendOrderConfirmationEmail(populatedOrder.userId.email, populatedOrder);
+          sendOrderConfirmationEmail(populatedOrder.userId.email, populatedOrder)
+            .catch(err => console.error("Error sending order email in updateOrderStatus:", err));
         }
-      } catch (emailErr) {
-        console.error("Error sending order email in updateOrderStatus:", emailErr);
-      }
+      }).catch(err => console.error("Error populating order for email:", err));
     }
 
     if (status === "cancelled") {
@@ -490,16 +495,14 @@ export const adminUpdateStatus = async (req, res) => {
 
     await order.save();
 
-    // Send order confirmation email if status is confirmed
+    // Send order confirmation email if status is confirmed (Non-blocking)
     if (orderStatus === "confirmed" && prev !== "confirmed") {
-      try {
-        const populatedOrder = await Order.findById(order._id).populate("userId", "email name");
+      Order.findById(order._id).populate("userId", "email name").then(populatedOrder => {
         if (populatedOrder && populatedOrder.userId) {
-          await sendOrderConfirmationEmail(populatedOrder.userId.email, populatedOrder);
+          sendOrderConfirmationEmail(populatedOrder.userId.email, populatedOrder)
+            .catch(err => console.error("Error sending order confirmation email by admin:", err));
         }
-      } catch (emailErr) {
-        console.error("Error sending order confirmation email by admin:", emailErr);
-      }
+      }).catch(err => console.error("Error populating order for admin email update:", err));
     }
 
     const updated = await Order.findById(order._id)

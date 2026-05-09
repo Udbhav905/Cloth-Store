@@ -1,8 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
 import API_BASE_URL from '../config/api';
 import './Orders.css';
+
+// Fix Leaflet icon issue
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
 const STATUS_OPTIONS = [
   { value: 'assigned', label: 'Ready for Pickup', icon: '📋' },
@@ -20,10 +29,32 @@ export default function Orders() {
   const [updating,        setUpdating]        = useState(false);
   const [partnerData,     setPartnerData]     = useState(null);
   const [openDropdownId,  setOpenDropdownId]  = useState(null);
+  const [isSharing,       setIsSharing]       = useState(false);
+  const [currentPos,      setCurrentPos]      = useState(null);
+  const watchId = useRef(null);
 
   const getAuthConfig = () => ({
     headers: { Authorization: `Bearer ${localStorage.getItem('partnerToken')}` },
   });
+
+  const apiFetch = async (path, options = {}) => {
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthConfig().headers,
+        ...(options.headers || {}),
+      },
+      ...options,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const err = new Error(data.message || `HTTP ${res.status}`);
+      err.status = res.status;
+      err.data = data;
+      throw err;
+    }
+    return data;
+  };
 
   const getPartnerInfo = () => {
     try { return JSON.parse(localStorage.getItem('partnerData') || 'null'); }
@@ -33,17 +64,17 @@ export default function Orders() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/delivery-partner/orders`, getAuthConfig());
-      const list = res.data.data || res.data.orders || (Array.isArray(res.data) ? res.data : []);
+      const res = await apiFetch('/api/partner/orders');
+      const list = res.data || res.orders || (Array.isArray(res) ? res : []);
       setOrders(list);
     } catch (err) {
-      if (err.response?.status === 401) {
+      if (err.status === 401) {
         toast.error('Session expired. Please login again.');
         localStorage.removeItem('partnerToken');
         localStorage.removeItem('partnerData');
         window.location.href = '/login';
       } else {
-        toast.error(err.response?.data?.message || 'Failed to fetch orders');
+        toast.error(err.message || 'Failed to fetch orders');
       }
     } finally {
       setLoading(false);
@@ -53,18 +84,17 @@ export default function Orders() {
   const updateOrderStatus = async (orderId, status) => {
     setUpdating(true);
     try {
-      await axios.put(
-        `${API_BASE_URL}/api/delivery-partner/orders/${orderId}/status`,
-        { status },
-        getAuthConfig(),
-      );
+      await apiFetch(`/api/partner/orders/${orderId}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status }),
+      });
       const msgs = { assigned: 'Order accepted!', picked: 'Marked as picked up!', delivered: 'Delivered! 🎉' };
       toast.success(msgs[status] || `Status → ${status}`);
       await fetchOrders();
       setSelectedOrder(null);
       setOpenDropdownId(null);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update status');
+      toast.error(err.message || 'Failed to update status');
     } finally {
       setUpdating(false);
     }
@@ -81,7 +111,61 @@ export default function Orders() {
     if (!localStorage.getItem('partnerToken')) { window.location.href = '/login'; return; }
     setPartnerData(getPartnerInfo());
     fetchOrders();
+
+    return () => {
+      if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
+    };
   }, []);
+
+  const startSharing = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setIsSharing(true);
+    toast.success('Live location sharing started');
+
+    watchId.current = navigator.geolocation.watchPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        setCurrentPos({ lat: latitude, lng: longitude });
+        try {
+          await apiFetch('/api/partner/location', {
+            method: 'PUT',
+            body: JSON.stringify({ lat: latitude, lng: longitude }),
+          });
+        } catch (err) {
+          console.error('Failed to update location:', err);
+        }
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        let msg = 'Location error';
+        if (error.code === 1) msg = 'Location permission denied';
+        else if (error.code === 2) msg = 'Location unavailable';
+        else if (error.code === 3) msg = 'Location timeout';
+        toast.error(msg);
+        stopSharing();
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    );
+  };
+
+  const stopSharing = () => {
+    if (watchId.current !== null) {
+      navigator.geolocation.clearWatch(watchId.current);
+      watchId.current = null;
+    }
+    setIsSharing(false);
+    setCurrentPos(null);
+    toast('Live location sharing stopped', { icon: '🛑' });
+  };
+
+  const toggleSharing = () => {
+    if (isSharing) stopSharing();
+    else startSharing();
+  };
 
   const active    = orders.filter(o => o.status !== 'delivered');
   const completed = orders.filter(o => o.status === 'delivered');
@@ -132,8 +216,16 @@ export default function Orders() {
     <div className="dp-page">
       {/* Header */}
       <div className="dp-header">
-        <h1 className="dp-title">My Deliveries</h1>
-        <p className="dp-subtitle">Manage and update your assigned orders</p>
+        <div>
+          <h1 className="dp-title">My Deliveries</h1>
+          <p className="dp-subtitle">Manage and update your assigned orders</p>
+        </div>
+        <button 
+          className={`dp-share-btn ${isSharing ? 'dp-share-btn--active' : ''}`}
+          onClick={toggleSharing}
+        >
+          {isSharing ? '📡 Stop Sharing' : '📍 Share Live Location'}
+        </button>
       </div>
 
       {/* Profile */}
@@ -164,6 +256,24 @@ export default function Orders() {
           <div><h3>{completed.length}</h3><p>Completed</p></div>
         </div>
       </div>
+
+      {/* Live Map Section (if sharing) */}
+      {isSharing && currentPos && (
+        <div className="dp-live-map-section">
+          <div className="dp-section-header">
+            <h2>Live Tracking Active</h2>
+            <span className="dp-live-dot" />
+          </div>
+          <div className="dp-map-container">
+            <MapContainer center={[currentPos.lat, currentPos.lng]} zoom={15} style={{ height: '300px', width: '100%', borderRadius: '12px' }}>
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <Marker position={[currentPos.lat, currentPos.lng]}>
+                <Popup>You are here (Sharing location)</Popup>
+              </Marker>
+            </MapContainer>
+          </div>
+        </div>
+      )}
 
       {/* ── ACTIVE ORDERS ── */}
       <div className="dp-section-header">

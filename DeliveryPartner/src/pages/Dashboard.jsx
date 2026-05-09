@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -27,16 +26,34 @@ const Dashboard = () => {
     };
   };
 
-  const fetchStats = async () => {
+  const apiFetch = async (path, options = {}) => {
     const config = getAuthConfig();
-    if (!config) return;
+    if (!config) throw new Error('Not authenticated');
     
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...config.headers,
+        ...(options.headers || {}),
+      },
+      ...options,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const err = new Error(data.message || `HTTP ${res.status}`);
+      err.status = res.status;
+      throw err;
+    }
+    return data;
+  };
+
+  const fetchStats = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/delivery-partner/stats`, config);
-      setStats(response.data.data);
+      const data = await apiFetch('/api/partner/stats');
+      setStats(data.data);
     } catch (error) {
-      console.error('Stats error:', error.response?.data || error.message);
-      if (error.response?.status === 401) {
+      console.error('Stats error:', error.message);
+      if (error.status === 401) {
         toast.error('Session expired. Please login again.');
         setAuthError(true);
       }
@@ -44,15 +61,12 @@ const Dashboard = () => {
   };
 
   const fetchOrders = async () => {
-    const config = getAuthConfig();
-    if (!config) return;
-    
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/delivery-partner/orders`, config);
-      setRecentOrders(response.data.data.slice(0, 5));
+      const data = await apiFetch('/api/partner/orders');
+      setRecentOrders(data.data.slice(0, 5));
     } catch (error) {
-      console.error('Orders error:', error.response?.data || error.message);
-      if (error.response?.status !== 401) {
+      console.error('Orders error:', error.message);
+      if (error.status !== 401) {
         toast.error('Failed to fetch orders');
       }
     } finally {
@@ -61,14 +75,11 @@ const Dashboard = () => {
   };
 
   const toggleAvailability = async () => {
-    const config = getAuthConfig();
-    if (!config) return;
-    
     try {
-      await axios.put(`${API_BASE_URL}/api/delivery-partner/availability`, 
-        { isAvailable: !availability }, 
-        config
-      );
+      await apiFetch('/api/partner/availability', {
+        method: 'PUT',
+        body: JSON.stringify({ isAvailable: !availability }),
+      });
       setAvailability(!availability);
       toast.success(`You are now ${!availability ? 'Available' : 'Offline'}`);
     } catch (error) {

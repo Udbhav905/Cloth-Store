@@ -256,6 +256,16 @@ export const updateDeliveryStatus = async (req, res) => {
         paidAt: new Date()
       };
     }
+
+    // NEW: Initialize liveLocation if partner has a current location
+    if (['shipped', 'out_for_delivery'].includes(orderStatus) && partner.availability?.currentLocation?.lat) {
+      console.log(`📍 Initializing liveLocation for order ${order.orderNumber} from partner's current position`);
+      order.liveLocation = {
+        lat: partner.availability.currentLocation.lat,
+        lng: partner.availability.currentLocation.lng,
+        lastUpdated: new Date()
+      };
+    }
     
     order.statusHistory.push({
       status: orderStatus,
@@ -323,6 +333,69 @@ export const updateAvailability = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message,
+    });
+  }
+};
+
+export const updateLocation = async (req, res) => {
+  try {
+    const { lat, lng } = req.body;
+    
+    if (lat === undefined || lng === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'Latitude and longitude are required',
+      });
+    }
+
+    const partner = await DeliveryPartner.findById(req.user.id);
+    if (!partner) {
+      return res.status(404).json({
+        success: false,
+        message: 'Delivery partner not found',
+      });
+    }
+
+    console.log(`📍 Updating location for partner ${partner.name} (${partner._id}):`, { lat, lng });
+
+    // Update partner's current location
+    if (!partner.availability) partner.availability = {};
+    partner.availability.currentLocation = { lat, lng };
+    partner.availability.lastUpdated = Date.now();
+    await partner.save();
+
+    // Update all active orders assigned to this partner
+    // We update orders that are 'shipped' or 'out_for_delivery'
+    const activeOrders = await Order.updateMany(
+      { 
+        deliveryPartnerId: partner._id,
+        orderStatus: { $in: ['shipped', 'out_for_delivery', 'processing'] } // Added processing to catch early updates
+      },
+      {
+        $set: {
+          liveLocation: {
+            lat,
+            lng,
+            lastUpdated: new Date()
+          }
+        }
+      }
+    );
+
+    console.log(`📡 Updated ${activeOrders.modifiedCount} active orders with new location.`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Location updated successfully',
+      data: { lat, lng, updatedOrders: activeOrders.modifiedCount }
+    });
+
+  } catch (error) {
+    console.error("updateLocation error:", error);
     res.status(500).json({
       success: false,
       message: 'Server error',

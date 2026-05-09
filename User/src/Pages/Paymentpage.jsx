@@ -124,6 +124,8 @@ export default function PaymentPage() {
 
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
+  const [clientSecret, setClientSecret] = useState("");
+  const [intentLoading, setIntentLoading] = useState(false);
 
   const nameRef = useRef(null);
 
@@ -140,6 +142,36 @@ export default function PaymentPage() {
 
   const displayGSTPercent = gstRate ? Math.round(gstRate * 100) : 0;
 
+  // Pre-fetch PaymentIntent on mount
+  useEffect(() => {
+    const fetchIntent = async () => {
+      if (!total || total <= 0 || clientSecret || intentLoading) return;
+      try {
+        setIntentLoading(true);
+        console.log("Pre-fetching PaymentIntent for amount:", total);
+        const amountToPay = Math.round(total);
+        const data = await apiFetch("/payments/create-intent", {
+          method: "POST",
+          body: JSON.stringify({
+            amount:   amountToPay,
+            currency: "inr",
+            items:    orderBody?.items || [],
+          }),
+        });
+        if (data.clientSecret) {
+          setClientSecret(data.clientSecret);
+          console.log("PaymentIntent pre-fetched successfully");
+        }
+      } catch (err) {
+        console.error("Intent pre-fetch error:", err);
+      } finally {
+        setIntentLoading(false);
+      }
+    };
+
+    if (total > 0) fetchIntent();
+  }, [total, orderBody]);
+
   const focusElement = (elementType) => {
     if (!elements) return;
     const element = elements.getElement(elementType);
@@ -155,30 +187,37 @@ export default function PaymentPage() {
     setLoading(true);
 
     try {
+      let currentSecret = clientSecret;
       const amountToPay = Math.round(total);
+
+      // Fallback: fetch secret if not pre-fetched or failed
+      if (!currentSecret) {
+        console.log("Secret not available, fetching now...");
+        const res = await apiFetch("/payments/create-intent", {
+          method: "POST",
+          body: JSON.stringify({
+            amount:   amountToPay,
+            currency: "inr",
+            metadata: { 
+              itemCount: String(orderBody?.items?.length || 0),
+              subtotal: subtotal,
+              discount: discount,
+              gst: gst,
+              gstRate: gstRate
+            },
+          }),
+        });
+        currentSecret = res.clientSecret;
+      }
+
+      if (!currentSecret) throw new Error("Could not initialize payment. Please try again.");
       
       console.log("💰 Payment Amount:", amountToPay);
-      console.log("📊 GST Details:", { gst, gstRate, displayGSTPercent });
-      
-      const { clientSecret } = await apiFetch("/payments/create-intent", {
-        method: "POST",
-        body: JSON.stringify({
-          amount:   amountToPay,
-          currency: "inr",
-          metadata: { 
-            itemCount: String(orderBody?.items?.length || 0),
-            subtotal: subtotal,
-            discount: discount,
-            gst: gst,
-            gstRate: gstRate
-          },
-        }),
-      });
-      if (!clientSecret) throw new Error("No client secret from server.");
+      if (!currentSecret) throw new Error("No client secret from server.");
 
       /* Step 2 — Confirm card payment */
       const { error: stripeErr, paymentIntent } =
-        await stripe.confirmCardPayment(clientSecret, {
+        await stripe.confirmCardPayment(currentSecret, {
           payment_method: {
             card: elements.getElement(CardNumberElement),
             billing_details: { name: cardName || "Customer" },

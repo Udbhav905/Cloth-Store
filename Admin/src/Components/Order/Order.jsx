@@ -1,8 +1,18 @@
 /* Components/Order/Order.jsx - Admin Panel (Optimized) */
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
 import { apiFetch, clearAdminSession } from "../../utils/AdminApi";
 import styles from "./Order.module.css";
+
+// Fix Leaflet icon issue
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
 const STATUS_CONFIG = {
   pending:          { label:"Pending",          color:"#d4ac0d", bg:"rgba(212,172,13,0.12)",  icon:"⏳" },
@@ -163,14 +173,6 @@ export default function Orders() {
   }, [fetchOrders, page, filterStatus, filterPay, sortBy]);
 
   
-  useEffect(() => {
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, []);
-
   const fetchDetail = useCallback(async (id) => {
     try {
       const data = await apiFetch(`/orders/admin/${id}`, {}, onAuthFail);
@@ -179,6 +181,25 @@ export default function Orders() {
       if (e.status !== 401 && e.status !== 403) showToast(e.message, "error");
     }
   }, [onAuthFail, showToast]);
+
+  useEffect(() => {
+    let interval;
+    if (selected && ["shipped", "out_for_delivery"].includes(selected.orderStatus)) {
+      interval = setInterval(() => {
+        fetchDetail(selected._id);
+      }, 10000);
+    }
+    return () => clearInterval(interval);
+  }, [selected, fetchDetail]);
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
 
   const handleAssign = useCallback(async (orderId, partner) => {
     setActionLoading(true);
@@ -475,6 +496,28 @@ export default function Orders() {
                 <section className={styles.panelSection}>
                   <h3 className={styles.sectionTitle}>Admin Notes</h3>
                   <div className={styles.noteBox}>{selected.adminNotes}</div>
+                </section>
+              )}
+
+              {selected.liveLocation?.lat && (
+                <section className={styles.panelSection}>
+                  <div className={styles.liveHeader}>
+                    <h3 className={styles.sectionTitle}>Live Tracking</h3>
+                    <span className={styles.liveIndicator}>LIVE</span>
+                  </div>
+                  <div className={styles.adminMapContainer}>
+                    <MapContainer 
+                      center={[selected.liveLocation.lat, selected.liveLocation.lng]} 
+                      zoom={14} 
+                      style={{ height: '200px', width: '100%', borderRadius: '8px' }}
+                    >
+                      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                      <Marker position={[selected.liveLocation.lat, selected.liveLocation.lng]}>
+                        <Popup>Delivery Partner's current location</Popup>
+                      </Marker>
+                    </MapContainer>
+                    <p className={styles.mapTimestamp}>Last updated: {new Date(selected.liveLocation.lastUpdated).toLocaleTimeString()}</p>
+                  </div>
                 </section>
               )}
 
