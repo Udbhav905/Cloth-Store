@@ -469,4 +469,24 @@
 /* Ensure Leaflet doesn't conflict with layout */
 .leaflet-container {
   z-index: 10;
+  filter: grayscale(0.2) contrast(1.1);
+}
+
+/* Custom Leaflet Overrides */
+.leaflet-popup-content-wrapper {
+  background: #1a1a1e !important;
+  color: #f0ece4 !important;
+  border: 1px solid rgba(201, 168, 76, 0.3) !important;
+  border-radius: 8px !important;
+  padding: 4px 8px !important;
+}
+
+.leaflet-popup-tip {
+  background: #1a1a1e !important;
+  border: 1px solid rgba(201, 168, 76, 0.3) !important;
+}
+
+.custom-marker-icon {
+  background: none !important;
+  border: none !important;
 }

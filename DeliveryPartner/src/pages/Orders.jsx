@@ -1,16 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import API_BASE_URL from '../config/api';
 import './Orders.css';
 
-// Fix Leaflet icon issue
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+// Premium Map Icons
+const partnerIcon = new L.DivIcon({
+  html: `<div style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+    <svg viewBox="0 0 24 24" width="32" height="32" fill="#c9a84c">
+      <path d="M21 16.5c0 .8-.7 1.5-1.5 1.5s-1.5-.7-1.5-1.5.7-1.5 1.5-1.5 1.5.7 1.5 1.5zm-13.5 0c0 .8-.7 1.5-1.5 1.5s-1.5-.7-1.5-1.5.7-1.5 1.5-1.5 1.5.7 1.5 1.5zm15-4.5v-3c0-.8-.7-1.5-1.5-1.5h-3c-.8 0-1.5.7-1.5 1.5v3h6zm-9-4.5h-4.5c-.8 0-1.5.7-1.5 1.5v4.5h7.5v-4.5c0-.8-.7-1.5-1.5-1.5zm-6 4.5h-1.5v-4.5h1.5v4.5zm13.5 4.5h-13.5c-1.1 0-2 .9-2 2h17.5c0-1.1-.9-2-2-2z"/>
+      <circle cx="12" cy="8" r="3" fill="none" stroke="#c9a84c" stroke-width="1.5"/>
+    </svg>
+  </div>`,
+  className: "custom-marker-icon",
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+});
+
+const destinationIcon = new L.DivIcon({
+  html: `<div style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+    <svg viewBox="0 0 24 24" width="32" height="32" fill="#1a1a1e" stroke="#c9a84c" stroke-width="1.5">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+  </div>`,
+  className: "custom-marker-icon",
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
 });
 
 const STATUS_OPTIONS = [
@@ -21,6 +38,18 @@ const STATUS_OPTIONS = [
 
 const getStatusDetails = (v) =>
   STATUS_OPTIONS.find(o => o.value === v) || { label: v || 'Assigned', icon: '📋' };
+
+function MapUpdater({ center, bounds }) {
+  const map = useMap();
+  useEffect(() => {
+    if (bounds) {
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: true });
+    } else if (center) {
+      map.setView(center, map.getZoom(), { animate: true });
+    }
+  }, [center, bounds, map]);
+  return null;
+}
 
 export default function Orders() {
   const [orders,          setOrders]          = useState([]);
@@ -265,11 +294,45 @@ export default function Orders() {
             <span className="dp-live-dot" />
           </div>
           <div className="dp-map-container">
-            <MapContainer center={[currentPos.lat, currentPos.lng]} zoom={15} style={{ height: '300px', width: '100%', borderRadius: '12px' }}>
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <Marker position={[currentPos.lat, currentPos.lng]}>
+            <MapContainer 
+              center={[currentPos.lat, currentPos.lng]} 
+              zoom={15} 
+              style={{ height: '350px', width: '100%', borderRadius: '14px', border: '1px solid rgba(201,168,76,0.2)' }}
+              zoomControl={false}
+            >
+              <TileLayer 
+                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              />
+              
+              {/* Markers and lines for all active orders */}
+              {active.map(order => {
+                const dest = order.shippingAddress?.coordinates;
+                if (!dest?.lat) return null;
+                return (
+                  <React.Fragment key={order._id}>
+                    <Polyline 
+                      positions={[[currentPos.lat, currentPos.lng], [dest.lat, dest.lng]]}
+                      color="#c9a84c"
+                      dashArray="8, 12"
+                      weight={2}
+                      opacity={0.4}
+                    />
+                    <Marker position={[dest.lat, dest.lng]} icon={destinationIcon}>
+                      <Popup>
+                        <strong>{order.customerName}</strong><br/>
+                        {order.shippingAddress.city}
+                      </Popup>
+                    </Marker>
+                  </React.Fragment>
+                );
+              })}
+
+              <Marker position={[currentPos.lat, currentPos.lng]} icon={partnerIcon}>
                 <Popup>You are here (Sharing location)</Popup>
               </Marker>
+
+              <MapUpdater center={[currentPos.lat, currentPos.lng]} />
             </MapContainer>
           </div>
         </div>
