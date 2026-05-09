@@ -1309,6 +1309,44 @@ body.drawer-open {
   margin-bottom: 18px;
 }
 
+.mapActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mapRefreshBtn {
+  background: var(--bg3);
+  border: 1px solid var(--gold-b);
+  color: var(--gold);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+}
+
+.mapRefreshBtn:hover {
+  background: var(--gold-dim);
+  transform: rotate(45deg);
+}
+
+.mapRefreshBtn:active {
+  transform: rotate(180deg) scale(0.9);
+}
+
+.mapRefreshBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.hidden {
+  display: none !important;
+}
+
 .liveBadge {
   background: var(--gold-dim);
   border: 1px solid var(--gold-b);

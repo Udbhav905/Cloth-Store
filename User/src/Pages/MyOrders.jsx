@@ -232,7 +232,24 @@ function OrderDrawer({ order: initialOrder, onClose, onCancel, onReview }) {
             <section className={styles.drawerSection}>
               <div className={styles.mapHeader}>
                 <h3 className={styles.drawerSectionTitle}>Live Tracking</h3>
-                <span className={styles.liveBadge}>LIVE</span>
+                <div className={styles.mapActions}>
+                  <button 
+                    className={`${styles.mapRefreshBtn} ${order.orderStatus === 'delivered' ? styles.hidden : ''}`}
+                    onClick={async () => {
+                      try {
+                        const updated = await apiFetch(`/orders/${order._id}`);
+                        if (updated) setOrder(updated);
+                      } catch (e) { console.error("Manual refresh error:", e); }
+                    }}
+                    title="Refresh Location"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+                      <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                    </svg>
+                  </button>
+                  <span className={styles.liveBadge}>LIVE</span>
+                </div>
               </div>
               
               {order.liveLocation?.lat ? (

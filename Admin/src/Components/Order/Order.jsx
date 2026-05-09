@@ -1,18 +1,47 @@
 /* Components/Order/Order.jsx - Admin Panel (Optimized) */
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { apiFetch, clearAdminSession } from "../../utils/AdminApi";
 import styles from "./Order.module.css";
 
-// Fix Leaflet icon issue
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+// Premium Map Icons
+const partnerIcon = new L.DivIcon({
+  html: `<div style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+    <svg viewBox="0 0 24 24" width="32" height="32" fill="#c9a84c">
+      <path d="M21 16.5c0 .8-.7 1.5-1.5 1.5s-1.5-.7-1.5-1.5.7-1.5 1.5-1.5 1.5.7 1.5 1.5zm-13.5 0c0 .8-.7 1.5-1.5 1.5s-1.5-.7-1.5-1.5.7-1.5 1.5-1.5 1.5.7 1.5 1.5zm15-4.5v-3c0-.8-.7-1.5-1.5-1.5h-3c-.8 0-1.5.7-1.5 1.5v3h6zm-9-4.5h-4.5c-.8 0-1.5.7-1.5 1.5v4.5h7.5v-4.5c0-.8-.7-1.5-1.5-1.5zm-6 4.5h-1.5v-4.5h1.5v4.5zm13.5 4.5h-13.5c-1.1 0-2 .9-2 2h17.5c0-1.1-.9-2-2-2z"/>
+      <circle cx="12" cy="8" r="3" fill="none" stroke="#c9a84c" stroke-width="1.5"/>
+    </svg>
+  </div>`,
+  className: "custom-marker-icon",
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
 });
+
+const destinationIcon = new L.DivIcon({
+  html: `<div style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+    <svg viewBox="0 0 24 24" width="32" height="32" fill="#1a1a1e" stroke="#c9a84c" stroke-width="1.5">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+  </div>`,
+  className: "custom-marker-icon",
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+});
+
+function MapUpdater({ center, bounds }) {
+  const map = useMap();
+  useEffect(() => {
+    if (bounds) {
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: true });
+    } else if (center) {
+      map.setView(center, map.getZoom(), { animate: true });
+    }
+  }, [center, bounds, map]);
+  return null;
+}
 
 const STATUS_CONFIG = {
   pending:          { label:"Pending",          color:"#d4ac0d", bg:"rgba(212,172,13,0.12)",  icon:"⏳" },
@@ -502,21 +531,77 @@ export default function Orders() {
               {selected.liveLocation?.lat && (
                 <section className={styles.panelSection}>
                   <div className={styles.liveHeader}>
-                    <h3 className={styles.sectionTitle}>Live Tracking</h3>
-                    <span className={styles.liveIndicator}>LIVE</span>
+                    <h3 className={styles.sectionTitle}>Live Delivery Tracking</h3>
+                    <div className={styles.mapActions}>
+                      <button 
+                        className={styles.mapRefreshBtn}
+                        onClick={() => fetchDetail(selected._id)}
+                        title="Refresh Location"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+                          <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                        </svg>
+                      </button>
+                      <span className={styles.liveIndicator}>LIVE</span>
+                    </div>
                   </div>
                   <div className={styles.adminMapContainer}>
                     <MapContainer 
                       center={[selected.liveLocation.lat, selected.liveLocation.lng]} 
                       zoom={14} 
-                      style={{ height: '200px', width: '100%', borderRadius: '8px' }}
+                      style={{ height: '260px', width: '100%', borderRadius: '12px', border: '1px solid rgba(201,168,76,0.2)' }}
+                      zoomControl={false}
                     >
-                      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                      <Marker position={[selected.liveLocation.lat, selected.liveLocation.lng]}>
-                        <Popup>Delivery Partner's current location</Popup>
+                      <TileLayer 
+                        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                      />
+
+                      {/* Route line */}
+                      {selected.shippingAddress?.coordinates?.lat && (
+                        <Polyline 
+                          positions={[
+                            [selected.liveLocation.lat, selected.liveLocation.lng],
+                            [selected.shippingAddress.coordinates.lat, selected.shippingAddress.coordinates.lng]
+                          ]}
+                          color="#c9a84c"
+                          dashArray="8, 12"
+                          weight={2}
+                          opacity={0.5}
+                        />
+                      )}
+
+                      {/* Destination Marker */}
+                      {selected.shippingAddress?.coordinates?.lat && (
+                        <Marker 
+                          position={[selected.shippingAddress.coordinates.lat, selected.shippingAddress.coordinates.lng]}
+                          icon={destinationIcon}
+                        >
+                          <Popup>Customer Address: {selected.shippingAddress.city}</Popup>
+                        </Marker>
+                      )}
+
+                      {/* Partner Marker */}
+                      <Marker 
+                        position={[selected.liveLocation.lat, selected.liveLocation.lng]}
+                        icon={partnerIcon}
+                      >
+                        <Popup>Partner Location: {new Date(selected.liveLocation.lastUpdated).toLocaleTimeString()}</Popup>
                       </Marker>
+
+                      <MapUpdater 
+                        center={[selected.liveLocation.lat, selected.liveLocation.lng]} 
+                        bounds={selected.shippingAddress?.coordinates?.lat ? [
+                          [selected.liveLocation.lat, selected.liveLocation.lng],
+                          [selected.shippingAddress.coordinates.lat, selected.shippingAddress.coordinates.lng]
+                        ] : null}
+                      />
                     </MapContainer>
-                    <p className={styles.mapTimestamp}>Last updated: {new Date(selected.liveLocation.lastUpdated).toLocaleTimeString()}</p>
+                    <div className={styles.mapInfo}>
+                      <span className={styles.mapTime}>Last updated: {new Date(selected.liveLocation.lastUpdated).toLocaleTimeString()}</span>
+                      <span className={styles.mapPartner}>Partner: {selected.deliveryPartnerName || selected.partnerName}</span>
+                    </div>
                   </div>
                 </section>
               )}
