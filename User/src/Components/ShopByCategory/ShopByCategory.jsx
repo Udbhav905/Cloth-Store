@@ -65,32 +65,58 @@ function CategoryCard({ cat, index, visible }) {
   const [loaded,  setLoaded]  = useState(false);
   const cardRef = useRef(null);
   
-  // 3D Tilt Parameters
-  const [tilt, setTilt] = useState({ rX: 0, rY: 0, gX: 50, gY: 50 });
+  // Cleanup animation frame on unmount
+  useEffect(() => {
+    return () => {
+      if (cardRef.current && cardRef.current.rafId) {
+        cancelAnimationFrame(cardRef.current.rafId);
+      }
+    };
+  }, []);
 
-  const handleMouseMove = useCallback((e) => {
+  const handleMouseMove = (e) => {
     if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    
+    // Throttle using requestAnimationFrame
+    if (cardRef.current.rafId) return;
+    
+    cardRef.current.rafId = requestAnimationFrame(() => {
+      if (!cardRef.current) return;
+      const rect = cardRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
 
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
 
-    const rotateX = ((y - centerY) / centerY) * -10; // Max tilt up/down
-    const rotateY = ((x - centerX) / centerX) * 10;  // Max tilt left/right
+      const rotateX = ((y - centerY) / centerY) * -10; // Max tilt up/down
+      const rotateY = ((x - centerX) / centerX) * 10;  // Max tilt left/right
 
-    const glareX = (x / rect.width) * 100;
-    const glareY = (y / rect.height) * 100;
+      const glareX = (x / rect.width) * 100;
+      const glareY = (y / rect.height) * 100;
 
-    setTilt({ rX: rotateX, rY: rotateY, gX: glareX, gY: glareY });
-  }, []);
+      cardRef.current.style.setProperty('--rX', `${rotateX}deg`);
+      cardRef.current.style.setProperty('--rY', `${rotateY}deg`);
+      cardRef.current.style.setProperty('--gX', `${glareX}%`);
+      cardRef.current.style.setProperty('--gY', `${glareY}%`);
+      
+      cardRef.current.rafId = null;
+    });
+  };
 
-  const handleMouseLeave = useCallback(() => {
+  const handleMouseLeave = () => {
     setHovered(false);
-    // Reset tilt with smooth spring
-    setTilt({ rX: 0, rY: 0, gX: 50, gY: 50 });
-  }, []);
+    if (!cardRef.current) return;
+    if (cardRef.current.rafId) {
+      cancelAnimationFrame(cardRef.current.rafId);
+      cardRef.current.rafId = null;
+    }
+    // Reset tilt and glare with smooth spring (default styles handle transitions)
+    cardRef.current.style.setProperty('--rX', `0deg`);
+    cardRef.current.style.setProperty('--rY', `0deg`);
+    cardRef.current.style.setProperty('--gX', `50%`);
+    cardRef.current.style.setProperty('--gY', `50%`);
+  };
 
   /* Use backend Cloudinary image, fall back to placeholder */
   const imgSrc = cat.img || FALLBACK_IMGS[index % FALLBACK_IMGS.length];
@@ -107,10 +133,6 @@ function CategoryCard({ cat, index, visible }) {
       style={{ 
         "--idx": index, 
         "--accent": cat.accent,
-        "--rX": `${tilt.rX}deg`,
-        "--rY": `${tilt.rY}deg`,
-        "--gX": `${tilt.gX}%`,
-        "--gY": `${tilt.gY}%`,
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseMove={handleMouseMove}

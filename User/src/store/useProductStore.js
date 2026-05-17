@@ -151,13 +151,44 @@ const useProductStore = create((set, get) => ({
       Date.now() - state.landingPageFetchedAt < 5 * 60 * 1000
     ) return;
 
-    // Set loading states
+    // Check if we have cached data in localStorage to hydrate the UI instantly
+    let hasCacheData = false;
+    try {
+      const cached = localStorage.getItem("luxuria_landing_cache");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && (parsed.trending?.length || parsed.newArrivals?.length || parsed.categories?.length)) {
+          hasCacheData = true;
+          // Hydrate state instantly if not already fetched this session
+          if (!state.landingPageFetchedAt) {
+            console.log("⚡ [SWR Cache] Hydrating landing page instantly from localStorage...");
+            if (parsed.categories) {
+              useCategoryStore.getState().setCategories(parsed.categories);
+            }
+            set({
+              trending:             parsed.trending || [],
+              newArrivals:          parsed.newArrivals || [],
+              featured:             parsed.featured || [],
+              landingCategories:    parsed.categories || [],
+              landingPageLoading:   false,
+              trendingLoading:      false,
+              newArrivalsLoading:   false,
+              featuredLoading:      false,
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("⚠️ Failed to load landing page cache from localStorage:", e);
+    }
+
+    // Set loading states (only show shimmer skeleton if we don't have cached data yet)
     set({ 
-      landingPageLoading: true, 
+      landingPageLoading: !hasCacheData, 
       landingPageError:   null,
-      trendingLoading:    true,
-      newArrivalsLoading: true,
-      featuredLoading:    true,
+      trendingLoading:    !hasCacheData,
+      newArrivalsLoading: !hasCacheData,
+      featuredLoading:    !hasCacheData,
       trendingError:      null,
       newArrivalsError:   null,
       featuredError:      null
@@ -180,7 +211,7 @@ const useProductStore = create((set, get) => ({
           useCategoryStore.getState().setCategories(data.categories);
         }
 
-        set({
+        const freshData = {
           trending:             data.trending || [],
           newArrivals:          data.newArrivals || [],
           featured:             data.featured || [],
@@ -196,7 +227,22 @@ const useProductStore = create((set, get) => ({
           trendingError:        null,
           newArrivalsError:     null,
           featuredError:        null
-        });
+        };
+
+        set(freshData);
+
+        // Save to localStorage cache for the next instant load
+        try {
+          localStorage.setItem("luxuria_landing_cache", JSON.stringify({
+            trending: freshData.trending,
+            newArrivals: freshData.newArrivals,
+            featured: freshData.featured,
+            categories: freshData.landingCategories
+          }));
+          console.log("💾 [SWR Cache] Landing page cache saved successfully!");
+        } catch (e) {
+          console.warn("⚠️ Failed to write landing page cache to localStorage:", e);
+        }
       } catch (err) {
         console.warn("⚠️ Landing-page API failed, trying fallbacks...", err.message);
         
@@ -221,7 +267,7 @@ const useProductStore = create((set, get) => ({
             parse(featuredRes),
           ]);
 
-          set({
+          const freshData = {
             trending:             trendingData,
             newArrivals:          arrivalsData,
             featured:             featuredData,
@@ -237,7 +283,22 @@ const useProductStore = create((set, get) => ({
             newArrivalsError:     arrivalsData.length === 0 ? "No new arrivals found" : null,
             featuredError:        featuredData.length === 0 ? "No featured products found" : null,
             landingPageError:     null,
-          });
+          };
+
+          set(freshData);
+
+          // Save fallback data to localStorage cache
+          try {
+            localStorage.setItem("luxuria_landing_cache", JSON.stringify({
+              trending: freshData.trending,
+              newArrivals: freshData.newArrivals,
+              featured: freshData.featured,
+              categories: useCategoryStore.getState().categories
+            }));
+            console.log("💾 [SWR Cache] Fallback landing page cache saved successfully!");
+          } catch (e) {
+            console.warn("⚠️ Failed to write fallback cache to localStorage:", e);
+          }
         } catch (fallbackErr) {
           console.error("❌ All landing page API calls failed:", fallbackErr.message);
           const errMsg = "Unable to reach server. Please check your connection.";
