@@ -35,10 +35,10 @@ export function hasDiscount(product) {
    TRENDING / BADGE helpers
 ─────────────────────────────────────────────────── */
 export function getBadge(product, index) {
-  if (index === 0)              return "TRENDING #1";
-  if (product.isBestSeller)     return "BEST SELLER";
-  if (product.isNewArrival)     return "NEW ARRIVAL";
-  if (product.isFeatured)       return "EDITORS' PICK";
+  if (index === 0) return "TRENDING #1";
+  if (product.isBestSeller) return "BEST SELLER";
+  if (product.isNewArrival) return "NEW ARRIVAL";
+  if (product.isFeatured) return "EDITORS' PICK";
   if (product.totalStock <= (product.lowStockThreshold ?? 5)) return "LIMITED";
   return "TRENDING";
 }
@@ -46,7 +46,7 @@ export function getBadge(product, index) {
 export function getTag(product) {
   const sold = product.totalSold ?? 0;
   if (sold > 150) return "🔥 Hot";
-  if (sold > 50)  return "⚡ Rising";
+  if (sold > 50) return "⚡ Rising";
   return "✦ Exclusive";
 }
 
@@ -65,41 +65,41 @@ export function getSoldText(product) {
 const useProductStore = create((set, get) => ({
 
   /* ── Trending (best sellers) ── */
-  trending:        [],
+  trending: [],
   trendingLoading: false,
-  trendingError:   null,
+  trendingError: null,
   trendingFetchedAt: null,
 
   /* ── New Arrivals ── */
-  newArrivals:        [],
+  newArrivals: [],
   newArrivalsLoading: false,
-  newArrivalsError:   null,
+  newArrivalsError: null,
   newArrivalsFetchedAt: null,
 
   /* ── Featured ── */
-  featured:        [],
+  featured: [],
   featuredLoading: false,
-  featuredError:   null,
+  featuredError: null,
   featuredFetchedAt: null,
-  
+
   /* ── Combined Landing Data ── */
   landingPageLoading: false,
-  landingPageError:   null,
+  landingPageError: null,
   landingPageFetchedAt: null,
   landingCategories: [],
   _landingPagePromise: null,
 
   /* ── Search ── */
-  searchResults:       [],
-  searchLoading:       false,
-  searchError:         null,
-  searchQuery:         "",      // last query that was fetched
-  searchTotal:         0,       // total count from server (for pagination later)
+  searchResults: [],
+  searchLoading: false,
+  searchError: null,
+  searchQuery: "",      // last query that was fetched
+  searchTotal: 0,       // total count from server (for pagination later)
 
   /* ─── INTERNAL fetch helper (for trending / arrivals / featured) ─── */
   _fetch: async (endpoint, stateKey, { force = false } = {}) => {
-    const loadingKey   = `${stateKey}Loading`;
-    const errorKey     = `${stateKey}Error`;
+    const loadingKey = `${stateKey}Loading`;
+    const errorKey = `${stateKey}Error`;
     const fetchedAtKey = `${stateKey}FetchedAt`;
 
     const state = get();
@@ -116,7 +116,7 @@ const useProductStore = create((set, get) => ({
       const res = await fetch(`${API}/products/${endpoint}`, {
         headers: { "Content-Type": "application/json" },
       });
-        
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.message || `Server error ${res.status}`);
@@ -128,10 +128,10 @@ const useProductStore = create((set, get) => ({
       const products = Array.isArray(data) ? data : (data.products ?? []);
 
       set({
-        [stateKey]:      products,
-        [loadingKey]:    false,
-        [errorKey]:      null,
-        [fetchedAtKey]:  Date.now(),
+        [stateKey]: products,
+        [loadingKey]: false,
+        [errorKey]: null,
+        [fetchedAtKey]: Date.now(),
       });
     } catch (err) {
       set({ [loadingKey]: false, [errorKey]: err.message });
@@ -140,228 +140,160 @@ const useProductStore = create((set, get) => ({
 
   fetchLandingPageData: async ({ force = false } = {}) => {
     const state = get();
-    
-    // Deduplicate concurrent requests
+
     if (state._landingPagePromise) return state._landingPagePromise;
 
-    // Cache check (5 min)
-    if (
-      !force &&
-      state.landingPageFetchedAt &&
-      Date.now() - state.landingPageFetchedAt < 5 * 60 * 1000
-    ) return;
-
-    // Check if we have cached data in localStorage to hydrate the UI instantly
-    let hasCacheData = false;
+    // Check if we have cached data in localStorage to hydrate the UI instantly (SWR pattern)
+    let hasCache = false;
     try {
       const cached = localStorage.getItem("luxuria_landing_cache");
       if (cached) {
         const parsed = JSON.parse(cached);
         if (parsed && (parsed.trending?.length || parsed.newArrivals?.length || parsed.categories?.length)) {
-          hasCacheData = true;
-          // Hydrate state instantly if not already fetched this session
-          if (!state.landingPageFetchedAt) {
-            console.log("⚡ [SWR Cache] Hydrating landing page instantly from localStorage...");
-            if (parsed.categories) {
-              useCategoryStore.getState().setCategories(parsed.categories);
-            }
-            set({
-              trending:             parsed.trending || [],
-              newArrivals:          parsed.newArrivals || [],
-              featured:             parsed.featured || [],
-              landingCategories:    parsed.categories || [],
-              landingPageLoading:   false,
-              trendingLoading:      false,
-              newArrivalsLoading:   false,
-              featuredLoading:      false,
-            });
-          }
+          hasCache = true;
+          set({
+            trending: parsed.trending || [],
+            newArrivals: parsed.newArrivals || [],
+            featured: parsed.featured || [],
+            landingCategories: parsed.categories || [],
+            landingPageLoading: false,
+            trendingLoading: false,
+            newArrivalsLoading: false,
+            featuredLoading: false,
+          });
         }
       }
     } catch (e) {
-      console.warn("⚠️ Failed to load landing page cache from localStorage:", e);
+      console.warn("⚠️ Failed to read landing cache:", e);
     }
 
-    // Set loading states (only show shimmer skeleton if we don't have cached data yet)
-    set({ 
-      landingPageLoading: !hasCacheData, 
-      landingPageError:   null,
-      trendingLoading:    !hasCacheData,
-      newArrivalsLoading: !hasCacheData,
-      featuredLoading:    !hasCacheData,
-      trendingError:      null,
-      newArrivalsError:   null,
-      featuredError:      null
-    });
+    // Cache check (5 min) - if fresh and not forced, return immediately
+    if (!force && state.landingPageFetchedAt && Date.now() - state.landingPageFetchedAt < 5 * 60 * 1000) {
+      return;
+    }
+
+    // Set loading flags if no cache exists, to show skeletons
+    if (!hasCache) {
+      set({
+        landingPageLoading: true,
+        trendingLoading: true,
+        newArrivalsLoading: true,
+        featuredLoading: true,
+        landingPageError: null,
+        trendingError: null,
+        newArrivalsError: null,
+        featuredError: null,
+      });
+    }
 
     const landingPromise = (async () => {
       try {
-        console.log("🌐 Calling consolidated landing-page API...");
+        // Fetch everything in one optimized request from the backend
         const res = await fetch(`${API}/products/landing-page`, {
           headers: { "Content-Type": "application/json" },
         });
 
         if (!res.ok) {
-          throw new Error(`Server returned ${res.status}: ${res.statusText}`);
+          throw new Error(`Server error ${res.status}`);
         }
 
         const data = await res.json();
-        
+
+        // Update category store
         if (data.categories) {
           useCategoryStore.getState().setCategories(data.categories);
         }
 
-        const freshData = {
-          trending:             data.trending || [],
-          newArrivals:          data.newArrivals || [],
-          featured:             data.featured || [],
-          landingCategories:    data.categories || [],
-          landingPageLoading:   false,
+        // Update product store with fresh data
+        set({
+          trending: data.trending || [],
+          newArrivals: data.newArrivals || [],
+          featured: data.featured || [],
+          landingCategories: data.categories || [],
+          landingPageLoading: false,
           landingPageFetchedAt: Date.now(),
-          trendingLoading:      false,
-          newArrivalsLoading:   false,
-          featuredLoading:      false,
-          trendingFetchedAt:    Date.now(),
+          trendingLoading: false,
+          newArrivalsLoading: false,
+          featuredLoading: false,
+          trendingFetchedAt: Date.now(),
           newArrivalsFetchedAt: Date.now(),
-          featuredFetchedAt:    Date.now(),
-          trendingError:        null,
-          newArrivalsError:     null,
-          featuredError:        null
-        };
+          featuredFetchedAt: Date.now(),
+          trendingError: null,
+          newArrivalsError: null,
+          featuredError: null,
+          landingPageError: null,
+        });
 
-        set(freshData);
-
-        // Save to localStorage cache for the next instant load
+        // Cache for next load (localStorage)
         try {
           localStorage.setItem("luxuria_landing_cache", JSON.stringify({
-            trending: freshData.trending,
-            newArrivals: freshData.newArrivals,
-            featured: freshData.featured,
-            categories: freshData.landingCategories
+            trending: data.trending || [],
+            newArrivals: data.newArrivals || [],
+            featured: data.featured || [],
+            categories: data.categories || []
           }));
-          console.log("💾 [SWR Cache] Landing page cache saved successfully!");
+          console.log("💾 Cache saved after optimized fetch.");
         } catch (e) {
-          console.warn("⚠️ Failed to write landing page cache to localStorage:", e);
+          console.warn("⚠️ Failed to write cache:", e);
         }
       } catch (err) {
-        console.warn("⚠️ Landing-page API failed, trying fallbacks...", err.message);
-        
-        try {
-          const [trendingRes, arrivalsRes, featuredRes] = await Promise.allSettled([
-            fetch(`${API}/products/best-sellers`, { headers: { "Content-Type": "application/json" } }),
-            fetch(`${API}/products/new-arrivals`, { headers: { "Content-Type": "application/json" } }),
-            fetch(`${API}/products/featured`,     { headers: { "Content-Type": "application/json" } }),
-          ]);
-
-          const parse = async (result) => {
-            if (result.status === "fulfilled" && result.value.ok) {
-              const d = await result.value.json();
-              return Array.isArray(d) ? d : (d.products ?? []);
-            }
-            return [];
-          };
-
-          const [trendingData, arrivalsData, featuredData] = await Promise.all([
-            parse(trendingRes),
-            parse(arrivalsRes),
-            parse(featuredRes),
-          ]);
-
-          const freshData = {
-            trending:             trendingData,
-            newArrivals:          arrivalsData,
-            featured:             featuredData,
-            landingPageLoading:   false,
-            landingPageFetchedAt: Date.now(),
-            trendingLoading:      false,
-            newArrivalsLoading:   false,
-            featuredLoading:      false,
-            trendingFetchedAt:    Date.now(),
-            newArrivalsFetchedAt: Date.now(),
-            featuredFetchedAt:    Date.now(),
-            trendingError:        trendingData.length === 0 ? "No trending products found" : null,
-            newArrivalsError:     arrivalsData.length === 0 ? "No new arrivals found" : null,
-            featuredError:        featuredData.length === 0 ? "No featured products found" : null,
-            landingPageError:     null,
-          };
-
-          set(freshData);
-
-          // Save fallback data to localStorage cache
-          try {
-            localStorage.setItem("luxuria_landing_cache", JSON.stringify({
-              trending: freshData.trending,
-              newArrivals: freshData.newArrivals,
-              featured: freshData.featured,
-              categories: useCategoryStore.getState().categories
-            }));
-            console.log("💾 [SWR Cache] Fallback landing page cache saved successfully!");
-          } catch (e) {
-            console.warn("⚠️ Failed to write fallback cache to localStorage:", e);
-          }
-        } catch (fallbackErr) {
-          console.error("❌ All landing page API calls failed:", fallbackErr.message);
-          const errMsg = "Unable to reach server. Please check your connection.";
-          set({ 
-            landingPageLoading: false, 
-            landingPageError:   errMsg,
-            trendingError:      errMsg,
-            newArrivalsError:   errMsg,
-            featuredError:      errMsg,
-            trendingLoading:    false,
-            newArrivalsLoading: false,
-            featuredLoading:    false
-          });
-        }
+        set({
+          landingPageLoading: false,
+          trendingLoading: false,
+          newArrivalsLoading: false,
+          featuredLoading: false,
+          landingPageError: err.message || "Failed to load landing page data",
+          trendingError: err.message,
+          newArrivalsError: err.message,
+          featuredError: err.message,
+        });
       }
     })();
 
     set({ _landingPagePromise: landingPromise });
-    try {
-      await landingPromise;
-    } finally {
-      set({ _landingPagePromise: null });
-    }
+    await landingPromise;
+    set({ _landingPagePromise: null });
   },
 
-  fetchSearchResults: async (query) => {
-    const q = (query || "").trim();
-    if (get().searchQuery === q && get().searchResults.length > 0) return;
 
-    set({ searchLoading: true, searchError: null, searchQuery: q });
 
-    try {
-      const params = new URLSearchParams();
-      if (q) params.set("q", q);
+fetchSearchResults: async (query) => {
+  const q = (query || "").trim();
+  if (get().searchQuery === q && get().searchResults.length > 0) return;
 
-      const res = await fetch(`${API}/products/search?${params.toString()}`, {
-        headers: { "Content-Type": "application/json" },
-      });
+  set({ searchLoading: true, searchError: null, searchQuery: q });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || `Server error ${res.status}`);
-      }
+  try {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
 
-      const data = await res.json();
-      const products = Array.isArray(data) ? data : (data.products ?? []);
-      const total    = data.total ?? products.length;
+    const res = await fetch(`${API}/products/search?${params.toString()}`, {
+      headers: { "Content-Type": "application/json" },
+    });
 
-      set({ searchResults: products, searchTotal: total, searchLoading: false });
-    } catch (err) {
-      set({ searchLoading: false, searchError: err.message });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `Server error ${res.status}`);
     }
-  },
 
+    const data = await res.json();
+    const products = Array.isArray(data) ? data : (data.products ?? []);
+    const total = data.total ?? products.length;
+
+    set({ searchResults: products, searchTotal: total, searchLoading: false });
+  } catch (err) {
+    set({ searchLoading: false, searchError: err.message });
+  }
+},
   clearSearch: () => set({ searchResults: [], searchQuery: "", searchTotal: 0, searchError: null }),
 
-  fetchTrending:    (opts) => get()._fetch("best-sellers",  "trending",    opts),
-  fetchNewArrivals: (opts) => get()._fetch("new-arrivals",  "newArrivals", opts),
-  fetchFeatured:    (opts) => get()._fetch("featured",      "featured",    opts),
+  fetchTrending: (opts) => get()._fetch("best-sellers", "trending", opts),
+  fetchNewArrivals: (opts) => get()._fetch("new-arrivals", "newArrivals", opts),
+  fetchFeatured: (opts) => get()._fetch("featured", "featured", opts),
 
-  refreshTrending:    () => get().fetchTrending({ force: true }),
+  refreshTrending: () => get().fetchTrending({ force: true }),
   refreshNewArrivals: () => get().fetchNewArrivals({ force: true }),
-  refreshFeatured:    () => get().fetchFeatured({ force: true }),
+  refreshFeatured: () => get().fetchFeatured({ force: true }),
 }));
 
 export default useProductStore;

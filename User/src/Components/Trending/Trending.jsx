@@ -83,14 +83,32 @@ function useCardReveal(delay = 0) {
 function useParallax(speed = 0.08) {
   const ref = useRef(null);
   useEffect(() => {
+    // Disable parallax on mobile/tablet to avoid layout reflow lag on lower-spec hardware
+    if (window.innerWidth < 768) return;
+
+    const el = ref.current;
+    if (!el) return;
+
+    let isVisible = false;
+
+    // Use IntersectionObserver so we only run layout checks when the element is visible
+    const observer = new IntersectionObserver(([e]) => {
+      isVisible = e.isIntersecting;
+    }, { threshold: 0 });
+    observer.observe(el);
+
     const onScroll = () => {
-      if (!ref.current) return;
-      const rect   = ref.current.getBoundingClientRect();
+      if (!isVisible || !el) return;
+      const rect = el.getBoundingClientRect();
       const center = rect.top + rect.height / 2 - window.innerHeight / 2;
-      ref.current.style.transform = `translateY(${center * speed}px)`;
+      el.style.transform = `translateY(${center * speed}px)`;
     };
+
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", onScroll);
+    };
   }, [speed]);
   return ref;
 }
@@ -280,6 +298,7 @@ export default function Trending() {
     trendingLoading,
     trendingError,
     landingPageError,
+    fetchLandingPageData,
   } = useProductStore();
 
   // Data is fetched once by the parent Home page

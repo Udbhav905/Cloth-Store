@@ -3,7 +3,8 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "baseUrl": ".",
-    "checkJs": false
+    "checkJs": false,
+    "ignoreDeprecations": "6.0"
   },
   "include": ["**/*.js"],
   "exclude": ["node_modules"]
