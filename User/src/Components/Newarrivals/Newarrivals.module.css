@@ -180,8 +180,30 @@
 .track {
   display: flex;
   gap: 30px;
-  padding: 20px 6vw;
+  padding: 20px 0;
+  width: max-content;
   will-change: transform;
+}
+
+.trackAnimate {
+  animation: marquee 45s linear infinite;
+}
+
+.viewport:hover .trackAnimate {
+  animation-play-state: paused;
+}
+
+.card:hover .underline {
+  transform: scaleX(1);
+}
+
+@keyframes marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
 }
 
 /* ══════════════════════════════════════════

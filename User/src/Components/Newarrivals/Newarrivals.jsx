@@ -46,12 +46,8 @@ function SkeletonCard() {
 }
 
 /* ── Single product card ── */
-function Card({ product: p, idx, onPause, onResume }) {
-  const [hovered, setHovered] = useState(false);
-  const [loaded,  setLoaded]  = useState(false);
-
-  const enter = () => { setHovered(true);  onPause();  };
-  const leave = () => { setHovered(false); onResume(); };
+function Card({ product: p, idx }) {
+  const [loaded, setLoaded] = useState(false);
 
   const finalPrice = calcFinalPrice(p);
   const discounted = hasDiscount(p);
@@ -69,11 +65,7 @@ function Card({ product: p, idx, onPause, onResume }) {
   return (
     <Link
       to={`/products/${p._id}`}
-      className={`${styles.card} ${hovered ? styles.cardHovered : ""}`}
-      onMouseEnter={enter}
-      onMouseLeave={leave}
-      onFocus={enter}
-      onBlur={leave}
+      className={styles.card}
       aria-label={`${p.name} — ${p.category?.name ?? ""}`}
       draggable={false}
     >
@@ -117,7 +109,7 @@ function Card({ product: p, idx, onPause, onResume }) {
             {origin}
           </div>
         </div>
-        <div className={`${styles.underline} ${hovered ? styles.underlineOn : ""}`} />
+        <div className={styles.underline} />
       </div>
     </Link>
   );
@@ -154,9 +146,6 @@ export default function NewArrivals() {
     fetchLandingPageData 
   } = useProductStore();
 
-  /* Fetch eagerly on mount — store caches for 5 min automatically */
-  // Data is fetched once by the parent Home page
-
   const isLoading = newArrivalsLoading && newArrivals.length === 0;
   const hasError  = !newArrivalsLoading && !!newArrivalsError && newArrivals.length === 0;
   const isEmpty   = !newArrivalsLoading && !newArrivalsError && newArrivals.length === 0 && !isLoading;
@@ -165,47 +154,6 @@ export default function NewArrivals() {
 
   /* Double the array for seamless infinite loop */
   const ITEMS = [...newArrivals, ...newArrivals];
-
-  /* ── rAF infinite scroll ── */
-  const trackRef     = useRef(null);
-  const offsetRef    = useRef(0);
-  const pausedRef    = useRef(true);
-  const rafRef       = useRef(null);
-  const halfWidthRef = useRef(0);
-  const SPEED        = 0.6;
-
-  useEffect(() => {
-    if (!inView || isLoading || newArrivals.length === 0) return;
-
-    const measure = () => {
-      if (!trackRef.current) return;
-      halfWidthRef.current = trackRef.current.scrollWidth / 2;
-    };
-    const tid = setTimeout(measure, 120);
-    window.addEventListener("resize", measure, { passive: true });
-    pausedRef.current = false;
-
-    const tick = () => {
-      if (!pausedRef.current && trackRef.current && halfWidthRef.current > 0) {
-        offsetRef.current -= SPEED;
-        if (Math.abs(offsetRef.current) >= halfWidthRef.current) {
-          offsetRef.current += halfWidthRef.current;
-        }
-        trackRef.current.style.transform = `translateX(${offsetRef.current}px)`;
-      }
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-
-    return () => {
-      clearTimeout(tid);
-      cancelAnimationFrame(rafRef.current);
-      window.removeEventListener("resize", measure);
-    };
-  }, [inView, isLoading, newArrivals.length]);
-
-  const pause  = () => { pausedRef.current = true;  };
-  const resume = () => { pausedRef.current = false; };
 
   return (
     <section className={styles.section} ref={sectionRef}>
@@ -255,7 +203,7 @@ export default function NewArrivals() {
             onRetry={onRetry}
           />
         ) : (
-          <div ref={trackRef} className={styles.track}>
+          <div className={`${styles.track} ${inView && newArrivals.length > 0 ? styles.trackAnimate : ""}`}>
             {isLoading
               ? Array.from({ length: 6 }, (_, i) => <SkeletonCard key={i} />)
               : ITEMS.map((p, i) => (
@@ -263,8 +211,6 @@ export default function NewArrivals() {
                     key={`${p._id}-${i}`}
                     product={p}
                     idx={i % newArrivals.length}
-                    onPause={pause}
-                    onResume={resume}
                   />
                 ))
             }
