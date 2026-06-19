@@ -393,7 +393,7 @@ export const deleteProduct = async (req, res) => {
 export const getFeaturedProducts = async (req, res) => {
   try {
     const CACHE_KEY = "featured";
-    const cached = cache.get(CACHE_KEY);
+    const cached = await cache.get(CACHE_KEY);
     if (cached) return res.json(cached);
 
     const products = await Product.find({ isFeatured: true, isActive: true })
@@ -403,7 +403,7 @@ export const getFeaturedProducts = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(12);
 
-    cache.set(CACHE_KEY, products);
+    await cache.set(CACHE_KEY, products);
     return res.json(products);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -413,7 +413,7 @@ export const getFeaturedProducts = async (req, res) => {
 export const getNewArrivals = async (req, res) => {
   try {
     const CACHE_KEY = "new-arrivals";
-    const cached = cache.get(CACHE_KEY);
+    const cached = await cache.get(CACHE_KEY);
     if (cached) return res.json(cached);
 
     const products = await Product.find({ isNewArrival: true, isActive: true })
@@ -423,7 +423,7 @@ export const getNewArrivals = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(12);
 
-    cache.set(CACHE_KEY, products);
+    await cache.set(CACHE_KEY, products);
     return res.json(products);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -433,7 +433,7 @@ export const getNewArrivals = async (req, res) => {
 export const getBestSellers = async (req, res) => {
   try {
     const CACHE_KEY = "best-sellers";
-    const cached = cache.get(CACHE_KEY);
+    const cached = await cache.get(CACHE_KEY);
     if (cached) return res.json(cached);
 
     const products = await Product.find({ isBestSeller: true, isActive: true })
@@ -443,7 +443,7 @@ export const getBestSellers = async (req, res) => {
       .sort({ totalSold: -1 })
       .limit(12);
 
-    cache.set(CACHE_KEY, products);
+    await cache.set(CACHE_KEY, products);
     return res.json(products);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -563,7 +563,7 @@ export const getHomeData = async (req, res) => {
     const CACHE_KEY = "home-data";
     let cached = null;
     try {
-      cached = cache.get(CACHE_KEY);
+      cached = await cache.get(CACHE_KEY);
     } catch (e) {
       console.error("Cache read error in getHomeData:", e);
     }
@@ -646,7 +646,7 @@ export const getHomeData = async (req, res) => {
     };
     
     try {
-      cache.set(CACHE_KEY, data, 600); // 10 minutes cache
+      await cache.set(CACHE_KEY, data, 1800); // 30 minutes cache
     } catch (e) {
       console.error("Cache write error in getHomeData:", e);
     }
