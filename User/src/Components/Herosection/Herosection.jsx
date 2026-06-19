@@ -36,74 +36,27 @@ const SLIDES = [
 ];
 
 const WAIT = 5000;       // time each slide is visible
-const LOCK_MS = 2400;    // lock during transition (matches 2.2s wipe)
-
-/* ── 3D Character Reveal ── */
-const CharReveal = ({ text, isActive }) => (
-  <span className={styles.splitText}>
-    {text.split("").map((ch, i) => (
-      <span key={i} className={styles.charWrap}>
-        <span
-          className={styles.charInner}
-          style={{ transitionDelay: isActive ? `${0.3 + i * 0.045}s` : "0s" }}
-        >
-          {ch === " " ? "\u00A0" : ch}
-        </span>
-      </span>
-    ))}
-  </span>
-);
 
 export default function Herosection() {
   const [current, setCurrent] = useState(0);
-  const [prev, setPrev] = useState(null);
-
-  const currentRef = useRef(0);
-  const lockedRef = useRef(false);
   const timerRef = useRef(null);
-  const unlockRef = useRef(null);
-
-  const doTransition = useCallback((nextIdx) => {
-    if (lockedRef.current) return;
-    if (nextIdx === currentRef.current) return;
-
-    lockedRef.current = true;
-
-    // Set prev to current before changing
-    setPrev(currentRef.current);
-    setCurrent(nextIdx);
-    currentRef.current = nextIdx;
-
-    // Unlock after transition
-    clearTimeout(unlockRef.current);
-    unlockRef.current = setTimeout(() => {
-      setPrev(null);
-      lockedRef.current = false;
-    }, LOCK_MS);
-  }, []);
 
   const resetAutoPlay = useCallback(() => {
     clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
-      const next = (currentRef.current + 1) % SLIDES.length;
-      doTransition(next);
+      setCurrent((prev) => (prev + 1) % SLIDES.length);
     }, WAIT);
-  }, [doTransition]);
+  }, []);
 
-  // Manual dot click
   const goTo = useCallback((idx) => {
-    doTransition(idx);
+    setCurrent(idx);
     resetAutoPlay();
-  }, [doTransition, resetAutoPlay]);
+  }, [resetAutoPlay]);
 
-  // Boot
   useEffect(() => {
     SLIDES.forEach((s) => { const i = new Image(); i.src = s.img; });
     resetAutoPlay();
-    return () => {
-      clearInterval(timerRef.current);
-      clearTimeout(unlockRef.current);
-    };
+    return () => clearInterval(timerRef.current);
   }, [resetAutoPlay]);
 
   return (
@@ -113,13 +66,11 @@ export default function Herosection() {
       <div className={styles.bgContainer}>
         {SLIDES.map((slide, idx) => {
           const isActive = idx === current;
-          const isPrev = idx === prev;
-          const cls = isActive ? styles.slideActive
-            : isPrev ? styles.slidePrev
-            : styles.slideHidden;
-
           return (
-            <div key={slide.id} className={`${styles.bgLayer} ${cls}`}>
+            <div 
+              key={slide.id} 
+              className={`${styles.bgLayer} ${isActive ? styles.slideActive : styles.slideHidden}`}
+            >
               <div
                 className={styles.bgImage}
                 style={{
@@ -133,26 +84,21 @@ export default function Herosection() {
         })}
       </div>
 
-      {/* ── Text ── */}
+      {/* ── Content ── */}
       <div className={styles.content}>
         {SLIDES.map((slide, idx) => {
           const isActive = idx === current;
-          const isPrev = idx === prev;
-          if (!isActive && !isPrev) return null;
-
           return (
             <div
               key={`t-${slide.id}`}
-              className={`${styles.textWrap} ${isActive ? styles.textActive : styles.textPrev}`}
+              className={`${styles.textWrap} ${isActive ? styles.textActive : styles.textHidden}`}
             >
               <div className={styles.tagWrap}>
                 <div className={styles.tagLine} />
                 <p className={styles.tag}>{slide.tag}</p>
               </div>
 
-              <h1 className={styles.title}>
-                <CharReveal text={slide.title} isActive={isActive} />
-              </h1>
+              <h1 className={styles.title}>{slide.title}</h1>
 
               <div className={styles.subWrap}>
                 <p className={styles.subtitle}>{slide.subtitle}</p>
@@ -186,7 +132,7 @@ export default function Herosection() {
                 className={styles.dotFill}
                 style={{
                   animationDuration: `${WAIT}ms`,
-                  animationPlayState: idx === current && prev === null ? "running" : "paused",
+                  animationPlayState: idx === current ? "running" : "paused",
                 }}
               />
             </div>

@@ -46,9 +46,6 @@
   margin-bottom: 80px;
 }
 
-.headerVisible {
-  opacity: 1;
-}
 
 .sectionTitle {
   font-family: 'Cormorant Garamond', serif;
@@ -101,16 +98,11 @@
   will-change: transform, opacity; /* Promote to GPU layer for smoother scroll */
 }
 
-.cardVisible {
-  opacity: 1;
-}
-
 .cardInner {
   position: relative;
   border-radius: 4px; /* classic sharp corners */
   overflow: hidden;
   background: var(--off-black);
-  transition: all 0.3s ease;
   box-shadow: var(--shadow-sm);
   height: 100%;
   aspect-ratio: 3 / 4; /* Taller ratio for fashion */
@@ -126,16 +118,13 @@
   bottom: 15px;
   border: 1px solid rgba(212, 175, 55, 0.2);
   z-index: 3;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, transform 0.3s ease;
   pointer-events: none;
 }
 
 .categoryCard:hover .cardInner::before {
-  top: 10px;
-  left: 10px;
-  right: 10px;
-  bottom: 10px;
   border-color: rgba(212, 175, 55, 0.8);
+  transform: scale(1.02);
 }
 
 .categoryCard:hover .cardInner {
@@ -155,12 +144,12 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: filter 0.3s ease;
-  filter: brightness(0.85) contrast(1.1);
+  transition: transform 0.4s ease;
+  filter: brightness(0.8) contrast(1.05);
 }
 
 .categoryCard:hover .categoryImage {
-  filter: brightness(0.65) contrast(1.15);
+  transform: scale(1.04);
 }
 
 .imageOverlay {
@@ -168,22 +157,17 @@
   inset: 0;
   background: linear-gradient(
     to bottom,
-    rgba(5, 5, 5, 0.1) 0%,
-    rgba(5, 5, 5, 0.3) 50%,
-    rgba(5, 5, 5, 0.85) 100%
+    rgba(5, 5, 5, 0.15) 0%,
+    rgba(5, 5, 5, 0.4) 50%,
+    rgba(5, 5, 5, 0.9) 100%
   );
   z-index: 1;
+  opacity: 0.85;
   transition: opacity 0.3s ease;
 }
 
 .categoryCard:hover .imageOverlay {
-  opacity: 0.9;
-  background: linear-gradient(
-    to bottom,
-    rgba(5, 5, 5, 0.2) 0%,
-    rgba(5, 5, 5, 0.5) 40%,
-    rgba(5, 5, 5, 0.95) 100%
-  );
+  opacity: 0.95;
 }
 
 /* Image Loader */

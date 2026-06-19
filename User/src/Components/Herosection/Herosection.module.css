@@ -30,6 +30,9 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
+  z-index: 1;
 }
 
 .bgImage {
@@ -37,6 +40,8 @@
   height: 100%;
   background-size: cover;
   background-repeat: no-repeat;
+  transform: translate3d(0, 0, 0); /* Force GPU acceleration */
+  will-change: opacity;
 }
 
 .overlay {
@@ -46,37 +51,15 @@
   z-index: 2;
 }
 
-/* ── Slide States: Slow Cinematic Wipe ── */
+/* ── Slide States: Fast & Smooth Opacity Fade ── */
 .slideHidden {
-  clip-path: polygon(100% 0, 100% 0, 100% 100%, 100% 100%);
+  opacity: 0;
   z-index: 1;
 }
 
 .slideActive {
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  opacity: 1;
   z-index: 3;
-  transition: clip-path 2.2s cubic-bezier(0.65, 0, 0.35, 1);
-}
-
-.slideActive .bgImage {
-  animation: kenBurns 9s linear forwards;
-}
-
-.slidePrev {
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-  z-index: 2;
-  transition: clip-path 2.2s cubic-bezier(0.65, 0, 0.35, 1);
-}
-
-.slidePrev .bgImage {
-  filter: brightness(0.3) saturate(0.2);
-  transform: scale(1.08);
-  transition: filter 2s ease, transform 2s ease;
-}
-
-@keyframes kenBurns {
-  0%   { transform: scale(1.18); }
-  100% { transform: scale(1); }
 }
 
 /* ═══════════ CONTENT ═══════════ */
@@ -94,15 +77,23 @@
   flex-direction: column;
   justify-content: center;
   max-width: 750px;
+  opacity: 0;
+  transform: translate3d(0, 20px, 0);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
 }
 
-.textActive { pointer-events: auto; z-index: 12; }
+.textActive { 
+  pointer-events: auto; 
+  z-index: 12; 
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
 
-.textPrev {
-  z-index: 5;
+.textHidden {
   opacity: 0;
-  transform: translateY(-30px) scale(0.97);
-  transition: opacity 0.5s ease, transform 0.5s ease;
+  transform: translate3d(0, -20px, 0);
+  pointer-events: none;
+  transition: opacity 0.4s ease-in, transform 0.4s ease-in;
 }
 
 /* ═══════════ TAG LINE ═══════════ */
@@ -125,7 +116,7 @@
 .textActive .tagLine {
   transform: scaleX(1);
   opacity: 1;
-  transition: transform 0.6s 0.3s var(--ease-out), opacity 0.3s 0.3s;
+  transition: transform 0.5s 0.2s var(--ease-out), opacity 0.2s 0.2s;
 }
 
 .tag {
@@ -137,12 +128,12 @@
   color: var(--gold);
   margin: 0;
   opacity: 0;
-  transform: translateY(100%);
+  transform: translate3d(0, 10px, 0);
 }
 .textActive .tag {
   opacity: 1;
-  transform: translateY(0);
-  transition: opacity 0.5s 0.35s, transform 0.5s 0.35s var(--ease-out);
+  transform: translate3d(0, 0, 0);
+  transition: opacity 0.4s 0.2s, transform 0.4s 0.2s var(--ease-out);
 }
 
 /* ═══════════ TITLE ═══════════ */
@@ -155,34 +146,13 @@
   font-weight: 300;
   text-transform: uppercase;
   letter-spacing: -0.02em;
-  overflow: hidden;
-}
-
-/* Character-level reveal */
-.splitText { display: inline-block; }
-
-.charWrap {
-  display: inline-block;
-  overflow: hidden;
-  vertical-align: top;
-}
-
-.charInner {
-  display: inline-block;
   opacity: 0;
-  transform: translateY(110%) rotateX(-80deg);
-  transform-origin: top center;
-  filter: blur(4px);
+  transform: translate3d(0, 20px, 0);
+  transition: opacity 0.6s 0.3s var(--ease-out), transform 0.6s 0.3s var(--ease-out);
 }
-
-.textActive .charInner {
+.textActive .title {
   opacity: 1;
-  transform: translateY(0) rotateX(0deg);
-  filter: blur(0px);
-  transition:
-    transform 0.7s var(--ease-out),
-    opacity 0.5s ease-out,
-    filter 0.6s ease-out;
+  transform: translate3d(0, 0, 0);
 }
 
 /* ═══════════ SUBTITLE ═══════════ */
@@ -200,23 +170,23 @@
   color: rgba(242,236,226,0.6);
   max-width: 420px;
   opacity: 0;
-  transform: translateY(20px);
+  transform: translate3d(0, 15px, 0);
 }
 .textActive .subtitle {
   opacity: 1;
-  transform: translateY(0);
-  transition: opacity 0.7s 0.6s, transform 0.7s 0.6s var(--ease-out);
+  transform: translate3d(0, 0, 0);
+  transition: opacity 0.5s 0.4s, transform 0.5s 0.4s var(--ease-out);
 }
 
 /* ═══════════ CTA ═══════════ */
 .ctaWrap {
   opacity: 0;
-  transform: translateY(15px);
+  transform: translate3d(0, 10px, 0);
 }
 .textActive .ctaWrap {
   opacity: 1;
-  transform: translateY(0);
-  transition: opacity 0.7s 0.75s, transform 0.7s 0.75s var(--ease-out);
+  transform: translate3d(0, 0, 0);
+  transition: opacity 0.5s 0.5s, transform 0.5s 0.5s var(--ease-out);
 }
 
 .ctaBtn {

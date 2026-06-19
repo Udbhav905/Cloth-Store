@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import men from "../../assets/confident-young-handsome-man-holds-his-coat-shoulder-near-lake-autumn-forest.jpg"
 import women from "../../assets/women-cat.jpg"
@@ -29,14 +29,14 @@ const ArrowIcon = () => (
   </svg>
 );
 
-const CategoryCard = ({ category, index, isVisible }) => {
+const CategoryCard = ({ category }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   return (
     <Link 
       to={`/collections/${category.slug}`} 
-      className={`${styles.categoryCard} ${isVisible ? styles.cardVisible : ""}`}
+      className={styles.categoryCard}
     >
       <div className={styles.cardInner}>
         {/* Image Container */}
@@ -73,32 +73,13 @@ const CategoryCard = ({ category, index, isVisible }) => {
 };
 
 export default function CategoryShowcase() {
-  const [isVisible, setIsVisible] = useState(false);
   const [hoveredCard, setHoveredCard] = useState(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setIsVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.2 }
-    );
-
-    const element = document.getElementById('category-showcase');
-    if (element) observer.observe(element);
-
-    return () => observer.disconnect();
-  }, []);
 
   return (
     <section id="category-showcase" className={styles.showcaseSection}>
       <div className={styles.container}>
         {/* Section Header */}
-        <div className={`${styles.sectionHeader} ${isVisible ? styles.headerVisible : ""}`}>
-          {/* <span className={styles.sectionTag}>Shop by Category</span> */}
+        <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>
             Discover Your Style
             <span className={styles.titleAccent}>.</span>
@@ -111,7 +92,7 @@ export default function CategoryShowcase() {
 
         {/* Categories Grid */}
         <div className={styles.categoriesGrid}>
-          {Object.values(categoryImages).map((category, index) => (
+          {Object.values(categoryImages).map((category) => (
             <div 
               key={category.slug}
               className={styles.cardWrapper}
@@ -120,14 +101,10 @@ export default function CategoryShowcase() {
             >
               <CategoryCard 
                 category={category} 
-                index={index} 
-                isVisible={isVisible}
               />
             </div>
           ))}
         </div>
-
-
       </div>
     </section>
   );
