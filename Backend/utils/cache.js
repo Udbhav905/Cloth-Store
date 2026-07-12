@@ -45,6 +45,16 @@ const cache = {
     } catch (err) {
       console.error(`Cache del error for key ${key}:`, err);
     }
+  },
+  delPattern: async (pattern) => {
+    try {
+      const keys = await redisClient.keys(pattern);
+      if (keys.length > 0) {
+        await redisClient.del(keys);
+      }
+    } catch (err) {
+      console.error(`Cache delPattern error for pattern ${pattern}:`, err);
+    }
   }
 };
 

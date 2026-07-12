@@ -12,6 +12,8 @@ const CARD_SELECT  = "name slug mainImage basePrice discountType discountValue a
 const bustProductCache = () => {
   try {
     ["featured", "new-arrivals", "best-sellers", "home-data"].forEach((k) => cache.del(k));
+    cache.delPattern("category:*");
+    cache.delPattern("subcategory:*");
   } catch (err) {
     console.error("Cache busting error:", err);
   }
@@ -186,12 +188,23 @@ export const getProductsByCategory = async (req, res) => {
     const { slug } = req.params;
     const { limit = 50, page = 1, sort = "-createdAt" } = req.query;
     
+    const CACHE_KEY = `category:${slug}:limit:${limit}:page:${page}:sort:${sort}`;
+    const cached = await cache.get(CACHE_KEY);
+    if (cached) {
+      return res.json(cached);
+    }
+
     const category = await Category.findOne({ slug }).lean();
     
     if (!category) {
       return res.status(404).json({ message: "Category not found" });
     }
     
+    let parentCategory = null;
+    if (category.parentCategory) {
+      parentCategory = await Category.findById(category.parentCategory).lean();
+    }
+
     const subCategories = await Category.find({ parentCategory: category._id }).lean();
     const subCategoryIds = subCategories.map(sc => sc._id);
     
@@ -219,7 +232,7 @@ export const getProductsByCategory = async (req, res) => {
     
     const total = await Product.countDocuments(query);
     
-    res.json({
+    const responseData = {
       success: true,
       category: {
         _id: category._id,
@@ -227,7 +240,11 @@ export const getProductsByCategory = async (req, res) => {
         slug: category.slug,
         description: category.description,
         image: category.image,
-        parentCategory: category.parentCategory
+        parentCategory: parentCategory ? {
+          _id: parentCategory._id,
+          name: parentCategory.name,
+          slug: parentCategory.slug
+        } : null
       },
       subCategories: subCategories.map(sc => ({
         _id: sc._id,
@@ -241,7 +258,10 @@ export const getProductsByCategory = async (req, res) => {
         total,
         pages: Math.ceil(total / parseInt(limit))
       }
-    });
+    };
+    
+    await cache.set(CACHE_KEY, responseData, 600); // 10 minutes cache
+    res.json(responseData);
     
   } catch (error) {
     console.error("Error in getProductsByCategory:", error);
@@ -254,6 +274,12 @@ export const getProductsBySubCategory = async (req, res) => {
     const { slug } = req.params;
     const { limit = 50, page = 1, sort = "-createdAt" } = req.query;
     
+    const CACHE_KEY = `subcategory:${slug}:limit:${limit}:page:${page}:sort:${sort}`;
+    const cached = await cache.get(CACHE_KEY);
+    if (cached) {
+      return res.json(cached);
+    }
+
     const subCategory = await Category.findOne({ slug }).lean();
     
     if (!subCategory) {
@@ -280,7 +306,7 @@ export const getProductsBySubCategory = async (req, res) => {
     
     const total = await Product.countDocuments({ subCategory: subCategory._id, isActive: true });
     
-    res.json({
+    const responseData = {
       success: true,
       subCategory: {
         _id: subCategory._id,
@@ -301,7 +327,10 @@ export const getProductsBySubCategory = async (req, res) => {
         total,
         pages: Math.ceil(total / parseInt(limit))
       }
-    });
+    };
+
+    await cache.set(CACHE_KEY, responseData, 600); // 10 minutes cache
+    res.json(responseData);
     
   } catch (error) {
     console.error("Error in getProductsBySubCategory:", error);

@@ -317,6 +317,9 @@ function FilterSidebar({ open, onClose, filters, setFilter, clearAll, allColors 
   );
 }
 
+/* In-memory cache to store fetched category/subcategory page data */
+const categoryCache = new Map();
+
 /* ═══════════════════════════════
    MAIN PAGE - USING BACKEND API
 ═══════════════════════════════ */
@@ -334,54 +337,78 @@ export default function CategoryPage() {
     if (!slug) return;
 
     const fetchProducts = async () => {
-      setLoading(true);
+      // SWR Pattern: Load from cache instantly if present
+      const cached = categoryCache.get(slug);
+      if (cached) {
+        setProducts(cached.products || []);
+        setCategoryInfo(cached.category);
+        setSubCategories(cached.subCategories || []);
+        setParentCategory(cached.parentCategory || null);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
       setError(null);
       
       try {
-        const timestamp = Date.now();
-        
         console.log(`🔍 Fetching products for category: ${slug}`);
-        const response = await fetch(`${API}/products/category/${slug}?_t=${timestamp}`, {
-          headers: { "Cache-Control": "no-cache" }
+        const response = await fetch(`${API}/products/category/${slug}`, {
+          headers: { "Content-Type": "application/json" }
         });
         
         if (response.ok) {
           const data = await response.json();
           console.log("✅ Category data received:", data);
-          setProducts(data.products || []);
-          setCategoryInfo(data.category);
-          setSubCategories(data.subCategories || []);
-          setParentCategory(null);
+          
+          const fetchedProducts = data.products || [];
+          const fetchedCategoryInfo = data.category;
+          const fetchedSubCategories = data.subCategories || [];
+          const fetchedParentCategory = data.category?.parentCategory || null;
+
+          setProducts(fetchedProducts);
+          setCategoryInfo(fetchedCategoryInfo);
+          setSubCategories(fetchedSubCategories);
+          setParentCategory(fetchedParentCategory);
           setLoading(false);
+
+          // Update cache
+          categoryCache.set(slug, {
+            products: fetchedProducts,
+            category: fetchedCategoryInfo,
+            subCategories: fetchedSubCategories,
+            parentCategory: fetchedParentCategory,
+            fetchedAt: Date.now()
+          });
           return;
         }
         
-        console.log(`🔍 Trying as subcategory: ${slug}`);
-        const subResponse = await fetch(`${API}/products/subcategory/${slug}?_t=${timestamp}`, {
-          headers: { "Cache-Control": "no-cache" }
-        });
-        
-        if (subResponse.ok) {
-          const data = await subResponse.json();
-          console.log("✅ Subcategory data received:", data);
-          setProducts(data.products || []);
-          setCategoryInfo(data.subCategory);
-          setSubCategories([]);
-          setParentCategory(data.subCategory?.parentCategory);
-          setLoading(false);
-          return;
-        }
-        
-        console.log(`🔍 Searching products by name: ${slug}`);
-        const searchResponse = await fetch(`${API}/products?search=${slug}&_t=${timestamp}`, {
-          headers: { "Cache-Control": "no-cache" }
+        // If not a recognized category slug, try as a search term fallback
+        console.log(`🔍 Trying search fallback for: ${slug}`);
+        const searchResponse = await fetch(`${API}/products?search=${slug}`, {
+          headers: { "Content-Type": "application/json" }
         });
         
         if (searchResponse.ok) {
           const data = await searchResponse.json();
-          setProducts(data.products || []);
-          setCategoryInfo({ name: slug, description: `Products matching "${slug}"` });
+          const fetchedProducts = data.products || [];
+          const fetchedCategoryInfo = { name: slug, description: `Products matching "${slug}"` };
+          const fetchedSubCategories = [];
+          const fetchedParentCategory = null;
+
+          setProducts(fetchedProducts);
+          setCategoryInfo(fetchedCategoryInfo);
+          setSubCategories(fetchedSubCategories);
+          setParentCategory(fetchedParentCategory);
           setLoading(false);
+
+          // Update cache
+          categoryCache.set(slug, {
+            products: fetchedProducts,
+            category: fetchedCategoryInfo,
+            subCategories: fetchedSubCategories,
+            parentCategory: fetchedParentCategory,
+            fetchedAt: Date.now()
+          });
           return;
         }
         
