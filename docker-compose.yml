@@ -1,9 +1,146 @@
-version: '3.8'
+version: '3.9'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Luxuria Clothing Store – Full-Stack Docker Compose
+#
+# Services
+#   redis      – In-memory cache / session store
+#   backend    – Node.js / Express API
+#   user       – React + Vite user storefront  (Nginx, port 5173)
+#   admin      – React + Vite admin panel      (Nginx, port 5174)
+#   partner    – React + Vite delivery app     (Nginx, port 5175)
+# ─────────────────────────────────────────────────────────────────────────────
+
+networks:
+  cloth_net:
+    driver: bridge
+
+volumes:
+  backend_uploads:   # persistent storage for uploaded product images
 
 services:
+
+  # ── Redis ──────────────────────────────────────────────────────────────────
   redis:
-    image: redis:alpine
-    container_name: my-redis-server
-    ports:
-      - "6379:6379"
+    image: redis:7-alpine
+    container_name: luxuria-redis
     restart: unless-stopped
+    networks:
+      - cloth_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend ─────────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: luxuria-backend
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - cloth_net
+    ports:
+      - "3000:3000"
+    volumes:
+      - backend_uploads:/app/uploads
+    environment:
+      PORT: 3000
+      NODE_ENV: ${NODE_ENV:-production}
+      MONGODB_URI: ${MONGODB_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      ACCESS_TOKEN_EXPIRY: ${ACCESS_TOKEN_EXPIRY:-15m}
+      REFRESH_TOKEN_EXPIRY: ${REFRESH_TOKEN_EXPIRY:-7d}
+      # Redis is on the internal Docker network; override localhost URL
+      REDIS_URL: redis://redis:6379
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      FROM_NAME: ${FROM_NAME}
+      FROM_EMAIL: ${FROM_EMAIL}
+      FRONTEND_URL: ${FRONTEND_URL}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+
+  # ── User Storefront ─────────────────────────────────────────────────────────
+  user:
+    build:
+      context: ./User
+      dockerfile: Dockerfile
+      args:
+        VITE_STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+    container_name: luxuria-user
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - cloth_net
+    ports:
+      - "5173:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+
+  # ── Admin Panel ─────────────────────────────────────────────────────────────
+  admin:
+    build:
+      context: ./Admin
+      dockerfile: Dockerfile
+    container_name: luxuria-admin
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - cloth_net
+    ports:
+      - "5174:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+
+  # ── Delivery Partner App ────────────────────────────────────────────────────
+  partner:
+    build:
+      context: ./DeliveryPartner
+      dockerfile: Dockerfile
+    container_name: luxuria-partner
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - cloth_net
+    ports:
+      - "5175:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3

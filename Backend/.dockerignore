@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log*
+.env
+uploads
+*.md
+.git
+.gitignore
+scratch_check.js
+scratch_check_partner.js
